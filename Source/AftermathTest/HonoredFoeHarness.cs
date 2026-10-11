@@ -55,6 +55,7 @@ namespace AftermathTest
 
             // a killer: one kill is enough
             Pawn killer = Foe(root + new IntVec3(6, 0, 0));
+            killer.equipment.AddEquipment((ThingWithComps)ThingMaker.MakeThing(rifleDef));
             Pawn e = Colonist(root + new IntVec3(4, 0, 4));
             Kit.KillBy(e, killer);
             Kit.Check(T.DeedsOf(killer) != null && T.DeedsOf(killer).Worthy && T.DeedsOf(killer).Kills == 1, "a raider who kills a colonist is worthy at once");
@@ -71,6 +72,14 @@ namespace AftermathTest
             Kit.KillBy(small, finisher);
             Kit.Check(T.RecordOf(small.thingIDNumber) == null, "the unworthy one dies without a record (negative)");
 
+            // the common death: downed first (his rifle falls to the ground), then dies with no instigator
+            TestUtil.DownBy(killer, finisher);
+            bool wasDowned = killer.Downed;
+            if (!killer.Dead) killer.Kill(null);
+            FoeRecord rk = T.RecordOf(killer.thingIDNumber);
+            Kit.Check(rk != null && rk.weaponDef == rifleDef && (!wasDowned || rk.killerName == finisher.LabelShort),
+                $"downed then dead without a blow: the record still has his rifle and who brought him down (downed {wasDowned}; {rk?.weaponDef?.defName}, {rk?.killerName})");
+
             // burial
             Building_Grave g1 = Grave(root + new IntVec3(0, 0, 1));
             Building_Grave g2 = Grave(root + new IntVec3(2, 0, 1));
@@ -83,7 +92,8 @@ namespace AftermathTest
             string inspect = g1.GetInspectString();
             Kit.Check(inspect.Contains(foeName) && inspect.Contains("worthy foe") && inspect.Contains(a.LabelShort) && inspect.Contains(finisher.LabelShort),
                 $"...and its inspect pane tells his name and deeds: \"{inspect.Replace("\n", " | ")}\"");
-            Kit.Check(rec.buried, "...and the record is marked buried (kept)");
+            T.RefreshBuried();
+            Kit.Check(rec.buried && T.RecordOf(killer.thingIDNumber)?.buried == false, "the grave scan marks his record buried (kept) and an unburied one not");
             Kit.Check(!g2.GetComp<CompHonoredFoe>().Marker(out _, out _) && !g2.GetInspectString().Contains("worthy foe"),
                 "an ordinary raider's grave has no marker and no story (negative)");
 

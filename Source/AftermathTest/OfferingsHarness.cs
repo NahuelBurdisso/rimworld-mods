@@ -27,7 +27,8 @@ namespace AftermathTest
 
         IntVec3 root;
         Building_Bed bed1, bed2;
-        Pawn p1, p2, lover, hater, neutral, quitter;
+        Pawn p1, p2, lover, hater, neutral, quitter, stayer;
+        int oldMinVisit = -1;
         readonly List<Pawn> colonists = new List<Pawn>();
         readonly List<Visit> visits = new List<Visit>();
         int oldJoyDuration = -1;
@@ -61,11 +62,29 @@ namespace AftermathTest
                     if (InPhase < 100) break;
                     quitter.jobs.EndCurrentJob(JobCondition.InterruptForced);
                     visits.Clear();
-                    Kit.Check(OfferingUtility.FindGift(p1, quitter.thingIDNumber, map) == null, "a visit cut short after 100 ticks leaves nothing (negative)");
+                    Kit.Check(OfferingUtility.FindGift(p1, quitter.thingIDNumber, map) == null,
+                        $"a visit cut short within {AftermathTuning.MinVisitTicks} ticks leaves nothing (negative)");
                     Next();
-                    Recover();
+                    Start(stayer, p1);
                     break;
                 case 4:
+                    {
+                        // interrupted, but only after sitting with him for 200+ ticks: that counts
+                        JobDriver drv = stayer.jobs.curDriver;
+                        bool sat = drv is JobDriver_VisitSickPawn && drv.OnLastToil && VisitTicks - drv.ticksLeftThisToil >= 200;
+                        if (!sat && InPhase < 700) break;
+                        int opinion = stayer.relations.OpinionOf(p1);
+                        stayer.jobs.EndCurrentJob(JobCondition.InterruptForced);
+                        visits.Clear();
+                        bool want = opinion >= AftermathTuning.MinOpinionForGift;
+                        Offering got = OfferingUtility.FindGift(p1, stayer.thingIDNumber, map);
+                        Kit.Check(sat && (got != null) == want,
+                            $"a visit interrupted after 200 ticks at the bedside counts (sat {sat}, opinion {opinion}, gift {got?.def?.label ?? "none"})");
+                        Next();
+                        Recover();
+                        break;
+                    }
+                case 5:
                     {
                         Offering o = OfferingUtility.OfferingsFor(p1, map).FirstOrDefault(x => x.visitorId == lover.thingIDNumber);
                         if (o != null && o.state == OfferingState.Active && InPhase < 600) break;
@@ -77,7 +96,7 @@ namespace AftermathTest
                         Kit.KillBy(p2, null);
                         break;
                     }
-                case 5:
+                case 6:
                     {
                         List<Offering> left = new List<Offering>(OfferingUtility.OfferingsFor(p2, map));
                         if (left.Count == 0)
@@ -103,6 +122,8 @@ namespace AftermathTest
             if (!root.IsValid) { Finish(); return; }
             oldJoyDuration = JobDefOf.VisitSickPawn.joyDuration;
             JobDefOf.VisitSickPawn.joyDuration = VisitTicks;
+            oldMinVisit = AftermathTuning.MinVisitTicks;
+            AftermathTuning.MinVisitTicks = 150;   // an interrupted visit counts after 150 ticks at the bedside (600 in play)
             bed1 = Bed(root + new IntVec3(2, 0, 3));
             bed2 = Bed(root + new IntVec3(6, 0, 3));
             p1 = Patient(bed1);
@@ -117,6 +138,7 @@ namespace AftermathTest
                 if (o >= 0 && o < AftermathTuning.FriendOpinion) break;
             }
             quitter = Colonist(root + new IntVec3(3, 0, 0));
+            stayer = Colonist(root + new IntVec3(5, 0, 0));
             p1.relations.AddDirectRelation(PawnRelationDefOf.Lover, lover);
             for (int i = 0; i < 3; i++) hater.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.HadAngeringFight, p2);
             Kit.Check(LovePartnerRelationUtility.LovePartnerRelationExists(lover, p1), $"setup: {lover.LabelShort} is {p1.LabelShort}'s lover");
@@ -231,6 +253,7 @@ namespace AftermathTest
         protected override void Cleanup()
         {
             if (oldJoyDuration >= 0) JobDefOf.VisitSickPawn.joyDuration = oldJoyDuration;
+            if (oldMinVisit >= 0) AftermathTuning.MinVisitTicks = oldMinVisit;
             if (p1?.drafter != null && p1.Spawned) p1.drafter.Drafted = false;
             foreach (Pawn p in colonists) TestUtil.Heal(p);
         }

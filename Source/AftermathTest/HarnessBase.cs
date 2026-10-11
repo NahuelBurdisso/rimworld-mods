@@ -11,6 +11,7 @@ namespace AftermathTest
         protected bool active, done;
         protected int ticks, phase, phaseTick;
         protected Map map;
+        int passedAtStart, failedAtStart;
 
         protected abstract int StartTick { get; }
         protected abstract string Name { get; }
@@ -33,6 +34,8 @@ namespace AftermathTest
                 if (map == null)
                 {
                     map = Find.CurrentMap;
+                    passedAtStart = Kit.Passed;
+                    failedAtStart = Kit.Failed;
                     Log.Message($"[Test] {Name} harness starting at tick {ticks}");
                 }
                 Step();
@@ -65,8 +68,12 @@ namespace AftermathTest
             done = true;
             try { Cleanup(); }
             catch (System.Exception ex) { Kit.Check(false, $"{Name} cleanup threw: {ex}"); }
-            Kit.Summary("Aftermath/" + Name);
+            // Kit's counters are shared by all harnesses: report this one's share, then the running total
+            int p = Kit.Passed - passedAtStart, f = Kit.Failed - failedAtStart;
+            if (f == 0) Log.Message($"[Test] DONE Aftermath/{Name}: {p} passed");
+            else Log.Error($"[Test] DONE Aftermath/{Name}: {p} passed, {f} FAILED");
             TestUtil.MarkFinished(Name);
+            if (TestUtil.AllFinished) Kit.Summary("Aftermath (all five harnesses)");
         }
     }
 }
