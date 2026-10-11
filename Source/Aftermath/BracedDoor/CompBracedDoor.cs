@@ -48,7 +48,8 @@ namespace Aftermath
             string attacker;
             if (by != null)
             {
-                if (!by.HostileTo(Faction.OfPlayer)) return;
+                // our own people never count, not even berserk or rebelling (GenHostility.cs:128-145)
+                if (by.Faction == Faction.OfPlayer || !by.HostileTo(Faction.OfPlayer)) return;
                 attacker = AttackerLabel(by);
             }
             else
@@ -64,8 +65,15 @@ namespace Aftermath
             if (!AftermathMod.Settings.bracedDoors || !parent.Spawned || parent.Destroyed || !OurDoor) return;
             if (parent.HitPoints <= 0 || parent.HitPoints > parent.MaxHitPoints * AftermathTuning.BatteredHitPointsFraction) return;
             Thing by = dinfo.Instigator;
-            if (by == null || !by.HostileTo(Faction.OfPlayer)) return;
+            if (by == null || by.Faction == Faction.OfPlayer || !by.HostileTo(Faction.OfPlayer)) return;
             BreachTracker.For(parent.Map)?.Register(parent.Position, BreachKind.Battered, AttackerLabel(by));
+        }
+
+        /// <summary>Latches repairs done off-screen too (PostDraw only runs for doors in view). Free while nothing is pending.</summary>
+        public override void CompTickInterval(int delta)
+        {
+            if (tracker == null || tracker.pendingRepairs == 0 || !parent.IsHashIntervalTick(250, delta)) return;
+            VisiblePlanks();
         }
 
         public override void PostDestroy(DestroyMode mode, Map previousMap)
@@ -119,12 +127,13 @@ namespace Aftermath
             if (n == 0 || (parent is Building_Door door && door.Open)) return;
             Vector3 center = parent.DrawPos;
             center.y = AltitudeLayer.DoorMoveable.AltitudeFor() + Altitudes.AltInc * 0.3f;
-            float width = Mathf.Max(parent.def.size.x, parent.def.size.z);
-            var scale = new Vector3(1.12f * width, 1f, 0.26f);
+            // laid out along the door's own axis, like Building_Door.DrawMovers rotates the leaves
+            Quaternion rot = parent.Rotation.AsQuat;
+            var scale = new Vector3(1.12f * parent.def.size.x, 1f, 0.26f);
             for (int i = 0; i < n; i++)
             {
-                Vector3 pos = center + new Vector3(0f, Altitudes.AltInc * 0.02f * i, Offsets[i]);
-                Matrix4x4 m = Matrix4x4.TRS(pos, Quaternion.AngleAxis(Angles[i], Vector3.up), scale);
+                Vector3 pos = center + rot * new Vector3(0f, 0f, Offsets[i]) + new Vector3(0f, Altitudes.AltInc * 0.02f * i, 0f);
+                Matrix4x4 m = Matrix4x4.TRS(pos, rot * Quaternion.AngleAxis(Angles[i], Vector3.up), scale);
                 Graphics.DrawMesh(MeshPool.plane10, m, BracedDoorGraphics.PlankMat, 0);
             }
         }

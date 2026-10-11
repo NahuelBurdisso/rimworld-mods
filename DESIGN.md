@@ -12,7 +12,9 @@ All signatures re-checked in `decomp/1.6.4871/Assembly-CSharp` (paths below are 
 ## Shared
 
 - **`AftermathMod` / `AftermathSettings`**: five bools (`bracedDoors`, `trophyStandards`,
-  `honoredFoes`, `vigilLamps`, `bedsideOfferings`), all default true, scroll view like Gesta.
+  `honoredFoes`, `vigilLamps`, `bedsideOfferings`), all default true, scroll view like Gesta. Saving the
+  settings in game re-prints the map meshes (`MapDrawer.WholeMapChanged`) so grave markers follow the
+  toggle at once.
 - **`AftermathTuning`** (static fields, not settings): every number below. The test harness may
   lower intervals and restores them.
 - **`CompInjector`** (`[StaticConstructorOnStartup]`): adds `CompProperties { compClass = ... }` to
@@ -51,7 +53,8 @@ All signatures re-checked in `decomp/1.6.4871/Assembly-CSharp` (paths below are 
   attacker: its faction name, else its `LabelShort` ("Pirates of Ash", "boar"). For a *broken*
   door with no instigator (fire spreading, collapse), it still counts when
   `GenHostility.AnyHostileActiveThreatToPlayer(map)` (`RimWorld/GenHostility.cs:227`) is true,
-  attacker "raiders". A door the player or his colonists destroy never counts.
+  attacker "raiders". A door the player or his colonists destroy never counts — not even a berserk or
+  rebelling colonist, who is "hostile" through his mental state (`GenHostility.cs:128-145`).
 - **One breach per raid per door cell:** if the cell already has a record from the last **1 day**,
   a battered hit adds nothing and a broken door upgrades that record to *broken* (keeps its date).
 - At most **6** records per cell (oldest dropped). Records belong to the **cell** (a
@@ -60,7 +63,8 @@ All signatures re-checked in `decomp/1.6.4871/Assembly-CSharp` (paths below are 
 
 **Planks:** a *broken* record shows a plank on any door standing on the cell (it was rebuilt by
 definition). A *battered* record shows its plank once the door has been **repaired** back to full
-hit points (latched in the record, saved). Up to **4** planks are drawn (crossing diagonals, slightly
+hit points (latched in the record, saved; checked every 250 ticks by the door's comp while any repair
+is pending map-wide, and whenever the door is drawn or inspected). Up to **4** planks are drawn (crossing diagonals, slightly
 staggered); the inspect pane lists every record. Drawn in `ThingComp.PostDraw()` (called from
 `Building_Door.DrawAt` → `Comps_PostDraw`, `RimWorld/Building_Door.cs:526-535`; doors are
 RealtimeOnly) with `Graphics.DrawMesh(MeshPool.plane10, TRS, mat, 0)` at
@@ -94,7 +98,9 @@ hall; it remembers the day and who did it.
 **Raid lords** (`StandardTracker : MapComponent`, every **250** ticks and lazily on a fall):
 `map.lordManager.lords` (`Verse.AI.Group/LordManager.cs:13`) on a player home map
 (`Map.IsPlayerHome`, `Verse/Map.cs:354`) with `lord.faction` non-null, not the player, hostile to
-the player, `def.humanlikeFaction`, and at least **2** humanlike members when first seen.
+the player, `def.humanlikeFaction`, not a prison break (`LordJob_PrisonBreak`, whose lord carries the
+prisoners' own hostile faction, `RimWorld/PrisonBreakUtility.cs:324`), and at least **2** humanlike
+members when first seen. Records of vanished lords are pruned even while the feature is off.
 Mechanoid and insect raids never carry a standard.
 
 **Leader** (fixed once per lord, saved): the faction's real `leader` (`RimWorld/Faction.cs:26`) if he
@@ -160,8 +166,12 @@ Colonist = `IsColonist` (slaves included). Downs without an instigator (bleeding
 **Death of a worthy foe** (`Pawn.Kill` prefix, any cause): snapshot into a `FoeRecord` keyed by his
 thingIDNumber — name, faction name, `equipment.Primary` def + stuff, the worn apparel on the
 `Overhead` layer (helmet) def + stuff, death tick + longLat, victims (killed flags), and who killed
-him. The deeds entry is removed. Deeds of foes not seen for **15 days** are pruned; unburied records
-older than **60 days** are pruned (buried ones are kept while their grave holds them).
+him. The deeds entry is removed. When the foe himself goes down (`MakeDowned` prefix) his weapon and the
+name of whoever downed him are stored in his deeds first: `MakeDowned` drops the weapon
+(`Pawn_HealthTracker.cs:854-859`) and the usual death that follows (bleeding out, execution) has no
+instigator. The snapshot falls back to those, then to `mindState.droppedWeapon`. Deeds of foes not seen
+for **15 days** are pruned; every 2500 ticks a scan of all graves (`ThingRequestGroup.Grave`) marks which
+records are buried; unburied records older than **60 days** are pruned.
 
 **The grave:** `CompHonoredFoe` (injected into every `Building_Grave` def) looks up
 `Building_CorpseCasket.Corpse.InnerPawn.thingIDNumber` (`RimWorld/Building_CorpseCasket.cs:17`).
@@ -186,7 +196,9 @@ worthy; downing only one with another hostile → not worthy (negative); killing
 record with the right weapon/helmet defs and both names; buried in a spawned grave
 (`TryAcceptThing`) → the comp reports a marker with a non-null weapon material and the inspect text
 has his name and victims; the unworthy one buried in another grave → no marker, no text (negative);
-a hostile who kills one colonist → worthy at once; `FoeRecord` roundtrip.
+a hostile who kills one colonist → worthy at once; that one downed first and then killed with no
+instigator → his record still has his rifle and who downed him; the grave scan marks buried/unburied;
+`FoeRecord` roundtrip.
 
 ## Feature 4 — Vigil Lamp (`vigilLamps`)
 
@@ -238,7 +250,8 @@ surrounded; the disliked one alone.
 **A visit counts** when a `JobDriver_VisitSickPawn` (`RimWorld/JobDriver_VisitSickPawn.cs`, used by
 the joy giver and the doctors' visit work giver) ends with `Succeeded`, or ends otherwise (not
 `Errored`) while on its last toil (the visit itself, `OnLastToil`) after at least **600** ticks of it
-(`job.def.joyDuration - ticksLeftThisToil`). Visitor: humanlike, spawned, alive. Patient:
+(`job.def.joyDuration - ticksLeftThisToil`). Never on a map that is being removed (a despawning pawn's
+job is stopped while it is still spawned, `Pawn.cs:2413`). Visitor: humanlike, spawned, alive. Patient:
 `job.targetA.Thing` as Pawn, `IsColonist`, alive, `CurrentBed()` non-null, same map.
 
 **Who leaves a gift:** the visitor's opinion of the patient (`Pawn_RelationsTracker.OpinionOf`,
@@ -276,7 +289,8 @@ bed by geometry.
 restored: lover visits → a flowers offering adjacent to the bed naming him; same lover again → still
 one offering, visits 2; a neutral colonist visits a second patient → candle; a colonist with a
 strongly negative opinion (3× `HadAngeringFight`) visits → no offering (negative); a visit
-interrupted after 100 ticks → no offering (negative); first patient cured and out of bed → after a
+interrupted within the minimum → no offering (negative); one interrupted after 200 ticks at the bedside
+(minimum lowered to 150 for the run) → counts; first patient cured and out of bed → after a
 rare tick he has `Aftermath_CameToSeeMe` stage 0 and his offering is done; second patient killed →
 his offering is a shrine.
 

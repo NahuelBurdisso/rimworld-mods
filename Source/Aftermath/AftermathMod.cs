@@ -37,6 +37,14 @@ namespace Aftermath
             Widgets.EndScrollView();
         }
 
+        /// <summary>Grave markers live in the static map mesh: re-print it so a toggle shows at once.</summary>
+        public override void WriteSettings()
+        {
+            base.WriteSettings();
+            if (Current.ProgramState != ProgramState.Playing || Find.Maps == null) return;
+            foreach (Map m in Find.Maps) m.mapDrawer.WholeMapChanged(MapMeshFlagDefOf.Things);
+        }
+
         static void Section(Listing_Standard list, string key, ref bool value, bool last = false)
         {
             list.Label(key.Translate());

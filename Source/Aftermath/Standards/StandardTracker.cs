@@ -57,15 +57,14 @@ namespace Aftermath
         {
             int interval = AftermathTuning.StandardScanInterval;
             if ((Find.TickManager.TicksGame + map.uniqueID) % interval != 0) return;
-            if (!AftermathMod.Settings.trophyStandards) return;
             Scan();
         }
 
         public void Scan()
         {
             List<Lord> lords = map.lordManager.lords;
-            records.RemoveAll(r => !LordAlive(r.lordId));
-            if (!map.IsPlayerHome) return;
+            records.RemoveAll(r => !LordAlive(r.lordId));   // pruned even while the feature is off
+            if (!AftermathMod.Settings.trophyStandards || !map.IsPlayerHome) return;
             for (int i = 0; i < lords.Count; i++)
             {
                 Lord lord = lords[i];
@@ -99,7 +98,9 @@ namespace Aftermath
         public static bool Eligible(Lord lord)
         {
             Faction f = lord?.faction;
-            return f != null && !f.IsPlayer && f.def.humanlikeFaction && f.HostileTo(Faction.OfPlayer);
+            // a prison break makes a lord of the prisoners' own hostile faction (PrisonBreakUtility.cs:324): not a raid
+            return f != null && !f.IsPlayer && f.def.humanlikeFaction && f.HostileTo(Faction.OfPlayer)
+                && !(lord.LordJob is LordJob_PrisonBreak);
         }
 
         static int HumanlikeMembers(Lord lord)

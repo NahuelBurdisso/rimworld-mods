@@ -26,6 +26,11 @@ namespace Aftermath
         public int foeId;
         public int lastTick;
         public List<FoeVictim> victims = new List<FoeVictim>();
+        // remembered when he himself goes down: MakeDowned drops his weapon (Pawn_HealthTracker.cs:854-859)
+        // before he bleeds out or is executed, and that death has no instigator
+        public bool wentDown;
+        public ThingDef weaponDef, weaponStuff;
+        public string downedBy;
 
         public int Kills
         {
@@ -51,6 +56,10 @@ namespace Aftermath
             Scribe_Values.Look(ref foeId, "foeId");
             Scribe_Values.Look(ref lastTick, "lastTick");
             Scribe_Collections.Look(ref victims, "victims", LookMode.Deep);
+            Scribe_Values.Look(ref wentDown, "wentDown");
+            Scribe_Defs.Look(ref weaponDef, "weaponDef");
+            Scribe_Defs.Look(ref weaponStuff, "weaponStuff");
+            Scribe_Values.Look(ref downedBy, "downedBy");
             if (Scribe.mode == LoadSaveMode.PostLoadInit && victims == null) victims = new List<FoeVictim>();
         }
     }
@@ -128,7 +137,27 @@ namespace Aftermath
             int now = Find.TickManager.TicksGame;
             if (now % AftermathTuning.FoeCleanupInterval != 0) return;
             deeds.RemoveAll(d => now - d.lastTick > AftermathTuning.DeedsForgetTicks);
+            if (records.Count == 0) return;
+            RefreshBuried();
             records.RemoveAll(r => !r.buried && now - r.deathTick > AftermathTuning.UnburiedRecordForgetTicks);
+        }
+
+        static readonly HashSet<int> tmpInGraves = new HashSet<int>();
+
+        /// <summary>A record is buried while some grave on a map holds his corpse; emptied graves let it expire.</summary>
+        public void RefreshBuried()
+        {
+            tmpInGraves.Clear();
+            foreach (Map m in Find.Maps)
+            {
+                List<Thing> graves = m.listerThings.ThingsInGroup(ThingRequestGroup.Grave);
+                for (int i = 0; i < graves.Count; i++)
+                {
+                    Pawn dead = (graves[i] as Building_Grave)?.Corpse?.InnerPawn;
+                    if (dead != null) tmpInGraves.Add(dead.thingIDNumber);
+                }
+            }
+            foreach (FoeRecord r in records) r.buried = tmpInGraves.Contains(r.foeId);
         }
 
         static bool IsVictim(Pawn p) => p != null && p.IsColonist && p.RaceProps.Humanlike;
@@ -136,7 +165,17 @@ namespace Aftermath
         /// <summary>MakeDowned prefix: a colonist goes down to a hostile's blow.</summary>
         public void Notify_Downed(Pawn victim, DamageInfo? dinfo)
         {
-            if (!AftermathMod.Settings.honoredFoes || !IsVictim(victim)) return;
+            if (!AftermathMod.Settings.honoredFoes) return;
+            FoeDeeds own = DeedsOf(victim);
+            if (own != null && !own.wentDown)
+            {
+                // the foe himself goes down: keep what he fought with and who stopped him
+                own.wentDown = true;
+                own.weaponDef = victim.equipment?.Primary?.def;
+                own.weaponStuff = victim.equipment?.Primary?.Stuff;
+                own.downedBy = dinfo?.Instigator != null ? AftermathUtil.NameOf(dinfo.Value.Instigator) : null;
+            }
+            if (!IsVictim(victim)) return;
             if (!(dinfo?.Instigator is Pawn foe) || !AftermathUtil.IsHostileHumanlike(foe)) return;
             Credit(foe, victim, killed: false);
         }
@@ -170,15 +209,14 @@ namespace Aftermath
                 factionName = p.Faction?.Name ?? "?",
                 deathTick = Find.TickManager.TicksGame,
                 longLat = AftermathUtil.LongLat(p.MapHeld),
-                killerName = AftermathUtil.NameOf(dinfo?.Instigator),
+                // the blow that downed him counts as the one that stopped him; else the killing blow
+                killerName = d.downedBy ?? AftermathUtil.NameOf(dinfo?.Instigator),
                 victims = d.victims,
             };
-            ThingWithComps weapon = p.equipment?.Primary;
-            if (weapon != null)
-            {
-                rec.weaponDef = weapon.def;
-                rec.weaponStuff = weapon.Stuff;
-            }
+            Thing weapon = p.equipment?.Primary;
+            if (weapon != null) { rec.weaponDef = weapon.def; rec.weaponStuff = weapon.Stuff; }
+            else if (d.weaponDef != null) { rec.weaponDef = d.weaponDef; rec.weaponStuff = d.weaponStuff; }
+            else if (p.mindState?.droppedWeapon != null) { rec.weaponDef = p.mindState.droppedWeapon.def; rec.weaponStuff = p.mindState.droppedWeapon.Stuff; }
             if (p.apparel != null)
             {
                 foreach (Apparel a in p.apparel.WornApparel)

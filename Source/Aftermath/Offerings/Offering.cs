@@ -109,6 +109,9 @@ namespace Aftermath
             Pawn visitor = driver.pawn;
             Job job = driver.job;
             if (visitor == null || job == null || visitor.Dead || !visitor.Spawned || !visitor.RaceProps.Humanlike) return;
+            // Pawn.DeSpawn stops the job while the pawn is still spawned (Pawn.cs:2413): never spawn a gift on a map
+            // that is being removed. (A visitor leaving with a caravan after a long visit still leaves his gift.)
+            if (!Find.Maps.Contains(visitor.Map)) return;
             if (!(job.targetA.Thing is Pawn patient) || patient == visitor || patient.Dead || !patient.Spawned
                 || patient.Map != visitor.Map || !patient.IsColonist) return;
             bool counts = condition == JobCondition.Succeeded
