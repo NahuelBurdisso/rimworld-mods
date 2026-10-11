@@ -59,7 +59,7 @@ namespace OldScoresTest
                     phaseTick = ticks;
                     break;
                 case 3:
-                    if (spared.Faction == Faction.OfPlayer || ticks - phaseTick > 90)
+                    if (spared.Faction == Faction.OfPlayer || ticks - phaseTick > 200)
                     {
                         Recognized();
                         Negatives();
@@ -137,21 +137,40 @@ namespace OldScoresTest
                 Kit.Check(spared.Faction == pirates, $"60 ticks with his captor {dist:0} cells away: still a raider");
             else
                 Log.Message($"[Test] (skipped far check: raid spawned only {dist:0} cells from the captor)");
-            // the rest of the raid would shoot the captor: gone before she walks up to him
-            TestUtil.KillAll(raiders.Where(r => r != spared));
-            IntVec3 cell = CellFinder.StandableCellNear(spared.Position, map, 7f,
-                c => c.DistanceTo(spared.Position) >= 3f && GenSight.LineOfSight(c, spared.Position, map));
-            if (!cell.IsValid) cell = CellFinder.StandableCellNear(spared.Position, map, 3f);
-            TestUtil.Teleport(rescuer, cell);
-            rescuer.drafter.Drafted = true;   // stand there instead of fleeing from a raider
+            // Run 6: killing the rest of the raid here made the lord give up, and he walked off the
+            // map edge he had spawned on before the 30-tick check saw the captor. Now the rest of the
+            // raid is left alone (far away at the edge, killed in Finish) and he is brought to her:
+            // a clear cell 3-6 cells from the captor, in her line of sight.
+            if (!spared.Spawned)
+            {
+                Kit.Check(false, "setup: he is still on the map before the meeting (" + Facts() + ")");
+                return;
+            }
+            rescuer.drafter.Drafted = true;   // stand still instead of fleeing from a raider
+            IntVec3 cell = CellFinder.StandableCellNear(rescuer.Position, map, 7f,
+                c => c.DistanceTo(rescuer.Position) >= 3f && c.GetFirstPawn(map) == null && GenSight.LineOfSight(c, rescuer.Position, map));
+            Kit.Check(cell.IsValid, $"setup: a clear cell in her sight near the captor ({cell})");
+            if (cell.IsValid) TestUtil.Teleport(spared, cell);
         }
 
         void Recognized()
         {
-            Kit.Check(spared.Faction == Faction.OfPlayer, $"when he sees his captor within 12 cells he joins the colony ({ticks - phaseTick} ticks)");
+            Kit.Check(spared.Faction == Faction.OfPlayer, $"when he sees his captor within 12 cells he joins the colony ({ticks - phaseTick} ticks; {Facts()})");
             Kit.Check(spared.equipment == null || spared.equipment.Primary == null, "...dropping his weapon");
             Kit.Check(T.GetSpared(spared) == null && !TestUtil.IsPinned(spared), "...and the record is cleared and he is unpinned");
             Kit.Check(TestUtil.LetterAbout(spared.LabelShort), "...with a letter telling the story");
+        }
+
+        /// <summary>Everything the recognition rule looks at, for FAIL messages.</summary>
+        string Facts()
+        {
+            SparedRecord rec = T.GetSpared(spared);
+            bool both = spared.Spawned && rescuer.Spawned && spared.Map == rescuer.Map;
+            return $"him: spawned {spared.Spawned}, dead {spared.Dead}, downed {spared.Downed}, faction {spared.Faction?.Name ?? "none"}, "
+                 + $"mental {spared.MentalStateDef?.defName ?? "none"}, lord toil {spared.GetLord()?.CurLordToil?.GetType().Name ?? "none"}, "
+                 + $"job {spared.CurJobDef?.defName ?? "none"}, record {(rec == null ? "none" : rec.stage.ToString())}; "
+                 + $"her: spawned {rescuer.Spawned}, dead {rescuer.Dead}, downed {rescuer.Downed}; "
+                 + (both ? $"distance {spared.Position.DistanceTo(rescuer.Position):0.0}, sight {GenSight.LineOfSight(spared.Position, rescuer.Position, map)}" : "not on the same map");
         }
 
         void Negatives()

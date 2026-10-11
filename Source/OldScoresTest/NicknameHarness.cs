@@ -135,6 +135,18 @@ namespace OldScoresTest
             NicknameRecord benRec = T.GetNickname(ben, pirates);
             Kit.Check(benRec == null || (benRec.kills == 0 && !benRec.Named), "finishing off five downed raiders earns nothing");
 
+            // hidden factions (here the hostile ancients) never nickname anyone
+            Faction ancients = Faction.OfAncientsHostile;
+            if (ancients != null && ancients.Hidden)
+            {
+                Pawn sleeper = Kit.SpawnHostile(map, origin + new IntVec3(15, 0, 0), null, ancients);
+                spawned.Add(sleeper);
+                bool hostile = sleeper.HostileTo(Faction.OfPlayer);
+                Kit.KillBy(sleeper, ben);
+                Kit.Check(hostile && T.GetNickname(ben, ancients) == null, $"killing a hostile pawn of a hidden faction ({ancients.Name}) counts for nothing (hostile {hostile})");
+            }
+            else Log.Message("[Test] (skipped: no hidden hostile ancients faction)");
+
             // the real leader names her at once
             Pawn cal = TestUtil.NewColonist(map, origin);
             Pawn king = Kit.SpawnHostile(map, origin + new IntVec3(15, 0, 0), null, pirates);

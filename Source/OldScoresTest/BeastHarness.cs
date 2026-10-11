@@ -93,6 +93,19 @@ namespace OldScoresTest
             Bite(victim3, pirateDog, 15f);
             Kit.Check(T.GetBeast(pirateDog) == null, "a wolf belonging to a faction is not");
 
+            // one beast per map per day: a second wolf that does less harm than the first is not remembered
+            Pawn lesser = SpawnWolf(null);
+            Pawn victim4 = TestUtil.NewColonist(map, origin, p => p.GetStatValue(StatDefOf.IncomingDamageFactor) >= 0.99f);
+            float lesserDealt = Bite(victim4, lesser, 12f);
+            Kit.Check(T.GetBeast(lesser) == null && T.GetBeast(wolf) != null,
+                $"a second wolf the same day doing less harm ({lesserDealt:0.#} vs {rec.damageDealt:0.#}) is not marked and does not replace the first");
+            // scaria (manhunter-pack) animals are never remembered, even if they did more harm
+            Pawn rabid = SpawnWolf(null);
+            rabid.health.AddHediff(HediffDefOf.Scaria);
+            Pawn victim5 = TestUtil.NewColonist(map, origin, p => p.GetStatValue(StatDefOf.IncomingDamageFactor) >= 0.99f);
+            float rabidDealt = Bite(victim5, rabid, 20f);
+            Kit.Check(T.GetBeast(rabid) == null && T.GetBeast(wolf) != null, $"a scaria wolf ({rabidDealt:0.#} damage) is not marked");
+
             // wound the wolf so there is something to scar
             wolf.TakeDamage(new DamageInfo(DamageDefOf.Cut, 4f, 2f, -1f, victim));
             Kit.Check(Injuries(wolf).Any(), "setup: the wolf is wounded");
@@ -120,7 +133,7 @@ namespace OldScoresTest
             nipper.ExitMap(false, Rot4.North);
             Kit.Check(nipper.Name == null && !TestUtil.IsPinned(nipper), "the unmarked wolf leaves unnamed and is not kept");
 
-            parms = new IncidentParms { target = map, forced = true };
+            parms = new IncidentParms { target = map };   // not forced, like the mod's own queued incident
             Kit.Check(!OldScoresDefOf.OldScores_BeastReturns.Worker.CanFireNow(parms), "the return incident cannot fire before it is due");
         }
 
@@ -160,6 +173,19 @@ namespace OldScoresTest
 
         void Negatives()
         {
+            // a beast that already came back BeastMaxReturns times and leaves alive stays away for good
+            Pawn veteran = SpawnWolf(null);
+            Pawn v2 = TestUtil.NewColonist(map, origin, p => p.GetStatValue(StatDefOf.IncomingDamageFactor) >= 0.99f);
+            Bite(v2, veteran, 15f);
+            BeastRecord vr = T.GetBeast(veteran);
+            if (vr != null)
+            {
+                vr.returns = OldScoresTuning.BeastMaxReturns;
+                veteran.ExitMap(false, Rot4.North);
+                Kit.Check(T.GetBeast(veteran) == null && !TestUtil.IsPinned(veteran), $"after {OldScoresTuning.BeastMaxReturns} returns it leaves for good (record dropped, unpinned)");
+            }
+            else Kit.Check(false, "setup: the veteran wolf was marked (another wolf may still be marked on this map today)");
+
             OldScoresMod.Settings.beasts = false;
             Pawn w = SpawnWolf(null);
             Pawn v = TestUtil.NewColonist(map, origin);
