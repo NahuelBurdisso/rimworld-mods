@@ -72,9 +72,10 @@ namespace OldScoresTest
         void Setup()
         {
             map = Find.CurrentMap;
-            pirates = Faction.OfPirates;
-            IntVec3 center = TestUtil.FindClearArea(map, 2, 2, 2);
-            if (!center.IsValid) center = map.Center;
+            pirates = TestUtil.HostileFaction();
+            Kit.Check(pirates != null, $"setup: a hostile humanlike faction that raids ({pirates?.Name ?? "none"})");
+            if (pirates == null) { Finish(); return; }
+            IntVec3 center = map.mapPawns.FreeColonistsSpawned.FirstOrDefault()?.Position ?? map.Center;
             rescuer = TestUtil.NewColonist(map, center);
             rescuer.equipment?.DestroyAllEquipment();   // she must not shoot him when they meet
 
@@ -179,7 +180,10 @@ namespace OldScoresTest
             parms.raidArrivalMode = PawnsArrivalModeDefOf.EdgeWalkIn;
             parms.points = 200f;
             parms.forced = true;
+            TimeSpeed speed = Find.TickManager.CurTimeSpeed;
             bool ok = IncidentDefOf.RaidEnemy.Worker.TryExecute(parms);
+            // the raid letter (ThreatBig) pauses the game under the default auto-pause setting
+            if (Find.TickManager.CurTimeSpeed == TimeSpeed.Paused && speed != TimeSpeed.Paused) Find.TickManager.CurTimeSpeed = speed;
             raiders.AddRange(map.mapPawns.SpawnedPawnsInFaction(pirates).Where(p => !before.Contains(p)));
             return ok;
         }
@@ -192,6 +196,7 @@ namespace OldScoresTest
             TestUtil.KillAll(raiders.Where(r => r != spared && r.Faction != Faction.OfPlayer));
             TestUtil.KillAll(spawned);
             Kit.Summary("OldScores/Spared");
+            TestUtil.MarkFinished("Spared");
             done = true;
         }
     }

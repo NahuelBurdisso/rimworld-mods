@@ -39,35 +39,109 @@ namespace OldScoresTest
 
         static bool Clear(IntVec3 c, Map map) =>
             c.InBounds(map) && c.Standable(map) && c.GetEdifice(map) == null && !c.Fogged(map)
-            && c.GetFirstPawn(map) == null && !c.GetTerrain(map).IsWater;
+            && !c.GetTerrain(map).IsWater;
+
+        /// <summary>Nothing in the cell that clearing it would hurt: pawns, player things, built (non-rock) buildings.</summary>
+        static bool Clearable(IntVec3 c, Map map)
+        {
+            List<Thing> things = map.thingGrid.ThingsListAt(c);
+            for (int i = 0; i < things.Count; i++)
+            {
+                Thing t = things[i];
+                if (t is Pawn || t.Faction == Faction.OfPlayer) return false;
+                if (t is Building && !(t.def.building?.isNaturalRock ?? false)) return false;
+            }
+            return true;
+        }
+
+        static bool RectOk(IntVec3 c, Map map, int left, int right, int half, bool clearOnly)
+        {
+            if (c.x - left < 3 || c.x + right >= map.Size.x - 3 || c.z - half < 3 || c.z + half >= map.Size.z - 3) return false;
+            for (int x = c.x - left; x <= c.x + right; x++)
+                for (int z = c.z - half; z <= c.z + half; z++)
+                {
+                    IntVec3 cell = new IntVec3(x, 0, z);
+                    if (clearOnly ? !Clear(cell, map) || cell.GetFirstPawn(map) != null : !Clearable(cell, map)) return false;
+                }
+            return true;
+        }
 
         /// <summary>
-        /// A cell such that the rect [x-left, x+right] x [z-half, z+half] is empty open ground, searched
-        /// outward from the map centre. Invalid if none.
+        /// A test strip [x-left, x+right] x [z-half, z+half] of open soil, guaranteed on any quicktest map:
+        /// near <paramref name="near"/> (a colonist), it first looks (bounded, radius 40) for a strip that is
+        /// already clear, else one that can be cleared without touching pawns or player things, and then
+        /// clears it: unfogs, removes plants, rocks, chunks, filth and items, and lays soil over water or
+        /// impassable ground. Logs and returns the root cell.
         /// </summary>
-        public static IntVec3 FindClearArea(Map map, int left, int right, int half)
+        public static IntVec3 PrepareStrip(Map map, IntVec3 near, int left, int right, int half)
         {
-            IntVec3 center = map.Center;
-            int max = System.Math.Max(map.Size.x, map.Size.z) / 2 - 2;
-            for (int r = 0; r < max; r++)
+            IntVec3 root = IntVec3.Invalid;
+            for (int pass = 0; pass < 2 && !root.IsValid; pass++)
             {
-                for (int dx = -r; dx <= r; dx++)
-                {
-                    for (int dz = -r; dz <= r; dz++)
-                    {
-                        if (System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dz)) != r) continue;
-                        IntVec3 c = new IntVec3(center.x + dx, 0, center.z + dz);
-                        if (c.x - left < 3 || c.x + right >= map.Size.x - 3 || c.z - half < 3 || c.z + half >= map.Size.z - 3) continue;
-                        bool ok = true;
-                        for (int x = c.x - left; x <= c.x + right && ok; x++)
-                            for (int z = c.z - half; z <= c.z + half && ok; z++)
-                                ok = Clear(new IntVec3(x, 0, z), map);
-                        if (ok) return c;
-                    }
-                }
+                for (int r = 0; r <= 40 && !root.IsValid; r++)
+                    for (int dx = -r; dx <= r && !root.IsValid; dx++)
+                        for (int dz = -r; dz <= r && !root.IsValid; dz++)
+                        {
+                            if (System.Math.Max(System.Math.Abs(dx), System.Math.Abs(dz)) != r) continue;
+                            IntVec3 c = new IntVec3(near.x + dx, 0, near.z + dz);
+                            if (RectOk(c, map, left, right, half, clearOnly: pass == 0)) root = c;
+                        }
             }
-            return IntVec3.Invalid;
+            if (!root.IsValid)
+            {
+                // last resort: the map centre, clamped into bounds; pawns there are moved, nothing else is spared
+                root = new IntVec3(
+                    UnityEngine.Mathf.Clamp(map.Center.x, left + 3, map.Size.x - right - 4), 0,
+                    UnityEngine.Mathf.Clamp(map.Center.z, half + 3, map.Size.z - half - 4));
+            }
+            var tmp = new List<Thing>();
+            for (int x = root.x - left; x <= root.x + right; x++)
+                for (int z = root.z - half; z <= root.z + half; z++)
+                {
+                    IntVec3 c = new IntVec3(x, 0, z);
+                    map.fogGrid.Unfog(c);
+                    tmp.Clear();
+                    tmp.AddRange(map.thingGrid.ThingsListAt(c));
+                    foreach (Thing t in tmp)
+                    {
+                        if (t.Destroyed) continue;
+                        if (t is Pawn p)
+                        {
+                            IntVec3 away = CellFinder.StandableCellNear(new IntVec3(root.x, 0, root.z + half + 4), map, 10f);
+                            if (away.IsValid) Teleport(p, away);
+                            continue;
+                        }
+                        t.Destroy(DestroyMode.Vanish);
+                    }
+                    TerrainDef terr = c.GetTerrain(map);
+                    if (terr.IsWater || terr.passability != Traversability.Standable || !c.Walkable(map))
+                        map.terrainGrid.SetTerrain(c, TerrainDefOf.Soil);
+                }
+            bool ok = RectOk(root, map, left, right, half, clearOnly: true);
+            Log.Message($"[Test] test strip at {root} ({left + right + 1}x{2 * half + 1}), clear={ok}");
+            return ok ? root : IntVec3.Invalid;
         }
+
+        /// <summary>
+        /// A hostile humanlike faction that can raid. Factions matching <paramref name="prefer"/> first
+        /// (e.g. one nobody has a nickname from yet), pirates before others. Null if there is none.
+        /// </summary>
+        public static Faction HostileFaction(System.Predicate<Faction> prefer = null)
+        {
+            List<Faction> all = Find.FactionManager.AllFactionsListForReading.Where(f =>
+                !f.IsPlayer && !f.Hidden && !f.defeated && f.def.humanlikeFaction && f.def.basicMemberKind != null
+                && f.HostileTo(Faction.OfPlayer)
+                && f.def.pawnGroupMakers != null && f.def.pawnGroupMakers.Any(g => g.kindDef == PawnGroupKindDefOf.Combat)).ToList();
+            IEnumerable<Faction> ordered = all.OrderByDescending(f => prefer != null && prefer(f)).ThenByDescending(f => f == Faction.OfPirates);
+            return ordered.FirstOrDefault() ?? Find.FactionManager.RandomEnemyFaction(allowNonHumanlike: false);
+        }
+
+        // --- keep the game running while a harness waits -------------------------------------------
+
+        static readonly HashSet<string> finished = new HashSet<string>();
+        public const int HarnessCount = 3;
+        public static void MarkFinished(string name) => finished.Add(name);
+        public static bool AllFinished => finished.Count >= HarnessCount;
 
         public static void Teleport(Pawn p, IntVec3 cell)
         {
@@ -100,5 +174,33 @@ namespace OldScoresTest
         }
 
         public static bool IsPinned(Pawn p) => Find.WorldPawns.ForcefullyKeptPawns.Contains(p);
+    }
+}
+
+namespace OldScoresTest
+{
+    /// <summary>
+    /// A ThreatBig letter (every raid) pauses the game when Prefs.AutomaticPauseMode is MajorThreat
+    /// (LetterStack.ReceiveLetter -> TickManager.Pause). Paused, no GameComponentTick runs and the
+    /// harness waits forever. GameComponentUpdate still runs every frame: while a harness is unfinished,
+    /// resume the speed the game had before the pause.
+    /// </summary>
+    public class HarnessWatchdog : GameComponent
+    {
+        bool active;
+        int resumes;
+
+        public HarnessWatchdog(Game game) { }
+
+        public override void FinalizeInit() { active = Kit.HarnessArmed; }
+
+        public override void GameComponentUpdate()
+        {
+            if (!active || TestUtil.AllFinished || Find.TickManager == null) return;
+            if (Find.TickManager.CurTimeSpeed != TimeSpeed.Paused) return;
+            TimeSpeed back = Find.TickManager.prePauseTimeSpeed;
+            Find.TickManager.CurTimeSpeed = back == TimeSpeed.Paused ? TimeSpeed.Normal : back;
+            if (resumes++ < 20) Log.Message($"[Test] (watchdog: the game was paused at tick {Find.TickManager.TicksGame}, probably by a letter; resumed at {Find.TickManager.CurTimeSpeed})");
+        }
     }
 }

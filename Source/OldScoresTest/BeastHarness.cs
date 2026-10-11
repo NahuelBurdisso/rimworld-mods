@@ -53,7 +53,8 @@ namespace OldScoresTest
         void MarkAndEscape()
         {
             map = Find.CurrentMap;
-            origin = TestUtil.FindClearArea(map, 3, 12, 3);
+            origin = TestUtil.PrepareStrip(map, map.mapPawns.FreeColonistsSpawned.FirstOrDefault()?.Position ?? map.Center, 3, 12, 3);
+            Kit.Check(origin.IsValid, $"setup: prepared a clear test strip at {origin}");
             if (!origin.IsValid) origin = map.Center;
             victim = TestUtil.NewColonist(map, origin);
 
@@ -69,7 +70,9 @@ namespace OldScoresTest
             float small = Bite(victim2, nipper, 3f);
             Kit.Check(T.GetBeast(nipper) == null, $"a wolf that only nips ({small:0.#} damage, not downed) is not");
 
-            Pawn pirateDog = SpawnWolf(Faction.OfPirates);
+            Faction enemy = TestUtil.HostileFaction();
+            Pawn pirateDog = SpawnWolf(enemy);
+            Kit.Check(pirateDog.Faction != null, $"setup: a wolf of a faction ({pirateDog.Faction?.Name ?? "none"})");
             Pawn victim3 = TestUtil.NewColonist(map, origin);
             Bite(victim3, pirateDog, 15f);
             Kit.Check(T.GetBeast(pirateDog) == null, "a wolf belonging to a faction is not");
@@ -162,6 +165,7 @@ namespace OldScoresTest
             OldScoresMod.Settings.beasts = true;
             TestUtil.KillAll(spawned);
             Kit.Summary("OldScores/Beasts");
+            TestUtil.MarkFinished("Beasts");
             done = true;
         }
     }

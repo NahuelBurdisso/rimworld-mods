@@ -41,10 +41,16 @@ namespace OldScoresTest
             {
                 phase = 1;
                 map = Find.CurrentMap;
-                pirates = Faction.OfPirates;
-                Kit.Check(pirates != null && pirates.HostileTo(Faction.OfPlayer), "setup: pirate faction exists and is hostile");
-                origin = TestUtil.FindClearArea(map, 8, 22, 2);
-                Kit.Check(origin.IsValid, $"setup: found a clear test strip at {origin}");
+                // a hostile humanlike faction nobody has a nickname from yet (the Gesta harness kills
+                // leaders earlier in the same game, which can already have named one of its colonists)
+                pirates = TestUtil.HostileFaction(f => !T.Nicknames.Any(r => r.faction == f && r.Named));
+                Kit.Check(pirates != null, $"setup: a hostile humanlike faction to fight ({pirates?.Name ?? "none"})");
+                if (pirates == null) { Finish(); return; }
+                if (T.Nicknames.Any(r => r.faction == pirates && r.Named))
+                    Log.Message($"[Test] (note: someone already has a nickname from {pirates.Name}; dread checks only look at who caused it)");
+                Pawn anyColonist = map.mapPawns.FreeColonistsSpawned.FirstOrDefault();
+                origin = TestUtil.PrepareStrip(map, anyColonist?.Position ?? map.Center, 8, 22, 2);
+                Kit.Check(origin.IsValid, $"setup: prepared a clear test strip at {origin}");
                 if (!origin.IsValid) { Finish(); return; }
                 KillsAndNames();
                 Dread();
@@ -70,7 +76,9 @@ namespace OldScoresTest
             {
                 if (periodicRaider.MentalStateDef == OldScoresDefOf.OldScores_Dread)
                 {
-                    Kit.Check(periodicRaider.MentalState.causedByPawn == ana, $"the map component's 250-tick check frightens raiders by itself ({ticks - periodicSpawnTick} ticks)");
+                    Pawn cause = periodicRaider.MentalState.causedByPawn;
+                    Kit.Check(cause != null && cause.Faction == Faction.OfPlayer,
+                        $"the map component's 250-tick check frightens raiders by itself ({ticks - periodicSpawnTick} ticks, caused by {cause?.LabelShort ?? "nobody"}{(cause == ana ? "" : ", another nicknamed colonist")})");
                     Finish();
                 }
                 else if (ticks - periodicSpawnTick > OldScoresTuning.DreadInterval + 30)
@@ -161,10 +169,10 @@ namespace OldScoresTest
 
                 Kit.Check(fleer.MentalStateDef == OldScoresDefOf.OldScores_Dread && fleer.MentalState.causedByPawn == ana,
                     "a raider 8 cells away in plain sight falls into dread of her");
-                Kit.Check(far.MentalStateDef == null, "a raider 20 cells away does not");
-                Kit.Check(downed.MentalStateDef == null, "a downed raider does not");
-                Kit.Check(hidden.MentalStateDef == null, "a raider behind a wall does not");
-                if (stranger != null) Kit.Check(stranger.MentalStateDef == null, $"a raider of another hostile faction ({other.Name}) does not");
+                Kit.Check(!DreadOf(far, ana), "a raider 20 cells away does not");
+                Kit.Check(!DreadOf(downed, ana), "a downed raider does not");
+                Kit.Check(!DreadOf(hidden, ana), "a raider behind a wall does not");
+                if (stranger != null) Kit.Check(!DreadOf(stranger, ana), $"a raider of another hostile faction ({other.Name}) does not");
                 else Log.Message("[Test] (skipped: no second hostile humanlike faction for the stranger case)");
                 // the others would only start a fistfight with her: gone now
                 TestUtil.KillAll(new[] { far, downed, hidden, stranger });
@@ -173,6 +181,9 @@ namespace OldScoresTest
             // the periodic check (phase 2) runs at the real 15%: force it again for that one
             OldScoresTuning.DreadChance = 1f;
         }
+
+        static bool DreadOf(Pawn raider, Pawn colonist) =>
+            raider.MentalStateDef == OldScoresDefOf.OldScores_Dread && raider.MentalState.causedByPawn == colonist;
 
         Pawn SpawnUnarmed(IntVec3 cell, Faction f)
         {
@@ -200,6 +211,7 @@ namespace OldScoresTest
             TestUtil.KillAll(spawned);
             if (wall != null && !wall.Destroyed) wall.Destroy();
             Kit.Summary("OldScores/Nicknames");
+            TestUtil.MarkFinished("Nicknames");
             done = true;
         }
     }
