@@ -91,7 +91,7 @@ namespace GestaTest
             {
                 Pawn bleeder = Kit.SpawnHostile(map, bleedCell);
                 Kit.Teleport(bleeder, bleedCell);
-                bleeder.TakeDamage(new DamageInfo(DamageDefOf.Bullet, 1f, 0f, -1f, mourner));
+                bleeder.TakeDamage(new DamageInfo(DamageDefOf.Bullet, 6f, 2f, -1f, mourner));
                 bleeder.Kill(null);
                 PoppyMemory bleedMem = field.Pending.FirstOrDefault(m => m.cell == bleedCell);
                 Kit.Check(bleedMem != null && bleedMem.killerName == mourner.LabelShort, "a raider who bleeds out still gets a poppy naming who shot them");
@@ -139,11 +139,15 @@ namespace GestaTest
             return IntVec3.Invalid;
         }
 
+        /// <summary>Any open standable cell; the harness lays soil around it so the map's biome does not matter.</summary>
         static IntVec3 FertileCellAt(Map map, IntVec3 c)
         {
-            if (!c.InBounds(map) || !c.Standable(map) || c.Roofed(map) || map.fertilityGrid.FertilityAt(c) < 0.9f) return IntVec3.Invalid;
+            if (!c.InBounds(map) || !c.Standable(map) || c.Roofed(map) || c.GetTerrain(map).IsWater) return IntVec3.Invalid;
             if (c.GetEdifice(map) != null || c.GetZone(map) != null || c.GetPlant(map)?.def.plant.IsTree == true) return IntVec3.Invalid;
-            if (!(c + IntVec3.East).InBounds(map) || (c + IntVec3.East).Roofed(map)) return IntVec3.Invalid;
+            foreach (IntVec3 n in GenRadial.RadialCellsAround(c, 2.5f, true))
+                if (!n.InBounds(map) || n.Roofed(map) || n.GetEdifice(map) != null) return IntVec3.Invalid;
+            foreach (IntVec3 n in GenRadial.RadialCellsAround(c, 2.5f, true))
+                if (map.fertilityGrid.FertilityAt(n) < 0.9f) map.terrainGrid.SetTerrain(n, TerrainDefOf.Soil);
             return c;
         }
 

@@ -37,7 +37,7 @@ namespace GestaTest
             Kit.KillBy(h1, witness, DamageDefOf.Bomb);
             AshSilhouette m1 = MarkAt(map, c1);
             Kit.Check(m1 != null, "a death by explosion leaves a silhouette on the floor");
-            Kit.Check(m1 != null && m1.png != null && m1.png.Length > 300, $"the silhouette holds a real snapshot ({m1?.png?.Length ?? 0} bytes)");
+            Kit.Check(m1 != null && m1.png != null && AshMaker.LastVisiblePixels > 300 && AshMaker.LastVisiblePixels < 128 * 128 / 2, $"the silhouette holds a real body shape ({AshMaker.LastVisiblePixels} visible px of 16384)");
             Kit.Check(m1 != null && m1.Material != null, "its texture decodes into a material");
             Kit.Check(m1 != null && m1.GetInspectString().Contains(m1.pawnName) && !m1.byFire, $"inspect text names them ({m1?.GetInspectString()})");
 

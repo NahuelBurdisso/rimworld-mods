@@ -18,7 +18,7 @@ namespace GestaTest
         bool active, started;
         int ticks;
         int framesSinceTrigger = -1;
-        readonly List<(int frame, string name)> shots = new List<(int, string)> { (45, "laststand-1-caption"), (260, "laststand-2-vignette"), (440, "feat-1-beam"), (500, "feat-2-fading"), (660, "poppies"), (800, "ash") };
+        readonly List<(int frame, string name)> shots = new List<(int, string)> { (45, "laststand-1-caption"), (260, "laststand-2-vignette"), (440, "feat-1-beam"), (500, "feat-2-fading"), (660, "poppies"), (800, "ash"), (875, "tide-0-before"), (1700, "tide-1-cold") };
         string shotDir;
         Map map;
         readonly List<Pawn> hostiles = new List<Pawn>();
@@ -58,6 +58,31 @@ namespace GestaTest
             EngagementTracker.Instance.PollNow();
             framesSinceTrigger = 0;
             Log.Message($"[Showcase] hero {hero.LabelShort}, last stand active: {LastStandTracker.ActiveHero != null}");
+        }
+
+        readonly List<Pawn> mechs = new List<Pawn>();
+        int goldFrame = -1;
+
+        void StageTide()
+        {
+            Pawn witness = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p => !p.Downed);
+            if (witness == null) return;
+            Faction f = Faction.OfMechanoids ?? Faction.OfPirates;
+            PawnKindDef kind = Faction.OfMechanoids != null ? PawnKindDef.Named("Mech_CentipedeGunner") : PawnKindDefOf.PirateBoss;
+            for (int i = 0; i < 8; i++)
+            {
+                Pawn m = Kit.SpawnHostile(map, witness.Position + new IntVec3(45, 0, i * 2 - 8), kind, f);
+                m.equipment?.DestroyAllEquipment();
+                mechs.Add(m);
+            }
+            Find.CameraDriver.SetRootPosAndSize(witness.DrawPos, 16f);
+            Log.Message("[Showcase] tide: enemies spawned");
+        }
+
+        void EndTide()
+        {
+            foreach (Pawn m in mechs) if (!m.Dead) m.Kill(null);
+            Log.Message($"[Showcase] tide: losing intensity {map.GetComponent<TideWatcher>().losingIntensity:0.00}, killed the enemy");
         }
 
         void StageAsh()
@@ -139,7 +164,15 @@ namespace GestaTest
             }
             if (framesSinceTrigger == 560) StagePoppies();
             if (framesSinceTrigger == 720) StageAsh();
-            if (framesSinceTrigger == 880)
+            if (framesSinceTrigger == 880) StageTide();
+            if (framesSinceTrigger == 1720) EndTide();
+            if (framesSinceTrigger > 1720 && goldFrame < 0 && map.GetComponent<TideWatcher>().Gold) goldFrame = framesSinceTrigger;
+            if (goldFrame > 0 && framesSinceTrigger == goldFrame + 150)
+            {
+                ScreenCapture.CaptureScreenshot(Path.Combine(shotDir, "tide-2-gold.png"));
+                Log.Message("[Showcase] captured tide-2-gold");
+            }
+            if ((goldFrame > 0 && framesSinceTrigger == goldFrame + 200) || framesSinceTrigger == 3500)
             {
                 Log.Message("[Showcase] done");
                 framesSinceTrigger = -1;
