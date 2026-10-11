@@ -93,6 +93,7 @@ namespace Gesta
             LastStandTracker.Instance?.Notify_PawnDied(__instance);
             BrothersTracker.Instance?.Notify_Died(__instance);
             Chronicler.Instance?.Notify_Killed(__instance, __state);
+            WarStories.Instance?.Notify_Killed(__instance, __state);
             FeatTracker.Instance?.Notify_Killed(__instance, __state);
             __state.map.GetComponent<PoppyField>()?.Notify_Killed(__instance, __state);
             if (__state.victimWasHostile) __state.map.GetComponent<TideWatcher>()?.Notify_HostileFell();

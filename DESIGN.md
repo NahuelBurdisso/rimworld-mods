@@ -251,3 +251,18 @@ positive message "X breaks the attack of Y", and only if that map is on screen: 
 midpoint (size 12), speed to Normal, 2.2 real seconds at 0.3× (`TickManager.TickRateMultiplier`
 postfix), letterbox bars with the caption for 4.5 s. Settings: on/off, camera, slow motion, points.
 **Known:** the slow-motion patch is not multiplayer-safe.
+
+## Feature 10 — War Stories (`war-stories`)
+
+**Pitch:** after a battle, veterans retell it in social time, a little bigger every time.
+
+**Story:** colonists who killed hostiles during an engagement that ended normally get a story
+(real kills, end tick, the ids of every colonist who fought in it). A new fight replaces it.
+**Interaction** `Gesta_RecountsBattle` (weight 0.12 — deep talk is 0.075 — only while the teller has
+a fresh story: ≤ 15 days old, told < 6 times, not mid-fight). Each telling adds 1-3 raiders per
+previous telling (3… 6… 9…). The vanilla log entry is built by vanilla, so the number is stored by
+(teller id, tick) and swapped into the text (token GESTAKILLS) by a postfix on
+`PlayLogEntry_Interaction.ToGameStringFromPOV_Worker`. Listener who fought in it: social memory
+"that's not how it happened" (−3 opinion, 3 days). Listener who did not: "X's war story" (+3 mood,
+1 day) and 2% chance of a random inspiration. Three crossed-swords icons rise over the teller.
+Forced interactions (other mods) with no fresh story do nothing.

@@ -37,6 +37,11 @@ namespace Gesta
 
         public static FleckDef Gesta_Fleck_Tracer;
 
+        public static InteractionDef Gesta_RecountsBattle;
+        public static ThoughtDef Gesta_NotHowItHappened;
+        public static ThoughtDef Gesta_InspiredByWarStory;
+        public static FleckDef Gesta_Fleck_WarStory;
+
         static GestaDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(GestaDefOf)); }
     }
 }

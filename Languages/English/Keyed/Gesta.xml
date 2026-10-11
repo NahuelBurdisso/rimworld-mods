@@ -33,6 +33,9 @@ They are now {3}, and wear the same red sash.</Gesta_Brothers_LetterText>
   <Gesta_Settings_KillcamPoints>Only for raids of at least {0} points</Gesta_Settings_KillcamPoints>
   <Gesta_Killcam_Caption>{0} breaks the attack of {1}.</Gesta_Killcam_Caption>
   <Gesta_Killcam_TheEnemy>the enemy</Gesta_Killcam_TheEnemy>
+  <Gesta_Settings_WarStories>War Stories (veterans retell their battles, a little bigger each time)</Gesta_Settings_WarStories>
+  <Gesta_WarStory_InspiredBy>Inspired by {0}'s war story.</Gesta_WarStory_InspiredBy>
+  <Gesta_WarStory_AFew>a few</Gesta_WarStory_AFew>
   <Gesta_LastStand_Caption>{0} stands alone.</Gesta_LastStand_Caption>
   <Gesta_LastStand_Survived>{0} stood alone, and held.</Gesta_LastStand_Survived>
 </LanguageData>
