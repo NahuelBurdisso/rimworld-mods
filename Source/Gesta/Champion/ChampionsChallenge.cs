@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
@@ -485,7 +486,7 @@ namespace Gesta
                 bool leftover = false;
                 foreach (Pawn p in c.lord.ownedPawns) if (IsChallengeDuty(p.mindState?.duty?.def)) leftover = true;
                 if (leftover) c.lord.CurLordToil?.UpdateAllDuties();
-                foreach (Pawn p in c.lord.ownedPawns) ClearDuty(p);
+                foreach (Pawn p in c.lord.ownedPawns.ToArray()) ClearDuty(p);   // ending a job must not trip the loop
             }
             ClearDuty(c.champion);
         }
@@ -820,7 +821,7 @@ namespace Gesta
         static void Shame(Map map, ThoughtDef def)
         {
             if (map == null) return;
-            foreach (Pawn p in map.mapPawns.FreeColonistsSpawned) p.needs?.mood?.thoughts?.memories?.TryGainMemory(def);
+            foreach (Pawn p in map.mapPawns.FreeColonistsSpawned.ToArray()) p.needs?.mood?.thoughts?.memories?.TryGainMemory(def);
         }
 
         // ---------------------------------------------------------------- drawing
