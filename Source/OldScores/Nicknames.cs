@@ -17,7 +17,6 @@ namespace OldScores
             "Kind", "Cannibal", "Masochist", "Gourmand", "Ascetic",
         };
 
-        public static readonly Color DreadColor = new Color(0.65f, 0.9f, 0.93f);
 
         public NicknameRecord GetNickname(Pawn colonist, Faction faction)
         {
@@ -142,7 +141,9 @@ namespace OldScores
                             "OldScores_Dread_Reason".Translate(colonist.LabelShort, rec.nickname), forced: true, otherPawn: colonist))
                     {
                         started++;
-                        MoteMaker.ThrowText(raider.DrawPos + new Vector3(0f, 0f, 0.6f), map, "!", DreadColor, 2.5f);
+                        // two icons a beat apart drift up from him (a text mote was one pixel at normal zoom)
+                        FleckMaker.ThrowMetaIcon(raider.Position, map, OldScoresDefOf.OldScores_Fleck_Dread);
+                        FleckMaker.ThrowMetaIcon(raider.Position, map, OldScoresDefOf.OldScores_Fleck_Dread, 0.25f);
                     }
                 }
                 tmpRaiders.Clear();

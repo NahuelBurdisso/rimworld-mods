@@ -17,6 +17,19 @@
     <recoveryMtbDays>0.3</recoveryMtbDays>
   </MentalStateDef>
 
+  <!-- Icon thrown over a raider when he falls into dread (FleckMaker.ThrowMetaIcon). -->
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>OldScores_Fleck_Dread</defName>
+    <altitudeLayer>MetaOverlays</altitudeLayer>
+    <fadeInTime>0.1</fadeInTime>
+    <solidTime>0.8</solidTime>
+    <fadeOutTime>0.6</fadeOutTime>
+    <graphicData>
+      <texPath>Things/OldScores/DreadIcon</texPath>
+      <drawSize>(0.7, 0.7)</drawSize>
+    </graphicData>
+  </FleckDef>
+
   <!-- Root keyword r_name. Constants: weapon (melee/ranged/none), trait (see Nicknames.cs), PAWN_gender.
        Rule WEAPON_label exists only when armed. Words are capitalised here: the code does not title-case. -->
   <RulePackDef>

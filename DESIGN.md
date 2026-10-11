@@ -68,7 +68,8 @@ one line listing every nickname).
 - raider: spawned, humanlike, `Faction` == the naming faction, `HostileTo(player)`, not downed,
   `MentalStateDef == null`, not a prisoner, within **15** cells and `GenSight.LineOfSight` from her.
 - each such raider rolls **15%**: `TryStartMentalState(OldScores_Dread, forced: true,
-  otherPawn: colonist)` and a pale-blue "!" text mote over him.
+  otherPawn: colonist)` and a dread icon (FleckDef `OldScores_Fleck_Dread`, red-orange "!" in a
+  dark-outlined white disc, `FleckMaker.ThrowMetaIcon`, twice) drifts up from him.
 - `OldScores_Dread`: own MentalStateDef, `stateClass Verse.AI.MentalState_Terror`, 300-600 ticks,
   no letter, no message. XML patch prepends a `ThinkNode_ConditionalMentalState`
   (`state OldScores_Dread`) with `JobGiver_FleeTerror` (+ jogging wander fallback) to

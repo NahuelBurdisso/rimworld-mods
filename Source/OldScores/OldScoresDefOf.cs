@@ -7,6 +7,7 @@ namespace OldScores
     public static class OldScoresDefOf
     {
         public static MentalStateDef OldScores_Dread;
+        public static FleckDef OldScores_Fleck_Dread;
         public static RulePackDef OldScores_Namer_EnemyNickname;
         public static RulePackDef OldScores_Namer_Beast;
         public static IncidentDef OldScores_BeastReturns;
