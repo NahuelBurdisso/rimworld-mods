@@ -46,6 +46,11 @@ namespace GestaTest
                 GestaMod.Settings.championsChallenge = true;
                 try { RunA(); }
                 catch (System.Exception ex) { Kit.Check(false, "champion harness (A) threw: " + ex); }
+                try { KillHostiles(Find.CurrentMap); } catch (System.Exception ex) { Kit.Check(false, "cleanup after A threw: " + ex); }
+                try { RunExploits(); }
+                catch (System.Exception ex) { Kit.Check(false, "champion harness (exploits) threw: " + ex); }
+                try { SetupLive(); }
+                catch (System.Exception ex) { Kit.Check(false, "champion harness (live setup) threw: " + ex); }
             }
             else if (ticks == StageB)
             {
@@ -149,16 +154,30 @@ namespace GestaTest
             CellFinder.StandableCellNear(turret, map, 6f, x => x.DistanceTo(turret) >= 3f && x.GetFirstPawn(map) == null
                                                               && x.GetFirstBuilding(map) == null && GenSight.LineOfSight(turret, x, map));
 
-        /// <summary>Puts the champion at his spot and a drafted colonist inside the circle.</summary>
-        static void Step(Map map, Challenge c, Pawn taker)
+        /// <summary>
+        /// Teleports only a spawned, living pawn to a valid in-bounds cell; otherwise FAILs (setting a
+        /// pawn's Position to an invalid cell destroys it).
+        /// </summary>
+        static bool SafeTeleport(Pawn p, IntVec3 cell, string what)
         {
-            Kit.Teleport(c.champion, c.standCell);
+            bool ok = p != null && p.Spawned && !p.Dead && p.Map != null && cell.IsValid && cell.InBounds(p.Map);
+            Kit.Check(ok, $"setup: teleport {what} ({p?.LabelShort ?? "null"} to {cell})");
+            if (ok) Kit.Teleport(p, cell);
+            return ok;
+        }
+
+        /// <summary>Puts the champion at his spot and a drafted colonist inside the circle.</summary>
+        static bool Step(Map map, Challenge c, Pawn taker)
+        {
+            if (!SafeTeleport(c.champion, c.standCell, "champion to the banner")) return false;
             IntVec3 cell = CellFinder.StandableCellNear(c.banner.Position, map, 2.5f,
                 x => x != c.standCell && x.InHorDistOf(c.banner.Position, ChampionsChallenge.CircleRadius - 1f) && x.GetFirstPawn(map) == null);
             if (!cell.IsValid) cell = c.banner.Position;
+            if (taker?.drafter == null) { Kit.Check(false, "setup: a challenger who can be drafted"); return false; }
             taker.drafter.Drafted = true;
-            Kit.Teleport(taker, cell);
+            if (!SafeTeleport(taker, cell, "challenger into the circle")) return false;
             ChampionsChallenge.Instance.ProcessNow();
+            return true;
         }
 
         // ------------------------------------------------------------------ stage A
@@ -230,7 +249,7 @@ namespace GestaTest
             var turret = (Building_TurretGun)ThingMaker.MakeThing(turretDef, GenStuff.DefaultStuffFor(turretDef));
             turret.SetFaction(Faction.OfPlayer);
             GenSpawn.Spawn(turret, turretCell, map);
-            Kit.Teleport(nearTurret, InSight(map, turretCell));
+            SafeTeleport(nearTurret, InSight(map, turretCell), "holder near the turret");
             LocalTargetInfo tgt = turret.TryFindNewTarget();
             Kit.Check(!(tgt.Thing is Pawn tp && tp.GetLord() == l1), $"a player turret ignores a holding raider ({tgt.Thing?.LabelShort ?? "no target"})");
 
@@ -243,7 +262,7 @@ namespace GestaTest
                 "the challenge is written to the save by reference");
 
             // --- accept, duel, win
-            Step(map, c1, duelA);
+            if (!Step(map, c1, duelA)) { KillHostiles(map); return; }
             Kit.Check(c1.phase == ChallengePhase.Duel && c1.challenger == duelA && champ1.mindState.duty?.def == GestaDefOf.Gesta_ChampDuel,
                 $"a drafted colonist in the circle accepts ({c1.phase}, champion duty {champ1.mindState.duty?.def?.defName})");
             Kit.Check(duelA.CurJobDef == JobDefOf.AttackMelee && duelA.CurJob.targetA.Thing == champ1, $"the challenger is ordered to fight the champion ({duelA.CurJobDef?.defName})");
@@ -267,10 +286,9 @@ namespace GestaTest
             Lord l2 = Raid(map, 1500f);
             Challenge c2 = l2 == null ? null : Roll(l2);
             Kit.Check(c2 != null, "setup: second raid challenges");
-            if (c2 != null)
+            if (c2 != null && Step(map, c2, duelB))
             {
                 Pawn champ2 = c2.champion;
-                Step(map, c2, duelB);
                 Kit.Check(c2.phase == ChallengePhase.Duel, "setup: second duel on");
                 Kit.DownBy(duelB, champ2);
                 Kit.Check(cc.For(l2) != null, "the champion's blows on the challenger do not break the truce");
@@ -282,7 +300,7 @@ namespace GestaTest
                 Pawn raider = l2.ownedPawns.FirstOrDefault(p => p != champ2);
                 if (raider != null)
                 {
-                    Kit.Teleport(raider, InSight(map, turretCell));
+                    SafeTeleport(raider, InSight(map, turretCell), "raider near the turret");
                     LocalTargetInfo t2 = turret.TryFindNewTarget();
                     Kit.Check(t2.Thing is Pawn rp && rp.GetLord() == l2, $"control: the turret targets a resumed raider ({t2.Thing?.LabelShort ?? "none"})");
                 }
@@ -361,102 +379,149 @@ namespace GestaTest
                     $"the lord ending aborts the challenge ({cc.LastOutcome})");
             }
 
-            // --- exploits (review): each must count against the colony, not end the truce for free
-            Pawn duelC = NewFighter(map, home + new IntVec3(0, 0, -3));
+        }
 
-            Challenge f1 = Fresh(map);
-            Kit.Check(f1 != null, "setup: fire challenge");
-            if (f1 != null)
+        // ------------------------------------------------------------------ exploits (review)
+
+        /// <summary>
+        /// One self-contained exploit scenario: its own raid and colonists, its own failure, and the
+        /// map cleaned up after it whatever happens, so one failing never takes the next ones down.
+        /// </summary>
+        static void Scenario(Map map, string name, System.Action body)
+        {
+            try { body(); }
+            catch (System.Exception ex) { Kit.Check(false, $"{name} threw: {ex}"); }
+            finally
             {
-                Pawn h = f1.lord.ownedPawns.First(p => p != f1.champion);
-                PastGrace(f1);
-                h.TakeDamage(new DamageInfo(DamageDefOf.Burn, 2f, 0f, -1f, shooter));
-                Kit.Check(f1.pending == ChallengeOutcome.None, "fire that spread on its own (no weapon) does not break the truce");
-                h.TakeDamage(new DamageInfo(DamageDefOf.Burn, 2f, 0f, -1f, shooter, null, ThingDef.Named("Weapon_GrenadeMolotov")));
+                try
+                {
+                    KillHostiles(map);
+                    foreach (Pawn p in map.mapPawns.FreeColonistsSpawned) if (p.drafter != null) p.drafter.Drafted = false;
+                }
+                catch (System.Exception ex) { Kit.Check(false, $"{name} cleanup threw: {ex}"); }
+            }
+        }
+
+        /// <summary>A fresh fighter near the colony for one scenario (FAIL and null if none can be made).</summary>
+        static Pawn FighterFor(Map map, string name)
+        {
+            IntVec3 home = map.mapPawns.FreeColonistsSpawned.First().Position;
+            Pawn p = NewFighter(map, home + new IntVec3(Rand.RangeInclusive(-4, 4), 0, Rand.RangeInclusive(-4, 4)));
+            Kit.Check(p != null && p.Spawned, $"setup ({name}): a fresh fighter");
+            return p != null && p.Spawned ? p : null;
+        }
+
+        void RunExploits()
+        {
+            Map map = Find.CurrentMap;
+            var cc = ChampionsChallenge.Instance;
+
+            Scenario(map, "fire", () =>
+            {
+                Pawn me = FighterFor(map, "fire");
+                Challenge c = Fresh(map);
+                Kit.Check(c != null, "setup: fire challenge");
+                if (me == null || c == null) return;
+                Pawn h = c.lord.ownedPawns.First(p => p != c.champion);
+                PastGrace(c);
+                h.TakeDamage(new DamageInfo(DamageDefOf.Burn, 2f, 0f, -1f, me));
+                Kit.Check(c.pending == ChallengeOutcome.None, "fire that spread on its own (no weapon) does not break the truce");
+                h.TakeDamage(new DamageInfo(DamageDefOf.Burn, 2f, 0f, -1f, me, null, ThingDef.Named("Weapon_GrenadeMolotov")));
                 cc.ProcessNow();
                 Kit.Check(cc.LastOutcome == ChallengeOutcome.BrokenByColony, $"a direct molotov hit breaks the truce ({cc.LastOutcome})");
                 Forget(map, GestaDefOf.Gesta_ChallengeDishonor);
-            }
-            KillHostiles(map);
+            });
 
-            Challenge f2 = Fresh(map);
-            Kit.Check(f2 != null, "setup: shock-lance challenge");
-            if (f2 != null)
+            Scenario(map, "shock lance", () =>
             {
-                Step(map, f2, duelC);
-                Kit.Check(f2.phase == ChallengePhase.Duel, "setup: duel on");
-                PastGrace(f2);
-                f2.champion.health.AddHediff(HediffDefOf.PsychicShock, f2.champion.health.hediffSet.GetBrain());
-                Kit.Check(f2.champion.Downed, "setup: the psychic shock downs the champion");
+                Pawn taker = FighterFor(map, "shock lance");
+                Challenge c = Fresh(map);
+                Kit.Check(c != null, "setup: shock-lance challenge");
+                if (taker == null || c == null || !Step(map, c, taker)) return;
+                Kit.Check(c.phase == ChallengePhase.Duel, "setup: duel on");
+                PastGrace(c);
+                c.champion.health.AddHediff(HediffDefOf.PsychicShock, c.champion.health.hediffSet.GetBrain());
+                Kit.Check(c.champion.Downed, "setup: the psychic shock downs the champion");
                 cc.ProcessNow();
-                Kit.Check(cc.LastOutcome == ChallengeOutcome.BrokenByColony && !HasMemory(duelC, GestaDefOf.Gesta_ChampionVictory),
+                Kit.Check(cc.LastOutcome == ChallengeOutcome.BrokenByColony && !HasMemory(taker, GestaDefOf.Gesta_ChampionVictory),
                     $"a champion felled without the challenger's blow is no win: dishonor ({cc.LastOutcome})");
                 Forget(map, GestaDefOf.Gesta_ChallengeDishonor);
-                duelC.drafter.Drafted = false;
-            }
-            KillHostiles(map);
+            });
 
-            Challenge f3 = Fresh(map);
-            Kit.Check(f3 != null, "setup: banner challenge");
-            if (f3 != null)
+            Scenario(map, "banner", () =>
             {
-                PastGrace(f3);
-                f3.banner.TakeDamage(new DamageInfo(DamageDefOf.Bullet, 5f, 0f, -1f, shooter));
+                Pawn me = FighterFor(map, "banner");
+                Challenge c = Fresh(map);
+                Kit.Check(c != null, "setup: banner challenge");
+                if (me == null || c == null) return;
+                PastGrace(c);
+                c.banner.TakeDamage(new DamageInfo(DamageDefOf.Bullet, 5f, 0f, -1f, me));
                 cc.ProcessNow();
-                Kit.Check(cc.LastOutcome == ChallengeOutcome.BrokenByColony && f3.banner.Destroyed, $"shooting the banner breaks the truce ({cc.LastOutcome})");
-                Kit.Check(f3.banner.def.GetStatValueAbstract(StatDefOf.Flammability) == 0f, "the banner cannot be burned down");
+                Kit.Check(cc.LastOutcome == ChallengeOutcome.BrokenByColony && c.banner.Destroyed, $"shooting the banner breaks the truce ({cc.LastOutcome})");
+                Kit.Check(c.banner.def.GetStatValueAbstract(StatDefOf.Flammability) == 0f, "the banner cannot be burned down");
                 Forget(map, GestaDefOf.Gesta_ChallengeDishonor);
-            }
-            KillHostiles(map);
+            });
 
-            Challenge f4 = Fresh(map);
-            Kit.Check(f4 != null, "setup: provocation challenge");
-            if (f4 != null)
+            Scenario(map, "provocation", () =>
             {
-                Pawn h = f4.lord.ownedPawns.First(p => p != f4.champion);
-                PastGrace(f4);
-                h.mindState.meleeThreat = shooter;
-                shooter.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 6f, 1f, -1f, h));
+                Pawn me = FighterFor(map, "provocation");
+                Challenge c = Fresh(map);
+                Kit.Check(c != null, "setup: provocation challenge");
+                if (me == null || c == null) return;
+                Pawn h = c.lord.ownedPawns.First(p => p != c.champion);
+                PastGrace(c);
+                h.mindState.meleeThreat = me;
+                me.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 6f, 1f, -1f, h));
                 cc.ProcessNow();
-                Kit.Check(cc.LastOutcome == ChallengeOutcome.BrokenByColony && cc.LastEnded?.breaker == shooter,
+                Kit.Check(cc.LastOutcome == ChallengeOutcome.BrokenByColony && cc.LastEnded?.breaker == me,
                     $"a raider hitting back at a colonist who swung first: the colony broke it ({cc.LastOutcome})");
                 Forget(map, GestaDefOf.Gesta_ChallengeDishonor);
-            }
-            KillHostiles(map);
+            });
 
-            Challenge f5 = Fresh(map);
-            Kit.Check(f5 != null, "setup: swing challenge");
-            if (f5 != null)
+            Scenario(map, "swing", () =>
             {
-                Pawn h = f5.lord.ownedPawns.First(p => p != f5.champion);
-                PastGrace(f5);
+                Pawn me = FighterFor(map, "swing");
+                Challenge c = Fresh(map);
+                Kit.Check(c != null, "setup: swing challenge");
+                if (me == null || c == null) return;
+                Pawn h = c.lord.ownedPawns.First(p => p != c.champion && p.Spawned);
+                PastGrace(c);
                 IntVec3 next = CellFinder.StandableCellNear(h.Position, map, 1.9f, x => x != h.Position && x.GetFirstPawn(map) == null);
-                Kit.Teleport(shooter, next);
-                Verb melee = shooter.meleeVerbs.TryGetMeleeVerb(h);
+                if (!SafeTeleport(me, next, "colonist next to a holder")) return;
+                Verb melee = me.meleeVerbs.TryGetMeleeVerb(h);
+                Kit.Check(melee != null, "setup: a melee verb");
+                if (melee == null) return;
                 Traverse.Create(melee).Field("currentTarget").SetValue(new LocalTargetInfo(h));
                 Traverse.Create(melee).Method("TryCastShot").GetValue<bool>();
-                Kit.Check(f5.pending == ChallengeOutcome.BrokenByColony && f5.breaker == shooter, $"a colonist's swing at a holder, hit or miss, breaks the truce ({f5.pending})");
+                Kit.Check(c.pending == ChallengeOutcome.BrokenByColony && c.breaker == me, $"a colonist's swing at a holder, hit or miss, breaks the truce ({c.pending})");
                 cc.ProcessNow();
                 Forget(map, GestaDefOf.Gesta_ChallengeDishonor);
-            }
-            KillHostiles(map);
+            });
 
-            Challenge f6 = Fresh(map);
-            Kit.Check(f6 != null, "setup: kiting challenge");
-            if (f6 != null)
+            Scenario(map, "kiting", () =>
             {
-                Step(map, f6, duelC);
-                Kit.Check(f6.phase == ChallengePhase.Duel, "setup: duel on");
-                Kit.Teleport(duelC, CellFinder.StandableCellNear(f6.champion.Position + new IntVec3(9, 0, 0), map, 4f, x => x.GetFirstPawn(map) == null));
-                f6.duelStartTick -= ChampionsChallenge.DuelTicks + 1;
+                Pawn taker = FighterFor(map, "kiting");
+                Challenge c = Fresh(map);
+                Kit.Check(c != null, "setup: kiting challenge");
+                if (taker == null || c == null || !Step(map, c, taker)) return;
+                Kit.Check(c.phase == ChallengePhase.Duel, "setup: duel on");
+                IntVec3 champ = c.champion.Position;
+                CellFinder.TryFindRandomCellNear(champ, map, 10, x => x.Standable(map) && x.DistanceTo(champ) >= 4f && x.GetFirstPawn(map) == null
+                                                                       && taker.CanReach(x, Verse.AI.PathEndMode.OnCell, Danger.Deadly), out IntVec3 away);
+                if (!SafeTeleport(taker, away, "challenger out of reach")) return;
+                c.duelStartTick -= ChampionsChallenge.DuelTicks + 1;
                 cc.ProcessNow();
-                Kit.Check(cc.LastOutcome == ChallengeOutcome.Refused && AllDuty(f6.lord, DutyDefOf.AssaultColony),
+                Kit.Check(cc.LastOutcome == ChallengeOutcome.Refused && AllDuty(c.lord, DutyDefOf.AssaultColony),
                     $"running out the clock out of reach counts as refusing ({cc.LastOutcome})");
-                duelC.drafter.Drafted = false;
-            }
-            KillHostiles(map);
+            });
+        }
 
-            // --- left running for stage B
+        // ------------------------------------------------------------------ left running for stage B
+
+        void SetupLive()
+        {
+            Map map = Find.CurrentMap;
+            if (shooter == null || shooter.Dead || !shooter.Spawned) shooter = FighterFor(map, "stage B shooter");
             liveLord = Raid(map, 1500f);
             Challenge live = liveLord == null ? null : Roll(liveLord);
             Kit.Check(live != null, "setup: eighth raid challenges and is left running");

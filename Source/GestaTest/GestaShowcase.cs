@@ -142,6 +142,7 @@ namespace GestaTest
             if (duelist == null) return;
             IntVec3 cell = CellFinder.StandableCellNear(champion.banner.Position + new IntVec3(-2, 0, 0), map, 2f,
                 x => x.InHorDistOf(champion.banner.Position, 3f) && x.GetFirstPawn(map) == null);
+            if (!cell.IsValid) cell = champion.banner.Position;
             duelist.drafter.Drafted = true;
             Kit.Teleport(duelist, cell);
             ChampionsChallenge.Instance.ProcessNow();

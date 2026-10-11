@@ -36,7 +36,8 @@ namespace GestaTest
 
             Pawn victim = NewColonist(map, cell);
             Pawn mourner = NewColonist(map, cell + IntVec3.North * 3);
-            victim.relations.AddDirectRelation(PawnRelationDefOf.Spouse, mourner);
+            // generated pawns can already be married to each other: adding it twice logs an error
+            if (!victim.relations.DirectRelationExists(PawnRelationDefOf.Spouse, mourner)) victim.relations.AddDirectRelation(PawnRelationDefOf.Spouse, mourner);
             Pawn killer = Kit.SpawnHostile(map, cell + IntVec3.East * 8);
             int before = field.Pending.Count;
             Kit.KillBy(victim, killer);
