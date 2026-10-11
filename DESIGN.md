@@ -73,6 +73,9 @@ instigator lingers for minutes; on any map, caravans included):
 | Kingslayer | kills a hostile who is its faction's real leader (`Faction.leader`) or whose kind `isBoss` (raid-group bosses like PirateBoss do not count: almost every raid has one) | Kingslayer, Crownbreaker, Headsman |
 | Lifeline | carries a downed humanlike colonist who is not a baby, with an active hostile in line of sight within 15 cells, for 4 consecutive checks (60 ticks apart; any gap restarts the count). The job is not checked: a drafted carry ends its job once the pawn is picked up | Lifeline, the Shield, Unflinching |
 
+A fifth feat, **Champion** (epithets Champion, Duelist, Bannerbreaker), is awarded by Feature 11 to a
+colonist who wins the champion's duel; it has no tale of its own (the duel records one).
+
 **On a feat** (several feats from the same kill are awarded together: one tale each, but one beam,
 one title — named by the last feat — one memory and one message):
 - A golden column of light rises at the pawn (fleck `Gesta_Fleck_FeatBeam`, tall vertical glow,
@@ -266,3 +269,88 @@ previous telling (3… 6… 9…). The vanilla log entry is built by vanilla, so
 "that's not how it happened" (−3 opinion, 3 days). Listener who did not: "X's war story" (+3 mood,
 1 day) and 2% chance of a random inspiration. Three crossed-swords icons rise over the teller.
 Forced interactions (other mods) with no fresh story do nothing.
+
+## Feature 11 — The Champion's Challenge (`champions-challenge`)
+
+**Pitch:** in the middle of a raid, the enemy's champion plants a banner between the lines and
+calls for single combat. Send someone into the circle and the battle stops to watch.
+
+**Roll** (every 250 ticks, one roll per lord, ever — `rolledLords` saved by `Lord.loadID`):
+the lord is on a player home map, its current toil is exactly `LordToil_AssaultColony` and it has
+been in it for ≥ 600 ticks (`Lord.ticksInToil`); its faction is hostile, not the player's and
+`humanlikeFaction`; it has ≥ 4 able humanlike raiders (spawned, not downed, not in a mental state,
+violence-capable); the colony has a fighter; no challenge is active on that map. Raids that fail
+the permanent checks (animals, mechs, insects, fewer than 4 raiders) are marked rolled. A raid
+with a raider in an aggro mental state waits. Then `Rand.Chance(championChance)` (setting, default
+0.25).
+**Champion:** the faction's real leader if it is in the lord and able; otherwise the best
+`MeleeDPS` among able raiders holding a melee weapon or nothing; otherwise the best of all.
+**Banner:** `Gesta_ChallengeBanner` (passable, destructible, unowned building) at a random
+cell within 6 of the midpoint between the champion and the nearest colonist fighter (then 0.35,
+0.65 and 0.2 of the way if that ground is unusable): reachable by the champion, standable,
+unfogged, outside zones, with no building, frame, blueprint or item. The champion stands on a
+reachable cell next to it. Ring of radius 4 drawn around it while the
+challenge lasts. Letter (ThreatSmall).
+
+**Phases** are pawn duties, never new lord toils (`pawn.mindState.duty`, saved with the pawn):
+- CHALLENGE: champion `Gesta_ChampChallenge` (jogs to a cell next to the banner, then stands facing
+  it); every other pawn of the lord `Gesta_ChampHold` (stands still). Standing is a job of its own,
+  `Gesta_ChampStand`, not vanilla `Wait`, whose driver melees any adjacent hostile (colonists are not
+  threat-disabled, so every passer-by would be hit). Remembered melee threats are cleared too
+  (`JobGiver_ReactToCloseMeleeThreat` sits above the duty and keeps one for 400 ticks). Both duties have
+  `threatDisabled`: turrets, drafted colonists and the "active threat" checks ignore them.
+  Colonists' attack jobs on that raid are ended when the truce starts.
+- DUEL: a drafted, violence-capable free colonist within 4 cells of the banner accepts (checked
+  every 20 ticks; also when the champion strikes such a colonist, or such a colonist strikes the
+  champion — felling him with those first blows is a win). The champion gets `Gesta_ChampDuel` (melee-attacks the challenger, still
+  `threatDisabled` so nothing else shoots him); the challenger gets an ordered melee attack on the
+  champion, re-issued only when they stand idle while drafted.
+- `LordToil_AssaultColony.UpdateAllDuties` (called by vanilla on any down, undown or new pawn)
+  overwrites duties: a postfix re-applies the challenge duties while it is active.
+- The assault graph's kidnap and steal transitions fire after 300 ticks without harm to the raid
+  (`Lord.lastPawnHarmTick`), which a truce would hand them at once: while the challenge lasts that
+  tick is kept current (every 20 ticks), so the raid does not start looting or kidnapping mid-truce.
+
+**Outcomes** (each destroys the banner and gives the raid back its duties via
+`CurLordToil.UpdateAllDuties()`, unless said otherwise):
+| Outcome | When | Effect |
+|---|---|---|
+| Colonist wins | champion downed or dead in the duel | raid goes to the lord graph's existing `LordToil_PanicFlee` (else its `LordToil_ExitMap`); winner gets `Gesta_ChampionVictory` (+8, 15 days), tale `Gesta_ChampionDuelTale` (winner, champion) and the feat `Gesta_Feat_Champion` (title, golden beam, message: see Feature 2) — if feats are off or already earned, just the golden beam |
+| Champion wins | challenger downed or dead | raid resumes |
+| Dishonor | after a 420-tick grace, any damage to a pawn of that lord whose instigator is of the player's faction (not fire, not helpful damage), other than the challenger hitting the champion | every colonist on the map gets `Gesta_ChallengeDishonor` (−5, 8 days); raid resumes |
+| Refused | nobody accepts within 2500 ticks (1 in-game hour) | every colonist on the map gets `Gesta_ChallengeRefused` (−3, 4 days); raid resumes |
+| Raiders break it | after the grace, a raider other than the dueling champion hurts a colonist | raid resumes, no memory |
+| Too long | the duel lasts 2500 ticks | raid resumes |
+| Aborted | the lord ends or leaves the assault toil (kidnap, steal, give up), the map goes, the champion dies, downs, despawns or breaks before the duel, the challenger leaves the map, the banner is destroyed, or the feature is turned off | raid resumes (if the lord still exists), no memory |
+
+**Engagement:** an active challenge counts as an ongoing fight for the EngagementTracker (held
+raiders are not "active threats", which would otherwise end the engagement mid-truce), and the
+Turning Tide freezes while it lasts.
+
+**Saved:** the active challenges (lord, champion, challenger, banner, map by reference; phase, start
+ticks, stand cell) and the rolled lord ids. Entries whose references are gone are not saved. After
+a load, entries with missing references are dropped, and a sweep every 250 ticks gives any
+assaulting lord with no challenge whose pawns still carry a challenge duty its normal duties back,
+so nothing can stay frozen.
+
+**Not done (cut):** no letterbox or choreographed walk; no buff or penalty for a lost duel; no
+dishonor for a raider breaking the truce; combat AI mods (CAI-5000, CE) may ignore the duty think
+nodes (unverified).
+
+**Tests (GestaTest ChampionHarness, tick 2600 and 2780):** a 2-raider humanlike assault, a
+mechanoid assault and an all-animal assault lord get no challenge (and are marked rolled); a real
+1500-point raid gets none in its first seconds, then one: banner, the champion's walk/stand job, the
+others holding (`Gesta_ChampStand`) and `ThreatDisabled`, no active threats, ignored by a player
+turret, the engagement still active, duties survive a vanilla `UpdateAllDuties`, the state is written
+to the save by reference; a drafted colonist in the circle starts the duel with an ordered melee
+attack; the challenger's blows do not break the truce; downing the champion sends the raid to
+PanicFlee with memory, tale and feat. Raid 2: the champion's blows do not break the truce, the
+challenger goes down → raid resumes, and (control) the turret targets its raiders again. Raid 3: an
+hour passes → refused memory, raid resumes. Raid 4: the champion dies of other causes → clean abort,
+no dishonor. Raid 5: a raider hurts a colonist → raid resumes, no dishonor. Raid 6: the challenge
+state is wiped (as after a broken load) → the sweep restores duties and removes the banner (the
+sweep runs even with the feature off). Raid 7: the whole raid dies → quiet abort. Raid 8 stays up
+for 180 ticks of real play (holders do not move, the champion walks toward the banner); a shot inside
+the grace is ignored, then a colonist shooting a holder → dishonor for the whole colony, raid
+resumes. If vanilla switches raid 8 to kidnapping or stealing on its own, stage B checks the clean
+abort instead.

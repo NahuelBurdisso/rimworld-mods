@@ -41,9 +41,11 @@ namespace Gesta
                 return;
             }
             int now = Find.TickManager.TicksGame;
-            if (now % CheckInterval == 0) Evaluate();
+            // under a champion's truce the held raiders are not active threats: the tide waits
+            bool truce = ChampionsChallenge.ActiveOn(map);
+            if (now % CheckInterval == 0) { if (!truce) Evaluate(); }
             // while losing, notice the last enemy falling within a second instead of waiting for the poll
-            else if (wasLosing && now % 60 == 0 && CombatUtil.ActiveHostilePawns(map) == 0) TryTurn();
+            else if (!truce && wasLosing && now % 60 == 0 && CombatUtil.ActiveHostilePawns(map) == 0) TryTurn();
 
             float target = Losing && !Gold ? 1f : 0f;
             losingIntensity = Mathf.MoveTowards(losingIntensity, target, EasePerTick);

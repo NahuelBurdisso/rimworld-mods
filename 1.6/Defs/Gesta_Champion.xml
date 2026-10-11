@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- The Champion's Challenge: duties given by Gesta.ChampionsChallenge (never new lord toils). -->
+
+  <!-- Everyone in the raid but the champion: stand where you are, outside the fight. -->
+  <DutyDef>
+    <defName>Gesta_ChampHold</defName>
+    <threatDisabled>true</threatDisabled>
+    <alwaysShowWeapon>true</alwaysShowWeapon>
+    <socialModeMax>Off</socialModeMax>
+    <thinkNode Class="ThinkNode_Priority">
+      <subNodes>
+        <li Class="Gesta.JobGiver_GestaHold" />
+      </subNodes>
+    </thinkNode>
+  </DutyDef>
+
+  <!-- The champion: walk to the banner (focus) and wait beside it (focusSecond). -->
+  <DutyDef>
+    <defName>Gesta_ChampChallenge</defName>
+    <threatDisabled>true</threatDisabled>
+    <alwaysShowWeapon>true</alwaysShowWeapon>
+    <socialModeMax>Off</socialModeMax>
+    <thinkNode Class="ThinkNode_Priority">
+      <subNodes>
+        <li Class="Gesta.JobGiver_GestaChampionChallenge" />
+      </subNodes>
+    </thinkNode>
+  </DutyDef>
+
+  <!-- The champion in the duel: fight the challenger (focus) hand to hand. Still threat-disabled, so
+       turrets and other colonists leave him to the challenger. -->
+  <DutyDef>
+    <defName>Gesta_ChampDuel</defName>
+    <threatDisabled>true</threatDisabled>
+    <alwaysShowWeapon>true</alwaysShowWeapon>
+    <socialModeMax>Off</socialModeMax>
+    <thinkNode Class="ThinkNode_Priority">
+      <subNodes>
+        <li Class="Gesta.JobGiver_GestaChampionDuel" />
+        <li Class="Gesta.JobGiver_GestaHold" />
+      </subNodes>
+    </thinkNode>
+  </DutyDef>
+
+  <!-- Standing still under the truce. Its own driver: JobDriver_Wait would melee adjacent colonists. -->
+  <JobDef>
+    <defName>Gesta_ChampStand</defName>
+    <driverClass>Gesta.JobDriver_GestaStand</driverClass>
+    <reportString>keeping the truce.</reportString>
+    <casualInterruptible>false</casualInterruptible>
+  </JobDef>
+
+  <ThingDef>
+    <defName>Gesta_ChallengeBanner</defName>
+    <label>champion's banner</label>
+    <description>A raider's banner driven into the ground between the lines: a call for single combat. While it stands, the rest of the raid holds its ground.\n\nDraft a colonist and step inside the circle around it to accept the challenge.</description>
+    <thingClass>Gesta.Building_ChallengeBanner</thingClass>
+    <category>Building</category>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>Standable</passability>
+    <selectable>true</selectable>
+    <drawerType>MapMeshOnly</drawerType>
+    <rotatable>false</rotatable>
+    <useHitPoints>true</useHitPoints>
+    <tickerType>Never</tickerType>
+    <leaveResourcesWhenKilled>false</leaveResourcesWhenKilled>
+    <soundImpactDefault>BulletImpact_Wood</soundImpactDefault>
+    <size>(1,1)</size>
+    <graphicData>
+      <texPath>Things/Gesta/ChallengeBanner</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>(1.5,1.5)</drawSize>
+      <drawOffset>(0,0,0.3)</drawOffset>
+      <shadowData>
+        <volume>(0.15, 0.5, 0.15)</volume>
+        <offset>(0, 0, -0.35)</offset>
+      </shadowData>
+    </graphicData>
+    <statBases>
+      <MaxHitPoints>80</MaxHitPoints>
+      <Flammability>1</Flammability>
+    </statBases>
+    <building>
+      <claimable>false</claimable>
+      <deconstructible>false</deconstructible>
+      <repairable>false</repairable>
+      <expandHomeArea>false</expandHomeArea>
+      <ai_chillDestination>false</ai_chillDestination>
+    </building>
+  </ThingDef>
+
+  <ThoughtDef>
+    <defName>Gesta_ChampionVictory</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>15</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>won the champion's duel</label>
+        <description>They sent their best, and everyone watched. I put them in the dirt and the whole raid turned and ran.</description>
+        <baseMoodEffect>8</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <ThoughtDef>
+    <defName>Gesta_ChallengeDishonor</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>8</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>we broke the truce</label>
+        <description>They offered an honest fight and one of us answered with a cheap shot. Even raiders keep their word better than that.</description>
+        <baseMoodEffect>-5</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <ThoughtDef>
+    <defName>Gesta_ChallengeRefused</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>4</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>nobody answered the challenge</label>
+        <description>Their champion stood by the banner and called for us, and none of us went. They were laughing when the attack started again.</description>
+        <baseMoodEffect>-3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <TaleDef>
+    <defName>Gesta_ChampionDuelTale</defName>
+    <label>champion's duel</label>
+    <taleClass>Tale_DoublePawn</taleClass>
+    <type>PermanentHistorical</type>
+    <firstPawnSymbol>WINNER</firstPawnSymbol>
+    <secondPawnSymbol>CHAMPION</secondPawnSymbol>
+    <baseInterest>4</baseInterest>
+    <rulePack>
+      <rulesStrings>
+        <li>tale_noun->[WINNER_nameDef]'s duel with [CHAMPION_nameDef]</li>
+        <li>tale_noun->the day [WINNER_nameDef] answered the challenge</li>
+        <li>image->[WINNER_nameFull] striking down [CHAMPION_nameFull] beside a raider's banner [circumstance_group]</li>
+        <li>image->[WINNER_nameFull] and [CHAMPION_nameFull] locked in single combat [circumstance_group]</li>
+        <li>image->[WINNER_nameFull] standing over the fallen [CHAMPION_nameFull] [circumstance_group]</li>
+        <li>circumstance_phrase->while both sides watch in silence</li>
+        <li>circumstance_phrase->as the raiders behind [CHAMPION_objective] begin to run</li>
+        <li>circumstance_phrase->inside a circle drawn in the dirt</li>
+        <li>circumstance_phrase->with the banner leaning over them</li>
+        <li>desc_sentence->The raiders' banner hangs torn and forgotten.</li>
+        <li>desc_sentence->[WINNER_nameDef] is breathing hard, but [WINNER_possessive] guard is still up.</li>
+        <li>desc_sentence->Faces of both armies crowd the edges of the scene.</li>
+        <li>desc_sentence->[CHAMPION_nameDef]'s weapon lies just out of reach.</li>
+      </rulesStrings>
+    </rulePack>
+  </TaleDef>
+
+  <!-- A fifth feat of arms (Feature 2), awarded by the duel. The duel records its own tale. -->
+  <Gesta.FeatDef>
+    <defName>Gesta_Feat_Champion</defName>
+    <label>champion's duel</label>
+    <description>Answered a raider champion's challenge and won.</description>
+    <epithets>
+      <li>Champion</li>
+      <li>Duelist</li>
+      <li>Bannerbreaker</li>
+    </epithets>
+  </Gesta.FeatDef>
+
+</Defs>

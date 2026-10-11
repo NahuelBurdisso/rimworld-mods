@@ -22,7 +22,7 @@ namespace Gesta
 
         public override void DoSettingsWindowContents(Rect inRect)
         {
-            // ten features do not fit in the settings window: scroll
+            // eleven features do not fit in the settings window: scroll
             var view = new Rect(0f, 0f, inRect.width - 20f, contentHeight);
             Widgets.BeginScrollView(inRect, ref scroll, view);
             var list = new Listing_Standard();
@@ -65,6 +65,11 @@ namespace Gesta
             list.GapLine();
             list.Label("Gesta_Settings_WarStories".Translate());
             list.CheckboxLabeled("Gesta_Settings_Enabled".Translate(), ref Settings.warStories);
+            list.GapLine();
+            list.Label("Gesta_Settings_Champion".Translate());
+            list.CheckboxLabeled("Gesta_Settings_Enabled".Translate(), ref Settings.championsChallenge);
+            list.Label("Gesta_Settings_ChampionChance".Translate(Settings.championChance.ToStringPercent()));
+            Settings.championChance = list.Slider(Settings.championChance, 0.05f, 1f);
             contentHeight = list.CurHeight + 20f;
             list.End();
             Widgets.EndScrollView();
@@ -91,6 +96,8 @@ namespace Gesta
         public bool killcamCamera = true;
         public bool killcamSlowMo = true;
         public float killcamMinPoints = 1000f;
+        public bool championsChallenge = true;
+        public float championChance = 0.25f;
 
         public override void ExposeData()
         {
@@ -112,6 +119,8 @@ namespace Gesta
             Scribe_Values.Look(ref killcamCamera, "killcamCamera", true);
             Scribe_Values.Look(ref killcamSlowMo, "killcamSlowMo", true);
             Scribe_Values.Look(ref killcamMinPoints, "killcamMinPoints", 1000f);
+            Scribe_Values.Look(ref championsChallenge, "championsChallenge", true);
+            Scribe_Values.Look(ref championChance, "championChance", 0.25f);
         }
     }
 }

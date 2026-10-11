@@ -79,7 +79,8 @@ namespace Gesta
         {
             if (!CombatUtil.IsPlayerHome(map)) return;
             Engagement e = Get(map);
-            bool threat = GenHostility.AnyHostileActiveThreatToPlayer(map);
+            // raiders holding under a champion's truce are not "active threats", but the fight is not over
+            bool threat = GenHostility.AnyHostileActiveThreatToPlayer(map) || ChampionsChallenge.ActiveOn(map);
 
             if (threat && !e.active)
             {

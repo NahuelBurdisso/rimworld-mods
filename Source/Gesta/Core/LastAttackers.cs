@@ -44,6 +44,7 @@ namespace Gesta
             if (totalDamageDealt <= 0f || !(dinfo.Instigator is Pawn attacker) || attacker == __instance) return;
             BrothersTracker.Instance?.Notify_Hit(__instance, attacker, totalDamageDealt);
             if (__instance.HostileTo(Faction.OfPlayer)) WarStories.Instance?.Notify_Fought(attacker, attacker.MapHeld);
+            if (__instance.Faction == Faction.OfPlayer) ChampionsChallenge.Instance?.Notify_ColonistHit(__instance, attacker);
             if (__instance.RaceProps == null || !__instance.RaceProps.Humanlike) return;
             LastAttackers.Record(__instance, attacker);
         }

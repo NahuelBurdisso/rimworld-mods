@@ -1,5 +1,6 @@
 using RimWorld;
 using Verse;
+using Verse.AI;
 
 namespace Gesta
 {
@@ -41,6 +42,17 @@ namespace Gesta
         public static ThoughtDef Gesta_NotHowItHappened;
         public static ThoughtDef Gesta_InspiredByWarStory;
         public static FleckDef Gesta_Fleck_WarStory;
+
+        public static DutyDef Gesta_ChampHold;
+        public static DutyDef Gesta_ChampChallenge;
+        public static DutyDef Gesta_ChampDuel;
+        public static JobDef Gesta_ChampStand;
+        public static ThingDef Gesta_ChallengeBanner;
+        public static ThoughtDef Gesta_ChampionVictory;
+        public static ThoughtDef Gesta_ChallengeDishonor;
+        public static ThoughtDef Gesta_ChallengeRefused;
+        public static TaleDef Gesta_ChampionDuelTale;
+        public static FeatDef Gesta_Feat_Champion;
 
         static GestaDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(GestaDefOf)); }
     }

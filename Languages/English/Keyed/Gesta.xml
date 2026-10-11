@@ -38,4 +38,25 @@ They are now {3}, and wear the same red sash.</Gesta_Brothers_LetterText>
   <Gesta_WarStory_AFew>a few</Gesta_WarStory_AFew>
   <Gesta_LastStand_Caption>{0} stands alone.</Gesta_LastStand_Caption>
   <Gesta_LastStand_Survived>{0} stood alone, and held.</Gesta_LastStand_Survived>
+  <Gesta_Settings_Champion>The Champion's Challenge (a raider champion calls for single combat)</Gesta_Settings_Champion>
+  <Gesta_Settings_ChampionChance>Chance per raid: {0}</Gesta_Settings_ChampionChance>
+  <Gesta_Champion_LetterLabel>Champion's challenge</Gesta_Champion_LetterLabel>
+  <Gesta_Champion_LetterText>{0} of {1} has driven a banner into the ground between the lines and calls for single combat.
+
+The rest of the raiders are holding their ground. To accept, draft a colonist and step inside the circle around the banner: the two will fight hand to hand.
+
+If your fighter wins, the raiders lose heart and flee. If their champion wins, the attack resumes. Strike any of them during the truce, or let an hour pass without an answer, and the colony will carry the shame.</Gesta_Champion_LetterText>
+  <Gesta_Champion_Accepted>{0} accepts the challenge of {1}.</Gesta_Champion_Accepted>
+  <Gesta_Champion_Won>{0} has defeated {1}. The raiders of {2} lose heart and flee.</Gesta_Champion_Won>
+  <Gesta_Champion_WonNoFlee>{0} has defeated {1}.</Gesta_Champion_WonNoFlee>
+  <Gesta_Champion_Lost>{0} has fallen to {1}. The attack resumes.</Gesta_Champion_Lost>
+  <Gesta_Champion_DishonorLabel>Truce broken</Gesta_Champion_DishonorLabel>
+  <Gesta_Champion_Dishonor>{0} struck a raider while {1}'s challenge stood. The truce is over and the attack resumes.
+
+Everyone saw it. The colony will not feel good about this for a while.</Gesta_Champion_Dishonor>
+  <Gesta_Champion_RaiderBroke>The raiders of {0} broke their own truce. The attack resumes.</Gesta_Champion_RaiderBroke>
+  <Gesta_Champion_Refused>No one answered the challenge of {0}. The attack resumes.</Gesta_Champion_Refused>
+  <Gesta_Champion_DuelTooLong>The duel drags on without an end. The attack resumes.</Gesta_Champion_DuelTooLong>
+  <Gesta_Champion_Inspect>Champion: {0}. Draft a colonist and step inside the circle to accept ({1} left).</Gesta_Champion_Inspect>
+  <Gesta_Champion_InspectDuel>Duel: {0} against {1}.</Gesta_Champion_InspectDuel>
 </LanguageData>
