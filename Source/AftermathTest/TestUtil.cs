@@ -148,10 +148,11 @@ namespace AftermathTest
         public static Faction HostileFaction(Faction not = null)
         {
             List<Faction> all = Find.FactionManager.AllFactionsListForReading.Where(f =>
-                f != not && !f.IsPlayer && !f.Hidden && !f.defeated && f.def.humanlikeFaction && f.def.basicMemberKind != null
+                f != not && !f.IsPlayer && !f.Hidden && !f.defeated && f.def.humanlikeFaction
                 && f.HostileTo(Faction.OfPlayer)
                 && f.def.pawnGroupMakers != null && f.def.pawnGroupMakers.Any(g => g.kindDef == PawnGroupKindDefOf.Combat)).ToList();
-            return all.OrderByDescending(f => f == Faction.OfPirates).FirstOrDefault()
+            // basicMemberKind can be null (SpawnAt falls back to Pirate): prefer factions that have one, pirates first
+            return all.OrderByDescending(f => f.def.basicMemberKind != null).ThenByDescending(f => f == Faction.OfPirates).FirstOrDefault()
                 ?? (not == null ? Find.FactionManager.RandomEnemyFaction(allowNonHumanlike: false) : null);
         }
 
