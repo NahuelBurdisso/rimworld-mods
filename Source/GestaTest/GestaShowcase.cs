@@ -18,7 +18,7 @@ namespace GestaTest
         bool active, started;
         int ticks;
         int framesSinceTrigger = -1;
-        readonly List<(int frame, string name)> shots = new List<(int, string)> { (45, "laststand-1-caption"), (260, "laststand-2-vignette") };
+        readonly List<(int frame, string name)> shots = new List<(int, string)> { (45, "laststand-1-caption"), (260, "laststand-2-vignette"), (440, "feat-1-beam"), (500, "feat-2-fading"), (660, "poppies") };
         string shotDir;
         Map map;
         readonly List<Pawn> hostiles = new List<Pawn>();
@@ -60,6 +60,41 @@ namespace GestaTest
             Log.Message($"[Showcase] hero {hero.LabelShort}, last stand active: {LastStandTracker.ActiveHero != null}");
         }
 
+        void StagePoppies()
+        {
+            var field = map.GetComponent<PoppyField>();
+            Pawn witness = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p => !p.Downed);
+            if (witness == null) return;
+            IntVec3 centre = IntVec3.Invalid;
+            int made = 0;
+            foreach (IntVec3 c in GenRadial.RadialCellsAround(witness.Position, 45f, false))
+            {
+                if (made >= 7) break;
+                if (!c.InBounds(map) || !c.Standable(map) || c.Roofed(map) || map.fertilityGrid.FertilityAt(c) < PoppyField.MinFertility || c.GetZone(map) != null || c.GetEdifice(map) != null) continue;
+                if (centre.IsValid && !c.InHorDistOf(centre, 6f)) continue;
+                if (!centre.IsValid) centre = c;
+                bool enemy = made % 3 == 2;
+                Pawn victim = enemy ? Kit.SpawnHostile(map, c) : PawnGenerator.GeneratePawn(PawnKindDefOf.Colonist, Faction.OfPlayer);
+                if (!victim.Spawned) GenSpawn.Spawn(victim, c, map);
+                Kit.Teleport(victim, c);
+                Pawn killer = Kit.SpawnHostile(map, c + new IntVec3(10, 0, 0));
+                if (enemy) Kit.KillBy(victim, witness); else Kit.KillBy(victim, killer);
+                killer.Kill(null);
+                made++;
+            }
+            field.TryBloomAll(force: true);
+            foreach (Thing t in map.listerThings.AllThings.ToList())
+            {
+                if (!(t is Plant_Poppy p)) continue;
+                p.Growth = 1f;
+                map.mapDrawer.MapMeshDirty(p.Position, MapMeshFlagDefOf.Things);
+            }
+            // clear the bodies so the flowers read
+            foreach (Thing t in map.listerThings.ThingsInGroup(ThingRequestGroup.Corpse).ToList()) t.Destroy();
+            if (centre.IsValid) Find.CameraDriver.SetRootPosAndSize(centre.ToVector3Shifted(), 9f);
+            Log.Message($"[Showcase] staged {made} poppies");
+        }
+
         public override void GameComponentUpdate()
         {
             if (framesSinceTrigger < 0) return;
@@ -74,6 +109,16 @@ namespace GestaTest
             if (framesSinceTrigger == 400)
             {
                 foreach (Pawn h in hostiles) if (!h.Dead) h.Kill(null);
+                Pawn hero = LastStandTracker.ActiveHero ?? map.mapPawns.FreeColonistsSpawned.FirstOrDefault(CombatUtil.IsFighter);
+                if (hero != null)
+                {
+                    Find.CameraDriver.SetRootPosAndSize(hero.DrawPos + new Vector3(0f, 0f, 2f), 12f);
+                    FeatTracker.Instance.TryAward(hero, GestaDefOf.Gesta_Feat_Kingslayer);
+                }
+            }
+            if (framesSinceTrigger == 560) StagePoppies();
+            if (framesSinceTrigger == 720)
+            {
                 Log.Message("[Showcase] done");
                 framesSinceTrigger = -1;
             }
