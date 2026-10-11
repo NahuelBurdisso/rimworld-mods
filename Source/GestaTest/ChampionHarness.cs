@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Gesta;
+using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -110,6 +111,23 @@ namespace GestaTest
 
         static bool HasMemory(Pawn p, ThoughtDef def) =>
             p.needs?.mood?.thoughts?.memories?.Memories.Any(m => m.def == def) == true;
+
+        /// <summary>A six-pirate assault lord at the edge, rolled straight into a challenge.</summary>
+        static Challenge Fresh(Map map)
+        {
+            Faction f = Enemy();
+            IntVec3 edge = CellFinder.RandomEdgeCell(map);
+            var pawns = Enumerable.Range(0, 6).Select(_ => Kit.SpawnHostile(map, edge, null, f)).ToList();
+            return Roll(LordOf(map, pawns, f));
+        }
+
+        /// <summary>Past the grace, so any further act counts.</summary>
+        static void PastGrace(Challenge c) => c.startTick = Find.TickManager.TicksGame - ChampionsChallenge.GraceTicks - 1;
+
+        static void Forget(Map map, ThoughtDef def)
+        {
+            foreach (Pawn p in map.mapPawns.FreeColonistsSpawned) p.needs?.mood?.thoughts?.memories?.RemoveMemoriesOfDef(def);
+        }
 
         static Pawn NewFighter(Map map, IntVec3 near)
         {
@@ -343,6 +361,101 @@ namespace GestaTest
                     $"the lord ending aborts the challenge ({cc.LastOutcome})");
             }
 
+            // --- exploits (review): each must count against the colony, not end the truce for free
+            Pawn duelC = NewFighter(map, home + new IntVec3(0, 0, -3));
+
+            Challenge f1 = Fresh(map);
+            Kit.Check(f1 != null, "setup: fire challenge");
+            if (f1 != null)
+            {
+                Pawn h = f1.lord.ownedPawns.First(p => p != f1.champion);
+                PastGrace(f1);
+                h.TakeDamage(new DamageInfo(DamageDefOf.Burn, 2f, 0f, -1f, shooter));
+                Kit.Check(f1.pending == ChallengeOutcome.None, "fire that spread on its own (no weapon) does not break the truce");
+                h.TakeDamage(new DamageInfo(DamageDefOf.Burn, 2f, 0f, -1f, shooter, null, ThingDef.Named("Weapon_GrenadeMolotov")));
+                cc.ProcessNow();
+                Kit.Check(cc.LastOutcome == ChallengeOutcome.BrokenByColony, $"a direct molotov hit breaks the truce ({cc.LastOutcome})");
+                Forget(map, GestaDefOf.Gesta_ChallengeDishonor);
+            }
+            KillHostiles(map);
+
+            Challenge f2 = Fresh(map);
+            Kit.Check(f2 != null, "setup: shock-lance challenge");
+            if (f2 != null)
+            {
+                Step(map, f2, duelC);
+                Kit.Check(f2.phase == ChallengePhase.Duel, "setup: duel on");
+                PastGrace(f2);
+                f2.champion.health.AddHediff(HediffDefOf.PsychicShock, f2.champion.health.hediffSet.GetBrain());
+                Kit.Check(f2.champion.Downed, "setup: the psychic shock downs the champion");
+                cc.ProcessNow();
+                Kit.Check(cc.LastOutcome == ChallengeOutcome.BrokenByColony && !HasMemory(duelC, GestaDefOf.Gesta_ChampionVictory),
+                    $"a champion felled without the challenger's blow is no win: dishonor ({cc.LastOutcome})");
+                Forget(map, GestaDefOf.Gesta_ChallengeDishonor);
+                duelC.drafter.Drafted = false;
+            }
+            KillHostiles(map);
+
+            Challenge f3 = Fresh(map);
+            Kit.Check(f3 != null, "setup: banner challenge");
+            if (f3 != null)
+            {
+                PastGrace(f3);
+                f3.banner.TakeDamage(new DamageInfo(DamageDefOf.Bullet, 5f, 0f, -1f, shooter));
+                cc.ProcessNow();
+                Kit.Check(cc.LastOutcome == ChallengeOutcome.BrokenByColony && f3.banner.Destroyed, $"shooting the banner breaks the truce ({cc.LastOutcome})");
+                Kit.Check(f3.banner.def.GetStatValueAbstract(StatDefOf.Flammability) == 0f, "the banner cannot be burned down");
+                Forget(map, GestaDefOf.Gesta_ChallengeDishonor);
+            }
+            KillHostiles(map);
+
+            Challenge f4 = Fresh(map);
+            Kit.Check(f4 != null, "setup: provocation challenge");
+            if (f4 != null)
+            {
+                Pawn h = f4.lord.ownedPawns.First(p => p != f4.champion);
+                PastGrace(f4);
+                h.mindState.meleeThreat = shooter;
+                shooter.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 6f, 1f, -1f, h));
+                cc.ProcessNow();
+                Kit.Check(cc.LastOutcome == ChallengeOutcome.BrokenByColony && cc.LastEnded?.breaker == shooter,
+                    $"a raider hitting back at a colonist who swung first: the colony broke it ({cc.LastOutcome})");
+                Forget(map, GestaDefOf.Gesta_ChallengeDishonor);
+            }
+            KillHostiles(map);
+
+            Challenge f5 = Fresh(map);
+            Kit.Check(f5 != null, "setup: swing challenge");
+            if (f5 != null)
+            {
+                Pawn h = f5.lord.ownedPawns.First(p => p != f5.champion);
+                PastGrace(f5);
+                IntVec3 next = CellFinder.StandableCellNear(h.Position, map, 1.9f, x => x != h.Position && x.GetFirstPawn(map) == null);
+                Kit.Teleport(shooter, next);
+                Verb melee = shooter.meleeVerbs.TryGetMeleeVerb(h);
+                Traverse.Create(melee).Field("currentTarget").SetValue(new LocalTargetInfo(h));
+                Traverse.Create(melee).Method("TryCastShot").GetValue<bool>();
+                Kit.Check(f5.pending == ChallengeOutcome.BrokenByColony && f5.breaker == shooter, $"a colonist's swing at a holder, hit or miss, breaks the truce ({f5.pending})");
+                cc.ProcessNow();
+                Forget(map, GestaDefOf.Gesta_ChallengeDishonor);
+            }
+            KillHostiles(map);
+
+            Challenge f6 = Fresh(map);
+            Kit.Check(f6 != null, "setup: kiting challenge");
+            if (f6 != null)
+            {
+                Step(map, f6, duelC);
+                Kit.Check(f6.phase == ChallengePhase.Duel, "setup: duel on");
+                Kit.Teleport(duelC, CellFinder.StandableCellNear(f6.champion.Position + new IntVec3(9, 0, 0), map, 4f, x => x.GetFirstPawn(map) == null));
+                f6.duelStartTick -= ChampionsChallenge.DuelTicks + 1;
+                cc.ProcessNow();
+                Kit.Check(cc.LastOutcome == ChallengeOutcome.Refused && AllDuty(f6.lord, DutyDefOf.AssaultColony),
+                    $"running out the clock out of reach counts as refusing ({cc.LastOutcome})");
+                duelC.drafter.Drafted = false;
+            }
+            KillHostiles(map);
+
             // --- left running for stage B
             liveLord = Raid(map, 1500f);
             Challenge live = liveLord == null ? null : Roll(liveLord);
@@ -382,6 +495,7 @@ namespace GestaTest
             Kit.Check(dist <= 2f || dist < liveStartDist - 1.5f, $"the champion walked to the banner ({liveStartDist:0.0} -> {dist:0.0} cells)");
 
             Pawn holder = holdersAt.Keys.First(p => p.Spawned && !p.Dead && !p.Downed);
+            c.startTick = Find.TickManager.TicksGame - 10;   // as if the truce had just begun
             holder.TakeDamage(new DamageInfo(DamageDefOf.Bullet, 3f, 0f, -1f, shooter));
             Kit.Check(c.pending == ChallengeOutcome.None, "a shot inside the grace period does not break the truce");
 
