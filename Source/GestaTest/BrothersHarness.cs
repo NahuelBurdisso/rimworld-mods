@@ -53,7 +53,7 @@ namespace GestaTest
             Kit.Check(BrothersTracker.AreBrothers(a, b) && BrothersTracker.AreBrothers(b, a), "three shared fights make brothers in arms (both ways)");
             Kit.Check(Has(a, GestaDefOf.Gesta_BrotherSash) && Has(b, GestaDefOf.Gesta_BrotherSash), "both wear the sash");
             Kit.Check(!BrothersTracker.AreBrothers(a, c) && tracker.SharedFights(a, c) == 2, "a colonist who missed one fight is not a brother yet");
-            Kit.Check(Find.LetterStack.LettersListForReading.Any(l => l.Label.ToString().Contains("Brothers in arms")), "a letter tells the story");
+            Kit.Check(Find.LetterStack.LettersListForReading.Any(l => l.Label.ToString().Contains("Bonded in arms")), "a letter tells the story");
             Kit.Check(a.health.hediffSet.GetFirstHediffOfDef(GestaDefOf.Gesta_BrotherSash).def.HasDefinedGraphicProperties, "the sash has a render node");
 
             Kit.Down(b);
@@ -62,7 +62,7 @@ namespace GestaTest
 
             b.Kill(null);
             Kit.Check(Has(a, GestaDefOf.Gesta_BrotherSashMourning) && !Has(a, GestaDefOf.Gesta_BrotherSash), "the survivor's sash turns black");
-            Kit.Check(a.needs.mood.thoughts.memories.Memories.Any(m => m.def == GestaDefOf.Gesta_BrotherInArmsDied),
+            Kit.Check(a.needs.mood.thoughts.memories.Memories.Count(m => (m.def == GestaDefOf.Gesta_BrotherInArmsDied || m.def == GestaDefOf.Gesta_SisterInArmsDied) && m.otherPawn == b) == 1,
                 "the survivor grieves a brother in arms");
         }
 

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Gesta;
+using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -62,6 +63,29 @@ namespace GestaTest
 
         readonly List<Pawn> mechs = new List<Pawn>();
         int goldFrame = -1, bloodFrame = -1;
+
+        void StageKillcam()
+        {
+            Pawn shooter = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p => !p.Downed);
+            if (shooter == null) return;
+            foreach (Pawn p in map.mapPawns.AllPawnsSpawned.Where(p => p.HostileTo(Faction.OfPlayer) && !p.Downed).ToList()) p.Kill(null);
+            Traverse.Create(Killcam.Instance).Field("lastFinaleTick").SetValue(-999999);
+            var parms = StorytellerUtility.DefaultParmsNow(IncidentCategoryDefOf.ThreatBig, map);
+            parms.faction = Faction.OfPirates ?? Find.FactionManager.RandomEnemyFaction(allowNonHumanlike: false);
+            parms.points = 1500f;
+            parms.raidStrategy = RaidStrategyDefOf.ImmediateAttack;
+            parms.raidArrivalMode = PawnsArrivalModeDefOf.EdgeWalkIn;
+            var before = new HashSet<Pawn>(map.mapPawns.AllPawnsSpawned);
+            IncidentDefOf.RaidEnemy.Worker.TryExecute(parms);
+            var raiders = map.mapPawns.AllPawnsSpawned.Where(p => !before.Contains(p) && p.HostileTo(Faction.OfPlayer)).ToList();
+            if (raiders.Count == 0) { Log.Message("[Showcase] killcam: no raid"); return; }
+            Pawn last = raiders.Last();
+            Kit.Teleport(last, CellFinder.StandableCellNear(shooter.Position + new IntVec3(6, 0, 2), map, 3f));
+            foreach (Pawn r in raiders.Take(raiders.Count - 1)) r.Kill(null);
+            Kit.KillBy(last, shooter);
+            Find.TickManager.CurTimeSpeed = TimeSpeed.Normal;
+            Log.Message($"[Showcase] killcam: finales {Killcam.Instance.FinalesPlayed}");
+        }
 
         void StageBrothers()
         {
@@ -215,6 +239,22 @@ namespace GestaTest
                 Log.Message("[Showcase] captured brothers");
             }
             if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 220)
+            {
+                Pawn subject = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p => !p.Downed);
+                if (subject != null) Chronicler.Instance.Speak(Chronicler.Beat.Recovered, subject, null, map, 0, force: true);
+            }
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 300)
+            {
+                ScreenCapture.CaptureScreenshot(Path.Combine(shotDir, "chronicle.png"));
+                Log.Message("[Showcase] captured chronicle");
+            }
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 340) StageKillcam();
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 395)
+            {
+                ScreenCapture.CaptureScreenshot(Path.Combine(shotDir, "killcam.png"));
+                Log.Message("[Showcase] captured killcam");
+            }
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 520)
             {
                 Log.Message("[Showcase] done");
                 framesSinceTrigger = -1;

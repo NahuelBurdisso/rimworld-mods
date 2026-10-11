@@ -132,9 +132,17 @@ namespace GestaTest
             else if (ticks > 300 && ticks % 10 == 0 && carryHostile != null)
             {
                 if (carryStartTick < 0 && d.carryTracker.CarriedThing == e) carryStartTick = ticks;
+                // the drafted carry job sometimes fails to start on odd terrain; the feat is about carrying, so pick up directly
+                if (carryStartTick < 0 && ticks == 420 && e.Spawned && !e.Dead)
+                {
+                    Kit.Teleport(d, e.Position + IntVec3.East);
+                    d.carryTracker.TryStartCarry(e);
+                }
                 if (carryStartTick >= 0 && ticks - carryStartTick >= 300)
                 {
-                    Kit.Check(feats.Has(d, GestaDefOf.Gesta_Feat_Lifeline), "carrying a downed friend near the enemy is Lifeline");
+                    bool los = carryHostile.Spawned && GenSight.LineOfSight(carryHostile.Position, d.Position, map);
+                    Kit.Check(feats.Has(d, GestaDefOf.Gesta_Feat_Lifeline),
+                        $"carrying a downed friend near the enemy is Lifeline (carrying {d.carryTracker.CarriedThing?.LabelShort ?? "nothing"}, hostile {(carryHostile.Dead ? "dead" : carryHostile.Downed ? "downed" : "up")} at {carryHostile.Position.DistanceTo(d.Position):0} cells, sight {los})");
                     Finish();
                 }
                 else if (ticks > 1450)
