@@ -12,7 +12,7 @@
   <OldScores_Nickname_LetterLabel>Nicknamed: {0}</OldScores_Nickname_LetterLabel>
   <OldScores_Nickname_LetterText>{0} have started calling {1} "{2}". {3} of their people fell to {PAWN_objective}, and the story is going around their camps.\n\nTheir raiders may break and run when they see {PAWN_objective} up close.</OldScores_Nickname_LetterText>
   <OldScores_Nickname_LetterTextLeader>{1} killed {3}, the leader of {0}. They have started calling {PAWN_objective} "{2}", and nobody laughs when they say it.\n\nTheir raiders may break and run when they see {PAWN_objective} up close.</OldScores_Nickname_LetterTextLeader>
-  <OldScores_Nickname_Inspect>Known as: {0}</OldScores_Nickname_Inspect>
+  <OldScores_Nickname_Inspect>Known as {0}</OldScores_Nickname_Inspect>
   <OldScores_Nickname_Fallback>the Nightmare</OldScores_Nickname_Fallback>
   <OldScores_Dread_Reason>{0} is here. {1}.</OldScores_Dread_Reason>
 

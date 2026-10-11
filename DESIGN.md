@@ -58,7 +58,9 @@ If the resolver returns nothing usable, fallback "the Nightmare".
 **On naming:** letter (`LetterDefOf.NeutralEvent`, `relatedFaction` = that faction, look target the
 colonist): "Pirates of X have started calling Ana "the Unkillable Toaster". Their raiders may break
 and run when they see her." (the leader variant says she killed their leader). Her inspect pane
-gets a line `Known as: the Unkillable Toaster (Pirates of X)` (Postfix `Pawn.GetInspectString`,
+gets a line `Known as the Unkillable Toaster (Pirates of X)` (no colon: RimWorld's `Translate` runs
+`GenText.CapitalizeSentences`, which capitalises the first letter after ':', '.', '!', '?', so the
+nickname keeps its lower-case "the" everywhere except at a sentence start) (Postfix `Pawn.GetInspectString`,
 one line listing every nickname).
 
 **Dread** (every 250 ticks, per map, only maps where a nicknamed colonist is spawned):
