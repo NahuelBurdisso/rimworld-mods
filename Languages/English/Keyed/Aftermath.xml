@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <!-- Settings -->
+  <Aftermath_Settings_Enabled>Enabled</Aftermath_Settings_Enabled>
+  <Aftermath_Settings_BracedDoors>Braced Door</Aftermath_Settings_BracedDoors>
+  <Aftermath_Settings_BracedDoorsDesc>A player door destroyed by hostiles, or battered below 30% of its hit points, leaves a breach on its cell. The door rebuilt (or repaired) there shows one crossed plank per breach and lists their dates when inspected.</Aftermath_Settings_BracedDoorsDesc>
+  <Aftermath_Settings_TrophyStandards>Trophy Standards</Aftermath_Settings_TrophyStandards>
+  <Aftermath_Settings_TrophyStandardsDesc>When the leader of a hostile humanlike raid is downed or killed, he drops his faction's standard. Install it anywhere: it shows the faction's colours, remembers the day and who brought him down, and gives pride to colonists who see it (more to those who fought that day).</Aftermath_Settings_TrophyStandardsDesc>
+  <Aftermath_Settings_HonoredFoes>Honored Foe</Aftermath_Settings_HonoredFoes>
+  <Aftermath_Settings_HonoredFoesDesc>A raider who brings down two colonists, or kills one, is remembered. Bury him and his grave carries his own weapon, stood upright, with his helmet on top, and tells his name and deeds.</Aftermath_Settings_HonoredFoesDesc>
+  <Aftermath_Settings_VigilLamps>Vigil Lamp</Aftermath_Settings_VigilLamps>
+  <Aftermath_Settings_VigilLampsDesc>The bed of anyone fighting for their life glows a faint amber. When the danger passes the light fades; if they die it goes out at once.</Aftermath_Settings_VigilLampsDesc>
+  <Aftermath_Settings_BedsideOfferings>Bedside Offerings</Aftermath_Settings_BedsideOfferings>
+  <Aftermath_Settings_BedsideOfferingsDesc>Each visit to a wounded colonist leaves a small gift by the bed: flowers from a lover, a letter from family, a carved figure from a friend, a candle from anyone else. Those who dislike the patient leave nothing. Back on their feet, the patient is cheered by how many came.</Aftermath_Settings_BedsideOfferingsDesc>
+
+  <!-- Shared -->
+  <Aftermath_UnknownHands>unknown hands</Aftermath_UnknownHands>
+  <Aftermath_Raiders>raiders</Aftermath_Raiders>
+
+  <!-- Braced door -->
+  <Aftermath_Braced>Braced {0}×</Aftermath_Braced>
+  <Aftermath_BreachBroken>broken on {0} by {1}</Aftermath_BreachBroken>
+  <Aftermath_BreachBattered>battered on {0} by {1}</Aftermath_BreachBattered>
+  <Aftermath_BreachNotRepaired>(repair it fully to brace it)</Aftermath_BreachNotRepaired>
+
+  <!-- Trophy standards -->
+  <Aftermath_StandardLabel>{0} of {1}</Aftermath_StandardLabel>
+  <Aftermath_StandardTaken>{2} brought down {1}. The standard of {0} is ours.</Aftermath_StandardTaken>
+  <Aftermath_StandardOf>Standard of {0}.</Aftermath_StandardOf>
+  <Aftermath_StandardTakenFrom>Taken from {0}, their leader, on {1}.</Aftermath_StandardTakenFrom>
+  <Aftermath_StandardBroughtDownBy>Brought down by {0}.</Aftermath_StandardBroughtDownBy>
+  <Aftermath_StandardVeterans>{0} of our colonists fought that day.</Aftermath_StandardVeterans>
+
+  <!-- Honored foe -->
+  <Aftermath_FoeHereLies>Here lies {0} of {1}, a worthy foe.</Aftermath_FoeHereLies>
+  <Aftermath_FoeDeedsBoth>Brought down {0}, and killed {1}.</Aftermath_FoeDeedsBoth>
+  <Aftermath_FoeDeedsKilled>Killed {0}.</Aftermath_FoeDeedsKilled>
+  <Aftermath_FoeDeedsDowned>Brought down {0}.</Aftermath_FoeDeedsDowned>
+  <Aftermath_FoeFell>Fell to {0} on {1}.</Aftermath_FoeFell>
+
+  <!-- Bedside offerings -->
+  <Aftermath_OfferingLabel>{0} for {1}</Aftermath_OfferingLabel>
+  <Aftermath_OfferingShrine>In memory of {0}.</Aftermath_OfferingShrine>
+  <Aftermath_OfferingLeftBy>Left for {0} by {1}, {2}.</Aftermath_OfferingLeftBy>
+  <Aftermath_OfferingLeftByRelation>Left for {0} by {1} ({2}), {3}.</Aftermath_OfferingLeftByRelation>
+  <Aftermath_OfferingVisits>Visits: {0}.</Aftermath_OfferingVisits>
+  <Aftermath_Lover>lover</Aftermath_Lover>
+  <Aftermath_Friend>friend</Aftermath_Friend>
+</LanguageData>

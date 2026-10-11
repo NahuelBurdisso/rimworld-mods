@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- A root category of their own: default stockpiles never accept it, so nobody hauls the gifts away. -->
+  <ThingCategoryDef>
+    <defName>Aftermath_Offerings</defName>
+    <label>bedside offerings</label>
+    <parent>Root</parent>
+  </ThingCategoryDef>
+
+  <ThingDef Name="Aftermath_OfferingBase" Abstract="True">
+    <thingClass>Aftermath.Offering</thingClass>
+    <category>Item</category>
+    <drawerType>MapMeshOnly</drawerType>
+    <altitudeLayer>Item</altitudeLayer>
+    <selectable>true</selectable>
+    <useHitPoints>true</useHitPoints>
+    <tickerType>Rare</tickerType>
+    <rotatable>false</rotatable>
+    <pathCost>14</pathCost>
+    <stackLimit>1</stackLimit>
+    <tradeability>None</tradeability>
+    <thingCategories>
+      <li>Aftermath_Offerings</li>
+    </thingCategories>
+    <statBases>
+      <MaxHitPoints>30</MaxHitPoints>
+      <Mass>0.2</Mass>
+      <Beauty>2</Beauty>
+      <MarketValue>1</MarketValue>
+      <Flammability>1</Flammability>
+      <DeteriorationRate>0</DeteriorationRate>
+    </statBases>
+  </ThingDef>
+
+  <ThingDef ParentName="Aftermath_OfferingBase">
+    <defName>Aftermath_Offering_Flowers</defName>
+    <label>posy of flowers</label>
+    <description>A small bunch of flowers left by a lover's bed, tied with a strip of red cloth.</description>
+    <graphicData>
+      <texPath>Things/Item/Aftermath/Offering_Flowers</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>(0.8,0.8)</drawSize>
+    </graphicData>
+  </ThingDef>
+
+  <ThingDef ParentName="Aftermath_OfferingBase">
+    <defName>Aftermath_Offering_Letter</defName>
+    <label>folded letter</label>
+    <description>A letter from family, folded and sealed, left by the bed for when the patient wakes.</description>
+    <graphicData>
+      <texPath>Things/Item/Aftermath/Offering_Letter</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>(0.8,0.8)</drawSize>
+    </graphicData>
+  </ThingDef>
+
+  <ThingDef ParentName="Aftermath_OfferingBase">
+    <defName>Aftermath_Offering_Figure</defName>
+    <label>carved figure</label>
+    <description>A little wooden figure a friend whittled while sitting by the bed.</description>
+    <graphicData>
+      <texPath>Things/Item/Aftermath/Offering_Figure</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>(0.8,0.8)</drawSize>
+    </graphicData>
+  </ThingDef>
+
+  <ThingDef ParentName="Aftermath_OfferingBase">
+    <defName>Aftermath_Offering_Candle</defName>
+    <label>candle</label>
+    <description>A plain candle on a dish, left by a visitor who did not know what else to bring.</description>
+    <graphicData>
+      <texPath>Things/Item/Aftermath/Offering_Candle</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>(0.8,0.8)</drawSize>
+    </graphicData>
+  </ThingDef>
+
+  <ThoughtDef>
+    <defName>Aftermath_CameToSeeMe</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>4</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>someone came to see me</label>
+        <description>While I was laid up, someone came and left something by my bed.</description>
+        <baseMoodEffect>2</baseMoodEffect>
+      </li>
+      <li>
+        <label>they came to see me</label>
+        <description>While I was laid up, they kept coming. There were gifts all around the bed.</description>
+        <baseMoodEffect>4</baseMoodEffect>
+      </li>
+      <li>
+        <label>everyone came to see me</label>
+        <description>I could barely see the floor around my bed for all the things people left. I'm not alone here.</description>
+        <baseMoodEffect>7</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+</Defs>

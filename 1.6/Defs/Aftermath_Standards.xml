@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Dropped (minified) when a raid's leader is brought down. Never buildable from the menu. -->
+  <ThingDef ParentName="BuildingBase">
+    <defName>Aftermath_CapturedStandard</defName>
+    <label>captured standard</label>
+    <description>A raiding party's standard, taken when its leader fell. The cloth still carries the colours of the faction that brought it here. Its inspect pane remembers the day, the leader and who brought him down. Colonists who see it feel proud; those who fought that day, more so.</description>
+    <thingClass>Aftermath.Building_CapturedStandard</thingClass>
+    <graphicData>
+      <texPath>Things/Building/Aftermath/CapturedStandard</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>(1.6,1.6)</drawSize>
+      <drawOffset>(0,0,0.3)</drawOffset>
+      <damageData>
+        <rect>(0.3,0.1,0.4,0.8)</rect>
+      </damageData>
+    </graphicData>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>PassThroughOnly</passability>
+    <pathCost>30</pathCost>
+    <fillPercent>0.15</fillPercent>
+    <rotatable>false</rotatable>
+    <minifiedDef>MinifiedThing</minifiedDef>
+    <leaveResourcesWhenKilled>false</leaveResourcesWhenKilled>
+    <thingCategories>
+      <li>BuildingsArt</li>
+    </thingCategories>
+    <tradeability>Sellable</tradeability>
+    <statBases>
+      <MaxHitPoints>80</MaxHitPoints>
+      <WorkToBuild>300</WorkToBuild>
+      <Mass>4</Mass>
+      <Beauty>6</Beauty>
+      <MarketValue>150</MarketValue>
+      <Flammability>1.0</Flammability>
+    </statBases>
+    <building>
+      <isInert>true</isInert>
+      <uninstallWork>200</uninstallWork>
+    </building>
+  </ThingDef>
+
+  <ThoughtDef>
+    <defName>Aftermath_TrophyStandard</defName>
+    <thoughtClass>Thought_MemoryObservation</thoughtClass>
+    <durationDays>1</durationDays>
+    <stackLimit>3</stackLimit>
+    <stages>
+      <li>
+        <label>captured standard</label>
+        <description>We took that from them. Let them come again.</description>
+        <baseMoodEffect>3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <ThoughtDef>
+    <defName>Aftermath_TrophyStandardVeteran</defName>
+    <thoughtClass>Thought_MemoryObservation</thoughtClass>
+    <durationDays>1</durationDays>
+    <stackLimit>3</stackLimit>
+    <stages>
+      <li>
+        <label>our standard</label>
+        <description>I was there the day we took that. I remember every second of it.</description>
+        <baseMoodEffect>6</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+</Defs>
