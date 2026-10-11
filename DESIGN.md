@@ -174,7 +174,7 @@ map, killer has the memory, record gone, unpinned; feature off → no mark.
 
 `GameComponent`s armed by `GenCommandLine.TryGetCommandLineArg("rwtools-ticks", out _)`; they start
 at harness tick 2700 (the Gesta harness uses 60-2200 in the same game) and must finish before
-4500: nicknames 2700-3070, spared 3100-3260 (two real raids), beasts 3700-3701. Every test spawns its own colonists
+4500: nicknames 3000-~3380, spared 3400-~3670 (two real raids), beasts 3750-3757; each first clears all hostile pawns and buildings and waits 5 ticks (Gesta harnesses run raids up to ~2900). Every test spawns its own colonists
 and cleans up the hostiles it spawned. `Kit.Check` PASS/FAIL lines, `Kit.Summary("OldScores/...")`.
 
 Harness robustness (after the first in-game run):
