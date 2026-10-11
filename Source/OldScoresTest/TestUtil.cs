@@ -12,12 +12,12 @@ namespace OldScoresTest
         /// <summary>The Gesta harness owns ticks 60-2200 of the same game; ours start here.</summary>
         public const int NicknamesStart = 2700, SparedStart = 3100, BeastsStart = 3700;
 
-        public static Pawn NewColonist(Map map, IntVec3 near)
+        public static Pawn NewColonist(Map map, IntVec3 near, System.Predicate<Pawn> accept = null)
         {
             for (int i = 0; i < 30; i++)
             {
                 Pawn p = PawnGenerator.GeneratePawn(PawnKindDefOf.Colonist, Faction.OfPlayer);
-                if (p.WorkTagIsDisabled(WorkTags.Violent))
+                if (p.WorkTagIsDisabled(WorkTags.Violent) || (accept != null && i < 29 && !accept(p)))
                 {
                     Find.WorldPawns.PassToWorld(p, PawnDiscardDecideMode.Discard);
                     continue;

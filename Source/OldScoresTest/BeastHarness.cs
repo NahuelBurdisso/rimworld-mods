@@ -9,7 +9,7 @@ namespace OldScoresTest
     /// <summary>Feature 3 — The Beast That Came Back: real damage, ExitMap, the queued incident, the kill.</summary>
     public class BeastHarness : GameComponent
     {
-        bool active, done;
+        bool active, done, stopped;
         int ticks, phase;
         Map map;
         IntVec3 origin;
@@ -44,7 +44,7 @@ namespace OldScoresTest
             {
                 // a later tick: IncidentWorker.CanFireNow caches its answer per tick
                 phase = 2;
-                ReturnAndKill();
+                if (!stopped) ReturnAndKill();
                 Negatives();
                 Finish();
             }
@@ -56,14 +56,30 @@ namespace OldScoresTest
             origin = TestUtil.PrepareStrip(map, map.mapPawns.FreeColonistsSpawned.FirstOrDefault()?.Position ?? map.Center, 3, 12, 3);
             Kit.Check(origin.IsValid, $"setup: prepared a clear test strip at {origin}");
             if (!origin.IsValid) origin = map.Center;
-            victim = TestUtil.NewColonist(map, origin);
+            // not Tough (IncomingDamageFactor 0.5 halved the 15 bite to 7.5 in run 3)
+            victim = TestUtil.NewColonist(map, origin, p => p.GetStatValue(StatDefOf.IncomingDamageFactor) >= 0.99f);
 
             wolf = SpawnWolf(null);
             Kit.Check(wolf.Faction == null && wolf.RaceProps.Animal, "setup: a wild timber wolf");
-            float dealt = Bite(victim, wolf, 15f);
+            // one real bite must deal >= 10; if something still reduces it, bite harder (bounded: 3 tries)
+            float dealt = 0f, amount = 15f;
+            for (int i = 0; i < 3 && dealt < OldScoresTuning.BeastMinDamage && !victim.Dead; i++, amount *= 1.6f)
+            {
+                dealt = Bite(victim, wolf, amount, i);
+                Log.Message($"[Test] (bite {i + 1}: {amount:0.#} requested, {dealt:0.#} dealt)");
+            }
+            Kit.Check(dealt >= OldScoresTuning.BeastMinDamage, $"setup: one bite dealt at least {OldScoresTuning.BeastMinDamage} ({dealt:0.#})");
             BeastRecord rec = T.GetBeast(wolf);
             Kit.Check(rec != null && rec.stage == BeastStage.Marked && rec.victimNames.Contains(victim.LabelShort),
                 $"a wild wolf that bites a colonist for {dealt:0.#} is marked with her name");
+            if (rec == null)
+            {
+                Kit.Check(false, "beast scenario stopped: the wolf was never marked, so nothing after it can run");
+                stopped = true;
+                Negatives();
+                Finish();
+                return;
+            }
 
             Pawn nipper = SpawnWolf(null);
             Pawn victim2 = TestUtil.NewColonist(map, origin);
@@ -95,6 +111,11 @@ namespace OldScoresTest
                     queued = true;
             }
             Kit.Check(queued, $"its return is queued 1-2 quadrums out (in {(rec.fireTick - now) / (float)GenDate.TicksPerDay:0.#} days)");
+            if (rec.stage != BeastStage.Away || wolf.Spawned || wolf.Dead)
+            {
+                Kit.Check(false, $"beast scenario stopped after the escape (stage {rec.stage}, spawned {wolf.Spawned}, dead {wolf.Dead})");
+                stopped = true;
+            }
 
             nipper.ExitMap(false, Rot4.North);
             Kit.Check(nipper.Name == null && !TestUtil.IsPinned(nipper), "the unmarked wolf leaves unnamed and is not kept");
@@ -111,6 +132,11 @@ namespace OldScoresTest
             bool fired = worker.TryExecute(parms);
             BeastRecord rec = T.GetBeast(wolf);
             Kit.Check(fired && wolf.Spawned && wolf.Map == map, "the incident brings the same wolf back to the map");
+            if (!fired || !wolf.Spawned || wolf.Map != map)
+            {
+                Kit.Check(false, $"beast scenario stopped: the wolf did not come back (fired {fired}, spawned {wolf.Spawned})");
+                return;
+            }
             Kit.Check(wolf.health.hediffSet.HasHediff(OldScoresDefOf.OldScores_Veteran), "...as a veteran (hediff)");
             Kit.Check(wolf.MentalStateDef == MentalStateDefOf.ManhunterPermanent, "...hunting the colony (ManhunterPermanent)");
             Kit.Check(wolf.mindState.exitMapAfterTick > Find.TickManager.TicksGame, "...until it gives up and leaves (exitMapAfterTick)");
@@ -120,14 +146,14 @@ namespace OldScoresTest
                 $"its red label / inspect line lists whom it hurt ({(rec != null ? T.BeastLabel(rec) : "")})");
 
             int trophiesBefore = map.listerThings.ThingsOfDef(OldScoresDefOf.OldScores_BeastTrophy).Count;
-            string name = wolf.Name.ToStringShort;
+            string name = wolf.Name?.ToStringShort ?? wolf.LabelShort;
             Kit.KillBy(wolf, victim);
             List<Thing> trophies = map.listerThings.ThingsOfDef(OldScoresDefOf.OldScores_BeastTrophy);
             Kit.Check(trophies.Count == trophiesBefore + 1, "killing it leaves a trophy");
             string history = trophies.Count > 0 ? trophies.Last().TryGetComp<CompBeastTrophy>()?.History() : null;
             Kit.Check(history != null && history.Contains(name) && history.Contains(victim.LabelShort) && trophies.Last().LabelNoCount.Contains(name),
                 $"the trophy tells its story: {history}");
-            Kit.Check(victim.needs.mood.thoughts.memories.GetFirstMemoryOfDef(OldScoresDefOf.OldScores_SettledOldScore) != null,
+            Kit.Check(victim.needs?.mood?.thoughts?.memories?.GetFirstMemoryOfDef(OldScoresDefOf.OldScores_SettledOldScore) != null,
                 "the killer settled an old score (memory)");
             Kit.Check(T.GetBeast(wolf) == null && !TestUtil.IsPinned(wolf), "record cleared and unpinned");
         }
@@ -151,9 +177,10 @@ namespace OldScoresTest
         }
 
         /// <summary>A real bite on a leg (armour ignored) from the animal; returns the damage dealt.</summary>
-        static float Bite(Pawn target, Pawn animal, float amount)
+        static float Bite(Pawn target, Pawn animal, float amount, int legIndex = 0)
         {
-            BodyPartRecord leg = target.health.hediffSet.GetNotMissingParts().FirstOrDefault(p => p.def == BodyPartDefOf.Leg);
+            List<BodyPartRecord> legs = target.health.hediffSet.GetNotMissingParts().Where(p => p.def == BodyPartDefOf.Leg).ToList();
+            BodyPartRecord leg = legs.Count == 0 ? null : legs[legIndex % legs.Count];
             var dinfo = new DamageInfo(DamageDefOf.Bite, amount, 2f, -1f, animal, leg);
             return target.TakeDamage(dinfo).totalDamageDealt;
         }
