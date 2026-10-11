@@ -46,6 +46,9 @@ namespace Gesta
             list.GapLine();
             list.Label("Gesta_Settings_Brothers".Translate());
             list.CheckboxLabeled("Gesta_Settings_Enabled".Translate(), ref Settings.brothers);
+            list.GapLine();
+            list.Label("Gesta_Settings_Chronicler".Translate());
+            list.CheckboxLabeled("Gesta_Settings_Enabled".Translate(), ref Settings.chronicler);
             list.End();
         }
     }
@@ -64,6 +67,7 @@ namespace Gesta
         public bool turningTide = true;
         public bool bloodStains = true;
         public bool brothers = true;
+        public bool chronicler = true;
 
         public override void ExposeData()
         {
@@ -79,6 +83,7 @@ namespace Gesta
             Scribe_Values.Look(ref turningTide, "turningTide", true);
             Scribe_Values.Look(ref bloodStains, "bloodStains", true);
             Scribe_Values.Look(ref brothers, "brothers", true);
+            Scribe_Values.Look(ref chronicler, "chronicler", true);
         }
     }
 }

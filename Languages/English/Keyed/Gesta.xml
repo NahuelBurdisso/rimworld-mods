@@ -20,8 +20,14 @@
   <Gesta_Settings_Tide>Turning Tide (the sky follows the fight)</Gesta_Settings_Tide>
   <Gesta_Settings_Blood>Blood-Stained (blood on those who fought up close)</Gesta_Settings_Blood>
   <Gesta_Settings_Brothers>Brothers in Arms</Gesta_Settings_Brothers>
-  <Gesta_Brothers_LetterLabel>Brothers in arms</Gesta_Brothers_LetterLabel>
-  <Gesta_Brothers_LetterText>{0} and {1} have fought side by side in {2} battles now. Somewhere along the way they stopped being just colonists to each other.\n\nThey are now brothers in arms, and wear the same red sash.</Gesta_Brothers_LetterText>
+  <Gesta_Brothers_LetterLabel>Bonded in arms</Gesta_Brothers_LetterLabel>
+  <Gesta_Brothers_LetterText>{0} and {1} have fought side by side in {2} battles now. Somewhere along the way they stopped being just colonists to each other.
+
+They are now {3}, and wear the same red sash.</Gesta_Brothers_LetterText>
+  <Gesta_Brothers_Brothers>brothers in arms</Gesta_Brothers_Brothers>
+  <Gesta_Brothers_Sisters>sisters in arms</Gesta_Brothers_Sisters>
+  <Gesta_Brothers_Mixed>bonded in arms, brother and sister</Gesta_Brothers_Mixed>
+  <Gesta_Settings_Chronicler>The Chronicler (a narrator's line at the decisive moments of a fight)</Gesta_Settings_Chronicler>
   <Gesta_LastStand_Caption>{0} stands alone.</Gesta_LastStand_Caption>
   <Gesta_LastStand_Survived>{0} stood alone, and held.</Gesta_LastStand_Survived>
 </LanguageData>

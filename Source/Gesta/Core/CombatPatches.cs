@@ -15,7 +15,19 @@ namespace Gesta
             if (___pawn.Faction != Faction.OfPlayer) return;
             LastStandTracker.Instance?.Notify_PawnDowned(___pawn);
             BrothersTracker.Instance?.Notify_Downed(___pawn);
+            Chronicler.Instance?.Notify_ColonistDowned(___pawn);
             EngagementTracker.Instance?.QueueCheck(___pawn.Map);
+        }
+    }
+
+    /// <summary>Pawn_HealthTracker.MakeUndowned(Hediff hediff) is private: a colonist getting back up.</summary>
+    [HarmonyPatch(typeof(Pawn_HealthTracker), "MakeUndowned")]
+    public static class Patch_MakeUndowned
+    {
+        public static void Postfix(Pawn ___pawn)
+        {
+            if (___pawn == null || ___pawn.Downed || ___pawn.Dead || !___pawn.Spawned || ___pawn.Faction != Faction.OfPlayer) return;
+            Chronicler.Instance?.Notify_ColonistRecovered(___pawn);
         }
     }
 
@@ -80,6 +92,7 @@ namespace Gesta
             if (__state == null || !__instance.Dead) return;
             LastStandTracker.Instance?.Notify_PawnDied(__instance);
             BrothersTracker.Instance?.Notify_Died(__instance);
+            Chronicler.Instance?.Notify_Killed(__instance, __state);
             FeatTracker.Instance?.Notify_Killed(__instance, __state);
             __state.map.GetComponent<PoppyField>()?.Notify_Killed(__instance, __state);
             if (__state.victimWasHostile) __state.map.GetComponent<TideWatcher>()?.Notify_HostileFell();

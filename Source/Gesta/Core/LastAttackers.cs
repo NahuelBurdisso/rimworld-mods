@@ -26,6 +26,10 @@ namespace Gesta
             return Find.TickManager.TicksGame - e.tick <= MaxAgeTicks ? e.attacker : null;
         }
 
+        /// <summary>Who last hurt this pawn (within a day), without forgetting it.</summary>
+        public static Pawn Peek(Pawn victim) =>
+            byVictim.TryGetValue(victim.thingIDNumber, out var e) && Find.TickManager.TicksGame - e.tick <= MaxAgeTicks ? e.attacker : null;
+
         public static void Clear() => byVictim.Clear();
     }
 
@@ -37,9 +41,9 @@ namespace Gesta
         {
             BloodStains.Notify_Damage(__instance, dinfo, totalDamageDealt);
             if (totalDamageDealt <= 0f || !(dinfo.Instigator is Pawn attacker) || attacker == __instance) return;
+            BrothersTracker.Instance?.Notify_Hit(__instance, attacker, totalDamageDealt);
             if (__instance.RaceProps == null || !__instance.RaceProps.Humanlike) return;
             LastAttackers.Record(__instance, attacker);
-            BrothersTracker.Instance?.Notify_Hit(__instance, attacker, totalDamageDealt);
         }
     }
 }

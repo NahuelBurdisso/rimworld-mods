@@ -30,6 +30,7 @@ namespace Gesta
 
         public static PawnRelationDef Gesta_BrotherInArms;
         public static ThoughtDef Gesta_BrotherInArmsDied;
+        public static ThoughtDef Gesta_SisterInArmsDied;
         public static ThoughtDef Gesta_BrotherDowned;
         public static HediffDef Gesta_BrotherSash;
         public static HediffDef Gesta_BrotherSashMourning;

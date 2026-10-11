@@ -55,7 +55,7 @@ namespace Gesta
             participants.Remove(map.uniqueID);
             if (forced || !GestaMod.Settings.brothers) return;
             tmp.Clear();
-            tmp.AddRange(set.Where(p => p != null && !p.Dead));
+            tmp.AddRange(set.Where(p => p != null && !p.Dead && p.IsFreeNonSlaveColonist && !p.IsPrisoner && p.MapHeld == map));
             for (int i = 0; i < tmp.Count; i++)
             for (int j = i + 1; j < tmp.Count; j++)
             {
@@ -73,8 +73,11 @@ namespace Gesta
             a.relations.AddDirectRelation(GestaDefOf.Gesta_BrotherInArms, b);   // reflexive: both sides
             GiveSash(a);
             GiveSash(b);
+            string bond = a.gender == Gender.Female && b.gender == Gender.Female ? "Gesta_Brothers_Sisters".Translate()
+                        : a.gender == Gender.Female || b.gender == Gender.Female ? "Gesta_Brothers_Mixed".Translate()
+                        : "Gesta_Brothers_Brothers".Translate();
             Find.LetterStack.ReceiveLetter("Gesta_Brothers_LetterLabel".Translate(),
-                "Gesta_Brothers_LetterText".Translate(a.LabelShort, b.LabelShort, FightsNeeded),
+                "Gesta_Brothers_LetterText".Translate(a.LabelShort, b.LabelShort, FightsNeeded, bond),
                 LetterDefOf.PositiveEvent, new LookTargets(a, b));
             Log.Message($"[Gesta] {a.LabelShort} and {b.LabelShort} are now brothers in arms");
         }
@@ -94,6 +97,10 @@ namespace Gesta
                          .Where(r => r.def == GestaDefOf.Gesta_BrotherInArms).Select(r => r.otherPawn).ToList())
             {
                 if (other == null || other.Dead || other.health == null) continue;
+                ThoughtDef grief = dead.gender == Gender.Female ? GestaDefOf.Gesta_SisterInArmsDied : GestaDefOf.Gesta_BrotherInArmsDied;
+                var memories = other.needs?.mood?.thoughts?.memories;
+                if (memories != null && !memories.Memories.Any(m => (m.def == GestaDefOf.Gesta_BrotherInArmsDied || m.def == GestaDefOf.Gesta_SisterInArmsDied) && m.otherPawn == dead))
+                    memories.TryGainMemory(grief, dead);
                 bool stillHasLivingBrother = other.relations.DirectRelations
                     .Any(r => r.def == GestaDefOf.Gesta_BrotherInArms && r.otherPawn != dead && r.otherPawn != null && !r.otherPawn.Dead);
                 if (!stillHasLivingBrother)
@@ -116,6 +123,20 @@ namespace Gesta
                 Pawn other = r.otherPawn;
                 if (other == null || other.Dead || other.MapHeld != downed.MapHeld) continue;
                 other.needs?.mood?.thoughts?.memories?.TryGainMemory(GestaDefOf.Gesta_BrotherDowned, downed);
+            }
+        }
+
+        public override void GameComponentTick()
+        {
+            if (Find.TickManager.TicksGame % 2500 != 0) return;
+            foreach (Map map in Find.Maps)
+            {
+                foreach (Pawn p in map.mapPawns.FreeColonistsSpawned)
+                {
+                    if (!p.health.hediffSet.HasHediff(GestaDefOf.Gesta_BrotherSashMourning)) continue;
+                    if (p.relations.DirectRelations.Any(r => r.def == GestaDefOf.Gesta_BrotherInArms && r.otherPawn != null && !r.otherPawn.Dead))
+                        GiveSash(p);
+                }
             }
         }
 

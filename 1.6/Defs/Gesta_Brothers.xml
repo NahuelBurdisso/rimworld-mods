@@ -12,6 +12,7 @@
     <implied>false</implied>
     <generationChanceFactor>0</generationChanceFactor>
     <diedThought>Gesta_BrotherInArmsDied</diedThought>
+    <diedThoughtFemale>Gesta_SisterInArmsDied</diedThoughtFemale>
   </PawnRelationDef>
 
   <ThoughtDef ParentName="DeathMemoryFamily">
@@ -25,9 +26,20 @@
     </stages>
   </ThoughtDef>
 
+  <ThoughtDef ParentName="DeathMemoryFamily">
+    <defName>Gesta_SisterInArmsDied</defName>
+    <stages>
+      <li>
+        <label>my sister in arms {0} died</label>
+        <description>We stood together through fight after fight. I always thought, if one of us went, it would be both.</description>
+        <baseMoodEffect>-12</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
   <ThoughtDef>
     <defName>Gesta_BrotherDowned</defName>
-    <thoughtClass>Thought_MemorySocial</thoughtClass>
+    <thoughtClass>Thought_Memory</thoughtClass>
     <durationDays>1</durationDays>
     <stackLimit>3</stackLimit>
     <stackLimitForSameOtherPawn>1</stackLimitForSameOtherPawn>
@@ -36,7 +48,6 @@
         <label>saw {0} go down</label>
         <description>They went down right next to me. I couldn't get to them in time.</description>
         <baseMoodEffect>-4</baseMoodEffect>
-        <baseOpinionOffset>0</baseOpinionOffset>
       </li>
     </stages>
   </ThoughtDef>

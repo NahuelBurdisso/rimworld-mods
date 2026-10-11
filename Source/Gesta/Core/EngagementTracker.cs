@@ -90,12 +90,14 @@ namespace Gesta
                 UpdateFighters(map);
                 LastStandTracker.Instance?.Notify_EngagementStarted(map);
                 BrothersTracker.Instance?.Notify_EngagementStarted(map);
+                Chronicler.Instance?.Notify_EngagementStarted(map);
             }
             else if (e.active && (!threat || now - e.startTick > MaxEngagementTicks))
             {
                 e.active = false;
                 LastStandTracker.Instance?.Notify_EngagementEnded(map, forced: threat);
                 BrothersTracker.Instance?.Notify_EngagementEnded(map, forced: threat);
+                Chronicler.Instance?.Notify_EngagementEnded(map, forced: threat);
                 return;
             }
             else if (!threat && !e.active)
