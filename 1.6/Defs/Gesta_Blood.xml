@@ -35,6 +35,7 @@
     <renderNodeProperties>
       <li Class="PawnRenderNodeProperties_Overlay">
         <debugLabel>Gesta blood (body)</debugLabel>
+        <nodeClass>Gesta.PawnRenderNode_Blood</nodeClass>
         <workerClass>Gesta.PawnRenderNodeWorker_Blood</workerClass>
         <parentTagDef>Body</parentTagDef>
         <overlayLayer>Body</overlayLayer>
@@ -42,6 +43,7 @@
       </li>
       <li Class="PawnRenderNodeProperties_Overlay">
         <debugLabel>Gesta blood (head)</debugLabel>
+        <nodeClass>Gesta.PawnRenderNode_Blood</nodeClass>
         <workerClass>Gesta.PawnRenderNodeWorker_Blood</workerClass>
         <parentTagDef>Head</parentTagDef>
         <overlayLayer>Head</overlayLayer>

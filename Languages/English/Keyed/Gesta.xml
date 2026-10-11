@@ -19,6 +19,9 @@
   <Gesta_Ash_InspectFire>Here {0} burned, {1}.</Gesta_Ash_InspectFire>
   <Gesta_Settings_Tide>Turning Tide (the sky follows the fight)</Gesta_Settings_Tide>
   <Gesta_Settings_Blood>Blood-Stained (blood on those who fought up close)</Gesta_Settings_Blood>
+  <Gesta_Settings_Brothers>Brothers in Arms</Gesta_Settings_Brothers>
+  <Gesta_Brothers_LetterLabel>Brothers in arms</Gesta_Brothers_LetterLabel>
+  <Gesta_Brothers_LetterText>{0} and {1} have fought side by side in {2} battles now. Somewhere along the way they stopped being just colonists to each other.\n\nThey are now brothers in arms, and wear the same red sash.</Gesta_Brothers_LetterText>
   <Gesta_LastStand_Caption>{0} stands alone.</Gesta_LastStand_Caption>
   <Gesta_LastStand_Survived>{0} stood alone, and held.</Gesta_LastStand_Survived>
 </LanguageData>

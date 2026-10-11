@@ -39,6 +39,7 @@ namespace Gesta
             if (totalDamageDealt <= 0f || !(dinfo.Instigator is Pawn attacker) || attacker == __instance) return;
             if (__instance.RaceProps == null || !__instance.RaceProps.Humanlike) return;
             LastAttackers.Record(__instance, attacker);
+            BrothersTracker.Instance?.Notify_Hit(__instance, attacker, totalDamageDealt);
         }
     }
 }

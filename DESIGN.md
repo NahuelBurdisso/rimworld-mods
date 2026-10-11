@@ -188,9 +188,33 @@ blow. Insects, mechanoids and races with other blood never stain anyone (v1: red
 (0.7). Fades 0.6/day awake, 1.8/day asleep.
 **Drawing:** the hediff's render nodes (body + head) use a copy of vanilla's firefoam overlay: a
 tiled splatter texture per stage, masked to the body/head graphic, drawn over apparel with the
-vanilla FirefoamOverlay shader. Fresh pawns only (not corpses). Stage changes clear the drawer
-cache and dirty the pawn's graphics.
+vanilla FirefoamOverlay shader. Living, fresh pawns only (corpses do not tick, so a stain would
+never fade). The drawer lives on a custom node (`PawnRenderNode_Blood`), rebuilt with the render
+tree, so a new body/head never keeps a stale mask. The killing blow counts too (the victim is
+already despawned in PostApplyDamage, so positions use PositionHeld). A new stain starts at 0.1.
 
 **Tests:** an adjacent cut stains attacker and victim; a distant shot stains only the target;
 cutting a mechanoid stains nobody; the hediff is visible and has render nodes; stages rise with
 more blood and cap at 1; it fades. Screenshot: splatter visible on body, clothes and face.
+
+## Feature 7 — Brothers in Arms (`brothers-in-arms`)
+
+**Pitch:** fight side by side often enough and two colonists become brothers (or sisters) in
+arms, and wear it.
+
+**Counting:** during an engagement, every free non-slave colonist who deals damage to a hostile
+(non-player-faction) pawn is a participant (Pawn.PostApplyDamage postfix). When the engagement ends
+normally (not by the 1-day timeout), every pair of living participants gets +1 shared fight
+(saved by pawn ids). At 3, the pair is bonded.
+
+**Bond:** reflexive `Gesta_BrotherInArms` relation (label "brother/sister in arms", opinion +25,
+importance 55 — below family, so a brother by blood still takes the death thought; generated 0).
+Both get the `Gesta_BrotherSash` hediff, which draws a red sash over the clothes (render node,
+Graphic_Multi south/north/east, layer 49: above body apparel, under the head). Positive letter.
+- A brother going down near the other: social memory "saw X go down" (−4, 1 day).
+- A brother dying: vanilla gives `Gesta_BrotherInArmsDied` (−12, family death memory). If the
+  survivor has no other living brother in arms, the sash turns black (`Gesta_BrotherSashMourning`).
+
+**Tests:** two shared fights are not enough; three bond both ways with sashes and a letter; a
+colonist who missed a fight is not bonded; seeing a brother go down gives the memory; the death
+turns the survivor's sash black and gives the grief memory. Screenshot: matching sashes.

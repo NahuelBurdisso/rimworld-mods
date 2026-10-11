@@ -30,8 +30,8 @@ namespace Gesta
 
             if (dinfo.Instigator is Pawn attacker && attacker != victim && CanStain(attacker)
                 && !dinfo.Def.isRanged && !dinfo.Def.isExplosive
-                && attacker.Spawned && victim.Spawned && attacker.Map == victim.Map
-                && attacker.Position.AdjacentTo8WayOrInside(victim.Position))
+                && attacker.Spawned && attacker.Map == victim.MapHeld
+                && attacker.Position.AdjacentTo8WayOrInside(victim.PositionHeld))
                 Add(attacker, damage * PerDamageAttacker);
         }
 
@@ -41,7 +41,7 @@ namespace Gesta
             if (h == null)
             {
                 h = HediffMaker.MakeHediff(GestaDefOf.Gesta_Bloodstained, pawn);
-                h.Severity = amount;
+                h.Severity = Mathf.Max(h.def.initialSeverity, amount);
                 pawn.health.AddHediff(h);
             }
             else
@@ -53,15 +53,23 @@ namespace Gesta
 
     public class Hediff_Bloodstained : HediffWithComps
     {
-        PawnBloodDrawer drawer;
-        public PawnBloodDrawer Drawer => drawer ??= new PawnBloodDrawer(pawn, this);
-
         protected override void OnStageIndexChanged(int stageIndex)
         {
             base.OnStageIndexChanged(stageIndex);
-            drawer?.ClearCache();
-            if (pawn.Spawned) pawn.Drawer?.renderer?.SetAllGraphicsDirty();
+            // rebuilds the render tree, and with it the nodes that own the drawers (and portraits/atlas)
+            pawn.Drawer?.renderer?.SetAllGraphicsDirty();
         }
+    }
+
+    /// <summary>Owns the overlay drawer, so a rebuilt tree (new body, head, xenotype) never reuses a stale mask.</summary>
+    public class PawnRenderNode_Blood : PawnRenderNode
+    {
+        PawnBloodDrawer drawer;
+
+        public PawnRenderNode_Blood(Pawn pawn, PawnRenderNodeProperties props, PawnRenderTree tree) : base(pawn, props, tree) { }
+
+        public PawnBloodDrawer Drawer =>
+            drawer ??= hediff is Hediff_Bloodstained h ? new PawnBloodDrawer(tree.pawn, h) : null;
     }
 
     /// <summary>Washes off: faster while asleep.</summary>
@@ -131,14 +139,18 @@ namespace Gesta
 
     public class PawnRenderNodeWorker_Blood : PawnRenderNodeWorker_Overlay
     {
-        static Hediff_Bloodstained Stain(Pawn pawn) =>
-            pawn.health?.hediffSet?.GetFirstHediffOfDef(GestaDefOf.Gesta_Bloodstained) as Hediff_Bloodstained;
+        // the per-node drawer is used in PostDraw; this pawn-level lookup is never needed
+        protected override PawnOverlayDrawer OverlayDrawer(Pawn pawn) => null;
 
-        protected override PawnOverlayDrawer OverlayDrawer(Pawn pawn) => Stain(pawn)?.Drawer;
+        public override bool ShouldListOnGraph(PawnRenderNode node, PawnDrawParms parms) => node.hediff != null;
 
-        public override bool ShouldListOnGraph(PawnRenderNode node, PawnDrawParms parms) => Stain(parms.pawn) != null;
-
+        /// <summary>Living pawns only: the dead do not tick, so a stain on a corpse would never fade.</summary>
         public override bool CanDrawNow(PawnRenderNode node, PawnDrawParms parms) =>
-            base.CanDrawNow(node, parms) && parms.rotDrawMode == RotDrawMode.Fresh && Stain(parms.pawn) != null;
+            base.CanDrawNow(node, parms) && parms.rotDrawMode == RotDrawMode.Fresh && !parms.pawn.Dead && node.hediff != null;
+
+        public override void PostDraw(PawnRenderNode node, PawnDrawParms parms, Mesh mesh, Matrix4x4 matrix)
+        {
+            (node as PawnRenderNode_Blood)?.Drawer?.RenderPawnOverlay(matrix, mesh, node.Props.overlayLayer, parms, node.Props.overlayOverApparel);
+        }
     }
 }

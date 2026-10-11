@@ -28,6 +28,12 @@ namespace Gesta
 
         public static HediffDef Gesta_Bloodstained;
 
+        public static PawnRelationDef Gesta_BrotherInArms;
+        public static ThoughtDef Gesta_BrotherInArmsDied;
+        public static ThoughtDef Gesta_BrotherDowned;
+        public static HediffDef Gesta_BrotherSash;
+        public static HediffDef Gesta_BrotherSashMourning;
+
         static GestaDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(GestaDefOf)); }
     }
 }

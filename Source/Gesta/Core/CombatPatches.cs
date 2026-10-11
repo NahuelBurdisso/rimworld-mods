@@ -14,6 +14,7 @@ namespace Gesta
             if (___pawn.HostileTo(Faction.OfPlayer)) ___pawn.Map.GetComponent<TideWatcher>()?.Notify_HostileFell();
             if (___pawn.Faction != Faction.OfPlayer) return;
             LastStandTracker.Instance?.Notify_PawnDowned(___pawn);
+            BrothersTracker.Instance?.Notify_Downed(___pawn);
             EngagementTracker.Instance?.QueueCheck(___pawn.Map);
         }
     }
@@ -78,6 +79,7 @@ namespace Gesta
         {
             if (__state == null || !__instance.Dead) return;
             LastStandTracker.Instance?.Notify_PawnDied(__instance);
+            BrothersTracker.Instance?.Notify_Died(__instance);
             FeatTracker.Instance?.Notify_Killed(__instance, __state);
             __state.map.GetComponent<PoppyField>()?.Notify_Killed(__instance, __state);
             if (__state.victimWasHostile) __state.map.GetComponent<TideWatcher>()?.Notify_HostileFell();

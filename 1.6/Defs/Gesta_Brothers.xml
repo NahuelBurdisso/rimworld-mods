@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Brothers in Arms: added by Gesta.BrothersTracker after three shared fights. -->
+  <PawnRelationDef>
+    <defName>Gesta_BrotherInArms</defName>
+    <label>brother in arms</label>
+    <labelFemale>sister in arms</labelFemale>
+    <importance>55</importance>
+    <opinionOffset>25</opinionOffset>
+    <reflexive>true</reflexive>
+    <implied>false</implied>
+    <generationChanceFactor>0</generationChanceFactor>
+    <diedThought>Gesta_BrotherInArmsDied</diedThought>
+  </PawnRelationDef>
+
+  <ThoughtDef ParentName="DeathMemoryFamily">
+    <defName>Gesta_BrotherInArmsDied</defName>
+    <stages>
+      <li>
+        <label>my brother in arms {0} died</label>
+        <description>We stood together through fight after fight. I always thought, if one of us went, it would be both.</description>
+        <baseMoodEffect>-12</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <ThoughtDef>
+    <defName>Gesta_BrotherDowned</defName>
+    <thoughtClass>Thought_MemorySocial</thoughtClass>
+    <durationDays>1</durationDays>
+    <stackLimit>3</stackLimit>
+    <stackLimitForSameOtherPawn>1</stackLimitForSameOtherPawn>
+    <stages>
+      <li>
+        <label>saw {0} go down</label>
+        <description>They went down right next to me. I couldn't get to them in time.</description>
+        <baseMoodEffect>-4</baseMoodEffect>
+        <baseOpinionOffset>0</baseOpinionOffset>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <HediffDef Name="Gesta_SashBase" Abstract="True">
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <everCurableByItem>false</everCurableByItem>
+    <defaultLabelColor>(0.75, 0.65, 0.5)</defaultLabelColor>
+  </HediffDef>
+
+  <HediffDef ParentName="Gesta_SashBase">
+    <defName>Gesta_BrotherSash</defName>
+    <label>brothers' sash</label>
+    <description>A strip of red cloth worn by those who have fought side by side, again and again. Their brother in arms wears the same.</description>
+    <renderNodeProperties>
+      <li>
+        <debugLabel>Gesta brothers' sash</debugLabel>
+        <texPath>Things/Gesta/Sash/Sash</texPath>
+        <parentTagDef>Body</parentTagDef>
+        <color>(168, 36, 34)</color>
+        <baseLayer>49</baseLayer>
+        <rotDrawMode>Fresh, Rotting</rotDrawMode>
+      </li>
+    </renderNodeProperties>
+  </HediffDef>
+
+  <HediffDef ParentName="Gesta_SashBase">
+    <defName>Gesta_BrotherSashMourning</defName>
+    <label>black sash</label>
+    <description>The red sash of a brother in arms, dyed black. The one who wore its twin is gone.</description>
+    <renderNodeProperties>
+      <li>
+        <debugLabel>Gesta mourning sash</debugLabel>
+        <texPath>Things/Gesta/Sash/Sash</texPath>
+        <parentTagDef>Body</parentTagDef>
+        <color>(46, 44, 44)</color>
+        <baseLayer>49</baseLayer>
+        <rotDrawMode>Fresh, Rotting</rotDrawMode>
+      </li>
+    </renderNodeProperties>
+  </HediffDef>
+
+</Defs>
