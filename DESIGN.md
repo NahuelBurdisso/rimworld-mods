@@ -173,3 +173,16 @@ map, killer has the memory, record gone, unpinned; feature off → no mark.
 at harness tick 2700 (the Gesta harness uses 60-2200 in the same game) and must finish before
 4500: nicknames 2700-3070, spared 3100-3260 (two real raids), beasts 3700-3701. Every test spawns its own colonists
 and cleans up the hostiles it spawned. `Kit.Check` PASS/FAIL lines, `Kit.Summary("OldScores/...")`.
+
+Harness robustness (after the first in-game run):
+- Enemy faction: `TestUtil.HostileFaction` — a hostile humanlike faction that has Combat pawn groups,
+  preferring one nobody has a nickname from yet (the Gesta harness kills faction leaders earlier in the
+  same game), pirates first. `Faction.OfPirates` can be null on a quicktest world.
+- Test strips: `TestUtil.PrepareStrip` near a colonist (bounded search, radius 40) then clears the strip
+  (unfog, remove plants/rock/chunks/items, soil over water or impassable ground; pawns are moved, player
+  things are never in a chosen strip), so it works on any map.
+- A raid letter (ThreatBig) pauses the game under the default auto-pause preference (MajorThreat):
+  `LetterStack.ReceiveLetter` -> `TickManager.Pause()`. While paused no GameComponentTick runs, so the
+  harness waited forever. The raid helper restores the speed right after `TryExecute`, and a
+  `HarnessWatchdog` GameComponent (GameComponentUpdate runs while paused) resumes the game while any
+  harness is unfinished. Every wait has a timeout that logs a FAIL.
