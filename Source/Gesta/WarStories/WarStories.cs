@@ -18,13 +18,14 @@ namespace Gesta
 
         public class Story : IExposable
         {
-            public int realKills, endTick, timesTold;
+            public int realKills, endTick, timesTold, lastShown;
             public List<int> witnesses = new List<int>();   // thingIDNumbers of colonists who fought in it
             public void ExposeData()
             {
                 Scribe_Values.Look(ref realKills, "realKills");
                 Scribe_Values.Look(ref endTick, "endTick");
                 Scribe_Values.Look(ref timesTold, "timesTold");
+                Scribe_Values.Look(ref lastShown, "lastShown");
                 Scribe_Collections.Look(ref witnesses, "witnesses", LookMode.Value);
                 if (Scribe.mode == LoadSaveMode.PostLoadInit) witnesses ??= new List<int>();
             }
@@ -90,14 +91,25 @@ namespace Gesta
         {
             Story s = StoryOf(teller);
             if (s == null) return 0;
-            int shown = s.realKills;
-            for (int i = 0; i < s.timesTold; i++) shown += Rand.RangeInclusive(1, 3);
+            // never shrinks: each telling adds 1-3 to the last one
+            int shown = s.timesTold == 0 ? s.realKills : Mathf.Max(s.lastShown, s.realKills) + Rand.RangeInclusive(1, 3);
+            s.lastShown = shown;
             s.timesTold++;
-            string key = teller.thingIDNumber + "_" + GenTicks.TicksAbs;
-            toldNumbers[key] = shown;
-            if (toldNumbers.Count > 400)
-                foreach (string old in toldNumbers.Keys.Take(100).ToList()) toldNumbers.Remove(old);
+            toldNumbers[teller.thingIDNumber + "_" + GenTicks.TicksAbs] = shown;
+            if (toldNumbers.Count > 400) Prune();
             return shown;
+        }
+
+        /// <summary>Forget numbers for log entries the play log no longer holds (it keeps ~150).</summary>
+        void Prune()
+        {
+            List<LogEntry> entries = Find.PlayLog.AllEntries;
+            int oldest = entries.Count > 0 ? entries.Min(e => e.Timestamp) : GenTicks.TicksAbs;
+            foreach (string key in toldNumbers.Keys.ToList())
+            {
+                int sep = key.IndexOf('_');
+                if (sep > 0 && int.TryParse(key.Substring(sep + 1), out int ticks) && ticks < oldest) toldNumbers.Remove(key);
+            }
         }
 
         public bool TryGetTold(Pawn teller, int ticksAbs, out int n) =>
