@@ -24,6 +24,8 @@ namespace Gesta
         public static ThingDef Gesta_PoppyWhite;
         public static ThoughtDef Gesta_VisitedPoppy;
 
+        public static ThingDef Gesta_AshSilhouette;
+
         static GestaDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(GestaDefOf)); }
     }
 }

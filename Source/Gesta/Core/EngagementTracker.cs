@@ -30,7 +30,7 @@ namespace Gesta
         static EngagementTracker instance;
         public static EngagementTracker Instance => instance;
 
-        public EngagementTracker(Game game) { instance = this; }
+        public EngagementTracker(Game game) { instance = this; LastAttackers.Clear(); }
 
         public Engagement Get(Map map)
         {

@@ -30,6 +30,7 @@
     <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(RimWorldManaged)/UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(RimWorldManaged)/UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
     <!-- Harmony comes from the Harmony mod (brrainz.harmony) at runtime -->
+    <Reference Include="UnityEngine.ImageConversionModule"><HintPath>$(RimWorldManaged)/UnityEngine.ImageConversionModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="0Harmony"><HintPath>$(HarmonyAssemblies)/0Harmony.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 

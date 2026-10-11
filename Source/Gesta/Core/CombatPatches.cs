@@ -23,6 +23,8 @@ namespace Gesta
         public Map map;
         public IntVec3 position;
         public Pawn killer;
+        /// <summary>The killer, or for deaths without a DamageInfo (bleeding out) whoever last hurt the victim.</summary>
+        public Pawn attributedKiller;
         public DamageDef damageDef;
         /// <summary>Hostile, on its feet and not one of ours (a berserk colonist does not count).</summary>
         public bool victimWasHostile;
@@ -51,12 +53,14 @@ namespace Gesta
             if (__instance.Dead) return;
             Map map = __instance.MapHeld;
             if (map == null) return;
+            AshMaker.TryMake(__instance, dinfo);
             Pawn killer = dinfo?.Instigator as Pawn;
             __state = new KillContext
             {
                 map = map,
                 position = __instance.PositionHeld,
                 killer = killer,
+                attributedKiller = killer ?? (dinfo == null ? LastAttackers.Take(__instance) : null),
                 damageDef = dinfo?.Def,
                 victimWasHostile = __instance.HostileTo(Faction.OfPlayer) && !__instance.Downed && __instance.Faction != Faction.OfPlayer,
                 killerAdjacent = killer != null && killer.Spawned && killer.Map == map

@@ -98,26 +98,55 @@ a colonist carrying a downed colonist near a hostile for 2 checks gets Lifeline.
 **Pitch:** where someone fell in battle, a poppy grows the next season: red for your people,
 white for the enemy, and it remembers who.
 
-**Recording** (Pawn.Kill postfix with the KillContext): the victim is humanlike, the killer is a
-pawn (a combat death), the death cell is in bounds, unroofed, with fertility ≥ 0.5. Stored per map
+**Recording** (Pawn.Kill postfix with the KillContext): the victim is humanlike and not a mutant
+(no shambler fields), the killer is a pawn — or, for a death without a DamageInfo (bleeding out),
+whoever last hurt the victim within a day (`LastAttackers`, from a Pawn.PostApplyDamage postfix) —
+and it is not an execution or sacrifice (`ExecutionCut`), the death cell is in bounds, unroofed, with fertility ≥ 0.5. Stored per map
 (MapComponent `PoppyField`): cell, colonist?, victim name, victim faction name, killer name, weapon
 label, death tick, and the living colonists who loved the victim (opinion ≥ 20 or any relation;
 only for colonist victims). A new record is skipped if a poppy or record already exists within 1
 cell (killboxes); at most 80 poppies + records per map.
 
 **Blooming:** every 2500 ticks, records at least 3 days old bloom if it is growing season there.
-Target cell: the death cell or the nearest valid cell within 2 (in bounds, unroofed, fertile, no
-edifice, not in a growing zone, no tree). An existing small wild plant is cleared. A record that
+Target cell: the nearest empty valid cell within 2 (in bounds, unroofed, fertile, no edifice, not
+in a growing zone); failing that, one whose plant is worthless wild growth (not a tree, not sown,
+auto-cuttable, nothing to harvest — anima grass, healroot, ambrosia and berries are never cleared). A record that
 cannot bloom within 60 days is dropped.
 
 **The plant** (`Gesta.Plant_Poppy`, defs `Gesta_PoppyRed` / `Gesta_PoppyWhite`): decorative, not
 sowable, not harvestable, not edible, not auto-cut, never blighted, never dies of age or light; it
 can still burn or be cut by the player. Beauty +8. Label "red poppy (Mía)". Inspect: "Here fell
 Mía, killed by Kerr with a bolt-action rifle, 12th of Aprimay 5502."
-**Mourners:** every long tick, a mourner within 4 cells gets `Gesta_VisitedPoppy` (+3, 1 day).
+**Mourners:** every long tick, an awake mourner within 4 cells and in line of sight gets
+`Gesta_VisitedPoppy` (+3, 1 day). Turning the feature off stops blooming and mourning too.
+**Known:** a growing zone or a blueprint placed over a poppy removes it, like any wild plant.
 
 **Tests:** a colonist killed by a hostile on fertile open ground creates a record with the right
 names; a death under a roof does not; a second death in the adjacent cell is merged; forcing the
 record's age blooms a red poppy at the cell with the victim's name in its label and inspect text;
 an enemy's poppy is white; the poppy is not ingestible and does not die of age; a mourner standing
 next to it gets the memory.
+
+## Feature 4 — Ash Silhouettes (`ash-silhouettes`)
+
+**Pitch:** someone killed by an explosion or fire leaves their shadow burned into the ground,
+like the shadows of Hiroshima.
+
+**Trigger** (Pawn.Kill prefix, while the pawn is still drawn standing): humanlike, spawned, and
+the killing damage is Bomb, BombSuper, Flame, Burn or Vaporize, or the pawn is on fire. At most
+3 per tick and 40 per map.
+
+**Snapshot:** the pawn's own render (body, head, hair, apparel; portrait pose, facing south) is
+drawn by vanilla's `PawnCacheRenderer` into a 128×128 render texture covering 2.6 × 2.6 cells,
+read back to a texture, turned into a soot-black silhouette (colour (22,18,16), alpha × 0.78) and
+stored as PNG bytes. This uses the real renderer, so alien races and modded apparel work.
+
+**The mark** (`Gesta.AshSilhouette`, def `Gesta_AshSilhouette`): drawn flat on the floor layer at the
+death cell (map mesh, built lazily on the main thread because saves load asynchronously). Not
+filth: it cannot be cleaned. It fades after one in-game year, or at once if the floor under it
+changes (the colony rebuilt there). Inspect: "Here Ruiz was caught in the blast, 12th of Aprimay
+5502." (fire: "burned"). Saved: PNG bytes (deflated by the scribe), name, cause, tick, terrain.
+
+**Tests:** a hostile killed by Bomb leaves one silhouette at its cell whose texture has a visible
+shape (non-transparent pixel count in a sane range); a bullet death leaves none; a burning pawn
+killed by a cut leaves one; the inspect text names the pawn; changing the terrain removes it.

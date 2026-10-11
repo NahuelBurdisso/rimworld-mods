@@ -23,12 +23,12 @@ namespace Gesta
         public override void TickLong()
         {
             base.TickLong();
-            if (Destroyed || memory == null || memory.mourners.Count == 0) return;
+            if (Destroyed || !GestaMod.Settings.poppies || memory == null || memory.mourners.Count == 0) return;
             for (int i = 0; i < memory.mourners.Count; i++)
             {
                 Pawn p = memory.mourners[i];
-                if (p == null || p.Dead || !p.Spawned || p.Map != Map || p.Downed) continue;
-                if (!p.Position.InHorDistOf(Position, MournRadius)) continue;
+                if (p == null || p.Dead || !p.Spawned || p.Map != Map || p.Downed || !p.Awake()) continue;
+                if (!p.Position.InHorDistOf(Position, MournRadius) || !GenSight.LineOfSight(p.Position, Position, Map)) continue;
                 p.needs?.mood?.thoughts?.memories?.TryGainMemory(GestaDefOf.Gesta_VisitedPoppy);
             }
         }

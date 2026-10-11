@@ -59,7 +59,8 @@ namespace Gesta
         public void Notify_Killed(Pawn victim, KillContext ctx)
         {
             if (!GestaMod.Settings.poppies) return;
-            if (victim.RaceProps == null || !victim.RaceProps.Humanlike || ctx.killer == null) return;
+            if (victim.RaceProps == null || !victim.RaceProps.Humanlike || victim.IsMutant) return;
+            if (ctx.attributedKiller == null || ctx.damageDef == DamageDefOf.ExecutionCut) return;   // executions and sacrifices are not battles
             IntVec3 c = ctx.position;
             if (!c.InBounds(map) || c.Roofed(map) || map.fertilityGrid.FertilityAt(c) < MinFertility) return;
             if (pending.Count + bloomedCount >= MaxPerMap || NearExisting(c)) return;
@@ -70,8 +71,8 @@ namespace Gesta
                 colonist = victim.Faction == Faction.OfPlayer,
                 victimName = victim.LabelShort,
                 victimFaction = victim.Faction?.Name,
-                killerName = ctx.killer.LabelShort,
-                weaponLabel = ctx.killer.equipment?.Primary?.def.label,
+                killerName = ctx.attributedKiller.LabelShort,
+                weaponLabel = ctx.attributedKiller.equipment?.Primary?.def.label,
                 deathTicksAbs = GenTicks.TicksAbs,
                 recordedTick = Find.TickManager.TicksGame,
             };
@@ -99,7 +100,7 @@ namespace Gesta
 
         public override void MapComponentTick()
         {
-            if (pending.Count == 0 || Find.TickManager.TicksGame % CheckInterval != 0) return;
+            if (!GestaMod.Settings.poppies || pending.Count == 0 || Find.TickManager.TicksGame % CheckInterval != 0) return;
             TryBloomAll(force: false);
         }
 
@@ -129,20 +130,27 @@ namespace Gesta
             }
         }
 
+        /// <summary>An empty cell first; failing that, one whose plant is worthless wild growth.</summary>
         IntVec3 FindBloomCell(IntVec3 origin, ThingDef def)
         {
             foreach (IntVec3 c in GenRadial.RadialCellsAround(origin, 2f, useCenter: true))
-                if (CanBloomAt(c, def)) return c;
+                if (CanBloomAt(c, def, allowClearing: false)) return c;
+            foreach (IntVec3 c in GenRadial.RadialCellsAround(origin, 2f, useCenter: true))
+                if (CanBloomAt(c, def, allowClearing: true)) return c;
             return IntVec3.Invalid;
         }
 
-        bool CanBloomAt(IntVec3 c, ThingDef def)
+        /// <summary>Grass and weeds: no harvest, auto-cuttable, not a tree, not sown. Anima grass, healroot,
+        /// ambrosia and berry bushes are never cleared.</summary>
+        static bool Clearable(Plant p) =>
+            !p.def.plant.IsTree && !p.sown && p.def.plant.allowAutoCut && p.def.plant.harvestedThingDef == null && !(p is Plant_Poppy);
+
+        bool CanBloomAt(IntVec3 c, ThingDef def, bool allowClearing)
         {
             if (!c.InBounds(map) || c.Roofed(map) || map.fertilityGrid.FertilityAt(c) < MinFertility) return false;
             if (c.GetEdifice(map) != null || c.GetZone(map) is Zone_Growing) return false;
             Plant existing = c.GetPlant(map);
-            if (existing != null && (existing.def.plant.IsTree || existing is Plant_Poppy || existing.def.plant.sowTags.Count > 0 && existing.sown))
-                return false;
+            if (existing != null && (!allowClearing || !Clearable(existing))) return false;
             List<Thing> things = c.GetThingList(map);
             for (int i = 0; i < things.Count; i++)
                 if (things[i].def.category == ThingCategory.Building || things[i].def.passability == Traversability.Impassable) return false;

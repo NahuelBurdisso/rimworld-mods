@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Ash Silhouettes: spawned by Gesta.AshMaker. Printed into the map mesh from a per-thing texture
+       (Gesta.AshSilhouette.Print); the graphicData below only gives the UI an icon. -->
+  <ThingDef>
+    <defName>Gesta_AshSilhouette</defName>
+    <label>ash silhouette</label>
+    <description>The shape of someone who died here, burned into the ground by the blast or the flames that killed them. It will not wash out. Only rebuilding the floor, or a long year of weather, will take it away.</description>
+    <thingClass>Gesta.AshSilhouette</thingClass>
+    <category>Ethereal</category>
+    <altitudeLayer>Filth</altitudeLayer>
+    <drawerType>MapMeshOnly</drawerType>
+    <tickerType>Long</tickerType>
+    <useHitPoints>false</useHitPoints>
+    <rotatable>false</rotatable>
+    <selectable>true</selectable>
+    <graphicData>
+      <texPath>Things/Gesta/Glow</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <color>(40, 32, 28)</color>
+    </graphicData>
+  </ThingDef>
+
+</Defs>
