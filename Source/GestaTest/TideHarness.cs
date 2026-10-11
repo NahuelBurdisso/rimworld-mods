@@ -41,10 +41,10 @@ namespace GestaTest
                     IntVec3 root = map.mapPawns.FreeColonistsSpawned.First().Position;
                     Faction mechFaction = Faction.OfMechanoids ?? Faction.OfPirates;
                     PawnKindDef kind = Faction.OfMechanoids != null ? PawnKindDef.Named("Mech_CentipedeGunner") : PawnKindDefOf.PirateBoss;
-                    for (int i = 0; i < 8; i++) mechs.Add(Kit.SpawnHostile(map, root + new IntVec3(35, 0, i * 2 - 8), kind, mechFaction));
+                    for (int i = 0; i < 8; i++) mechs.Add(SpawnVisible(map, root, kind, mechFaction));
                     // the colony's strength depends on the random colonists: add enemies until clearly outmatched
                     for (int i = 0; i < 24 && TideWatcher.Ratio(map) < TideWatcher.LosingRatio * 1.5f; i++)
-                        mechs.Add(Kit.SpawnHostile(map, root + new IntVec3(38, 0, i - 12), kind, mechFaction));
+                        mechs.Add(SpawnVisible(map, root, kind, mechFaction));
                     EngagementTracker.Instance.PollNow();
                     float ratio = TideWatcher.Ratio(map);
                     tide.Evaluate();
@@ -79,6 +79,20 @@ namespace GestaTest
                     Finish();
                     break;
             }
+        }
+
+        /// <summary>A hostile on an unfogged, standable cell 12-25 cells away (fogged pawns are no threat).</summary>
+        static Pawn SpawnVisible(Map map, IntVec3 root, PawnKindDef kind, Faction f)
+        {
+            IntVec3 cell = IntVec3.Invalid;
+            for (int i = 0; i < 60 && !cell.IsValid; i++)
+            {
+                IntVec3 c = root + new IntVec3(Rand.RangeInclusive(-25, 25), 0, Rand.RangeInclusive(-25, 25));
+                if (c.InBounds(map) && c.Standable(map) && !c.Fogged(map) && c.DistanceTo(root) >= 12f) cell = c;
+            }
+            Pawn p = Kit.SpawnHostile(map, cell.IsValid ? cell : root + new IntVec3(12, 0, 0), kind, f);
+            if (cell.IsValid) Kit.Teleport(p, cell);
+            return p;
         }
 
         SkyTarget Sky() => Traverse.Create(map.skyManager).Method("CurrentSkyTarget").GetValue<SkyTarget>();

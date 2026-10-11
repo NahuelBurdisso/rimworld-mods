@@ -53,7 +53,13 @@ namespace GestaTest
             // clear any hostiles left over from earlier harnesses
             foreach (Pawn p in map.mapPawns.AllPawnsSpawned.Where(p => p.HostileTo(Faction.OfPlayer) && !p.Downed).ToList()) p.Kill(null);
 
-            List<Pawn> small = Raid(map, 500f);
+            // some factions cannot form a group with few points: retry a bit higher, still under the threshold
+            List<Pawn> small = new List<Pawn>();
+            foreach (float pts in new[] { 500f, 650f, 800f, 950f })
+            {
+                small = Raid(map, pts);
+                if (small.Count > 0) break;
+            }
             Kit.Check(small.Count > 0, $"setup: small raid arrived ({small.Count})");
             Lord smallLord = small.FirstOrDefault()?.GetLord();
             Kit.Check(smallLord != null && kc.PointsOf(smallLord) > 0f && kc.PointsOf(smallLord) < 3000f,
