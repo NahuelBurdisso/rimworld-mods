@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <Gesta_Settings_LastStand>The Last One Standing</Gesta_Settings_LastStand>
+  <Gesta_Settings_Enabled>Enabled</Gesta_Settings_Enabled>
+  <Gesta_Settings_Camera>Move the camera to them</Gesta_Settings_Camera>
+  <Gesta_Settings_SlowDown>Drop to normal speed</Gesta_Settings_SlowDown>
+  <Gesta_Settings_Music>Fade the battle music to silence</Gesta_Settings_Music>
+  <Gesta_Settings_Vignette>Pulsing red screen edges</Gesta_Settings_Vignette>
+  <Gesta_LastStand_Caption>{0} stands alone.</Gesta_LastStand_Caption>
+  <Gesta_LastStand_Survived>{0} stood alone, and held.</Gesta_LastStand_Survived>
+</LanguageData>

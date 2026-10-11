@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- The Last One Standing: given by Gesta.LastStandTracker, lasts one in-game hour. -->
+  <HediffDef>
+    <defName>Gesta_LastStand</defName>
+    <label>last stand</label>
+    <description>Everyone else is down. There is no one left to fall back to, so there is no reason to fall back. Pain is distant, hands are steady, and fear can wait until later.\n\nWhen it wears off, exhaustion hits all at once.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.82, 0.32)</defaultLabelColor>
+    <isBad>false</isBad>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>2500~2500</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Gesta.HediffCompProperties_LastStandCrash">
+        <restAfter>0.15</restAfter>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <blocksMentalBreaks>true</blocksMentalBreaks>
+        <statOffsets>
+          <PainShockThreshold>0.5</PainShockThreshold>
+          <ShootingAccuracyPawn>5</ShootingAccuracyPawn>
+          <MeleeHitChance>0.2</MeleeHitChance>
+        </statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <ThoughtDef>
+    <defName>Gesta_StoodAlone</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>20</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>stood alone</label>
+        <description>Everyone else was down and I was still standing. I held. I don't know how, but I held.</description>
+        <baseMoodEffect>8</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <ThoughtDef>
+    <defName>Gesta_SavedByLastStand</defName>
+    <thoughtClass>Thought_MemorySocial</thoughtClass>
+    <durationDays>10</durationDays>
+    <stackLimit>3</stackLimit>
+    <stackLimitForSameOtherPawn>1</stackLimitForSameOtherPawn>
+    <stages>
+      <li>
+        <label>{0} stood over me</label>
+        <description>I was on the ground. The last thing I saw before passing out was them, still fighting, between me and the enemy.</description>
+        <baseMoodEffect>4</baseMoodEffect>
+        <baseOpinionOffset>15</baseOpinionOffset>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <TaleDef>
+    <defName>Gesta_StoodAloneTale</defName>
+    <label>stood alone</label>
+    <taleClass>Tale_SinglePawn</taleClass>
+    <type>PermanentHistorical</type>
+    <baseInterest>4</baseInterest>
+    <rulePack>
+      <rulesStrings>
+        <li>tale_noun->[PAWN_nameDef]'s last stand</li>
+        <li>image->[PAWN_nameFull] standing alone among fallen friends [circumstance_group]</li>
+        <li>image->[PAWN_nameFull] holding the line by [PAWN_objective]self [circumstance_group]</li>
+        <li>image->[PAWN_nameFull] facing a wave of attackers with no one beside [PAWN_objective] [circumstance_group]</li>
+        <li>circumstance_phrase->while the wounded lie behind [PAWN_objective]</li>
+        <li>circumstance_phrase->with the sky darkening overhead</li>
+        <li>circumstance_phrase->bleeding but unbowed</li>
+        <li>circumstance_phrase->as the enemy hesitates</li>
+        <li>desc_sentence->[PAWN_pronoun] looks exhausted, but [PAWN_possessive] eyes are calm.</li>
+        <li>desc_sentence->Bodies of attackers lie scattered in a circle around [PAWN_objective].</li>
+        <li>desc_sentence->Behind [PAWN_objective], [PAWN_possessive] friends are on the ground.</li>
+        <li>desc_sentence->The scene is rendered in harsh, dramatic strokes.</li>
+      </rulesStrings>
+    </rulePack>
+  </TaleDef>
+
+  <TaleDef>
+    <defName>Gesta_FellAloneTale</defName>
+    <label>fell alone</label>
+    <taleClass>Tale_SinglePawn</taleClass>
+    <type>PermanentHistorical</type>
+    <baseInterest>3</baseInterest>
+    <rulePack>
+      <rulesStrings>
+        <li>tale_noun->[PAWN_nameDef]'s final stand</li>
+        <li>image->[PAWN_nameFull] falling as the last defender [circumstance_group]</li>
+        <li>image->[PAWN_nameFull] fighting to the end, surrounded [circumstance_group]</li>
+        <li>circumstance_phrase->in front of [PAWN_possessive] fallen friends</li>
+        <li>circumstance_phrase->with [PAWN_possessive] weapon still raised</li>
+        <li>circumstance_phrase->as the last light fades</li>
+        <li>desc_sentence->[PAWN_pronoun] is alone, and [PAWN_pronoun] does not look afraid.</li>
+        <li>desc_sentence->The attackers keep their distance, even now.</li>
+        <li>desc_sentence->The work feels like a memorial.</li>
+      </rulesStrings>
+    </rulePack>
+  </TaleDef>
+
+</Defs>

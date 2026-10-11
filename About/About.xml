@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Gesta</name>
+  <packageId>nahuel.gesta</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+  </loadAfter>
+  <description>Combat that becomes legend.\n\nGesta turns the rare, decisive moments of a fight into something the colony remembers. Every feature can be switched off in the mod settings.\n\n&lt;b&gt;The Last One Standing&lt;/b&gt;\nWhen everyone else is down and a single colonist is still on their feet against a real attack, the game stops to watch them: the camera finds them, the battle music fades to silence, the screen edges pulse like a heartbeat and their name turns gold. They fight without pain or panic for an hour, then crash. If they hold, they never forget it, the friends they stood over remember it too, and the colony's artists will carve it.</description>
+</ModMetaData>
