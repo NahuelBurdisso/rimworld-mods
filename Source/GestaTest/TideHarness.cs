@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Gesta;
+using HarmonyLib;
+using UnityEngine;
 using RimWorld;
 using Verse;
 
@@ -44,26 +46,39 @@ namespace GestaTest
                     float ratio = TideWatcher.Ratio(map);
                     tide.Evaluate();
                     tide.Evaluate();
-                    Kit.Check(tide.Losing, $"a much stronger enemy counts as losing (ratio {ratio:0.0})");
+                    Kit.Check(!tide.Losing, $"outmatched but nobody down yet is not losing (ratio {ratio:0.0})");
+                    Pawn fallen = map.mapPawns.FreeColonistsSpawned.First(CombatUtil.IsFighter);
+                    Kit.Down(fallen);
+                    tide.Evaluate();
+                    tide.Evaluate();
+                    Kit.Check(tide.Losing, $"outmatched and bleeding counts as losing (ratio {TideWatcher.Ratio(map):0.0})");
                     break;
                 case 1950:
                     Kit.Check(tide.losingIntensity > 0.1f, $"the cold sky eases in ({tide.losingIntensity:0.00})");
-                    Kit.Check(tide.SkyEvent != null && map.weatherManager.eventHandler.LiveEventsListForReading.Contains(tide.SkyEvent), "a sky event is live");
-                    Kit.Check(tide.SkyEvent != null && tide.SkyEvent.SkyTargetLerpFactor > 0f && tide.SkyEvent.SkyTarget.colors.saturation < 1f,
-                        "it pulls the sky toward grey");
+                    SkyTarget withTide = Sky(), withoutTide;
+                    GestaMod.Settings.turningTide = false; withoutTide = Sky(); GestaMod.Settings.turningTide = true;
+                    Kit.Check(withTide.colors.saturation < withoutTide.colors.saturation - 0.1f,
+                        $"the sky loses colour ({withoutTide.colors.saturation:0.00} -> {withTide.colors.saturation:0.00})");
+                    Kit.Check(Mathf.Approximately(withTide.glow, withoutTide.glow), $"light level is untouched (glow {withTide.glow:0.000})");
                     foreach (Pawn m in mechs) if (!m.Dead) m.Kill(null);
                     EngagementTracker.Instance.PollNow();
                     tide.Evaluate();
-                    Kit.Check(tide.Gold, "winning a fight you were losing opens the gold sky");
+                    Kit.Check(tide.Gold && tide.hostilesFelled >= 4, $"bringing the enemy down after losing opens the gold sky ({tide.hostilesFelled} felled)");
                     break;
                 case 2150:
-                    Kit.Check(tide.SkyEvent != null && tide.SkyEvent.SkyTargetLerpFactor > 0.3f && tide.SkyEvent.SkyTarget.colors.saturation > 1f,
-                        $"the gold sky is strong and warm (lerp {tide.SkyEvent?.SkyTargetLerpFactor:0.00})");
+                    float f = tide.TintFactor(out bool gold);
+                    SkyTarget goldSky = Sky();
+                    GestaMod.Settings.turningTide = false; SkyTarget plain = Sky(); GestaMod.Settings.turningTide = true;
+                    Kit.Check(gold && f > 0.5f && goldSky.colors.saturation > plain.colors.saturation + 0.1f && goldSky.colors.sky.b < plain.colors.sky.b,
+                        $"the gold sky is strong and warm (tint {f:0.00}, saturation {plain.colors.saturation:0.00} -> {goldSky.colors.saturation:0.00})");
+                    Kit.Check(Mathf.Approximately(goldSky.glow, plain.glow), "gold does not brighten the light level");
                     Kit.Check(tide.losingIntensity == 0f, "the cold is gone");
                     Finish();
                     break;
             }
         }
+
+        SkyTarget Sky() => Traverse.Create(map.skyManager).Method("CurrentSkyTarget").GetValue<SkyTarget>();
 
         void Finish()
         {

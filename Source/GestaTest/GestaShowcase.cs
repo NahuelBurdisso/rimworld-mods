@@ -61,7 +61,20 @@ namespace GestaTest
         }
 
         readonly List<Pawn> mechs = new List<Pawn>();
-        int goldFrame = -1;
+        int goldFrame = -1, bloodFrame = -1;
+
+        void StageBlood()
+        {
+            var standing = map.mapPawns.FreeColonistsSpawned.Where(p => !p.Downed).Take(3).ToList();
+            float[] amounts = { 0.2f, 0.5f, 0.95f };
+            for (int i = 0; i < standing.Count; i++)
+            {
+                BloodStains.Add(standing[i], amounts[i]);
+                standing[i].jobs.StopAll();
+            }
+            if (standing.Count > 0) Find.CameraDriver.SetRootPosAndSize(standing[0].DrawPos, 5f);
+            Log.Message($"[Showcase] blood on {standing.Count} colonists");
+        }
 
         void StageTide()
         {
@@ -75,6 +88,8 @@ namespace GestaTest
                 m.equipment?.DestroyAllEquipment();
                 mechs.Add(m);
             }
+            var standing = map.mapPawns.FreeColonistsSpawned.Where(CombatUtil.IsFighter).ToList();
+            if (standing.Count >= 2) Kit.Down(standing.Last());   // the colony has to be losing people
             Find.CameraDriver.SetRootPosAndSize(witness.DrawPos, 16f);
             Log.Message("[Showcase] tide: enemies spawned");
         }
@@ -172,7 +187,14 @@ namespace GestaTest
                 ScreenCapture.CaptureScreenshot(Path.Combine(shotDir, "tide-2-gold.png"));
                 Log.Message("[Showcase] captured tide-2-gold");
             }
-            if ((goldFrame > 0 && framesSinceTrigger == goldFrame + 200) || framesSinceTrigger == 3500)
+            if ((goldFrame > 0 && framesSinceTrigger == goldFrame + 200) || framesSinceTrigger == 3500) bloodFrame = framesSinceTrigger;
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 1) StageBlood();
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 60)
+            {
+                ScreenCapture.CaptureScreenshot(Path.Combine(shotDir, "blood.png"));
+                Log.Message("[Showcase] captured blood");
+            }
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 100)
             {
                 Log.Message("[Showcase] done");
                 framesSinceTrigger = -1;
