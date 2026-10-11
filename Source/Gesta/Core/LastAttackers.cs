@@ -35,6 +35,7 @@ namespace Gesta
     {
         public static void Postfix(Pawn __instance, DamageInfo dinfo, float totalDamageDealt)
         {
+            BloodStains.Notify_Damage(__instance, dinfo, totalDamageDealt);
             if (totalDamageDealt <= 0f || !(dinfo.Instigator is Pawn attacker) || attacker == __instance) return;
             if (__instance.RaceProps == null || !__instance.RaceProps.Humanlike) return;
             LastAttackers.Record(__instance, attacker);

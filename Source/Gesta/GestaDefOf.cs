@@ -26,6 +26,8 @@ namespace Gesta
 
         public static ThingDef Gesta_AshSilhouette;
 
+        public static HediffDef Gesta_Bloodstained;
+
         static GestaDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(GestaDefOf)); }
     }
 }

@@ -175,3 +175,22 @@ simply normal.
 **Tests:** a quiet map has no hostile strength; 8 centipedes against the colony count as losing;
 the cold eases in and a live sky event pulls saturation down; killing them opens the gold sky with
 saturation above 1 and the cold gone.
+
+## Feature 6 — Blood-Stained (`blood-stained`)
+
+**Pitch:** after a fight you can tell who was in the thick of it: they come back covered in blood.
+
+**Accumulation** (Pawn.PostApplyDamage postfix): damage whose def `makesBlood`, to a red-blooded
+(`Filth_Blood`) pawn that can bleed, adds 0.012 × damage to the victim (if humanlike) and 0.009 ×
+damage to a humanlike attacker who struck from the adjacent cell with a non-ranged, non-explosive
+blow. Insects, mechanoids and races with other blood never stain anyone (v1: red only).
+**Hediff** `Gesta_Bloodstained` (visible, not bad, 0..1): speckled → spattered (0.35) → drenched
+(0.7). Fades 0.6/day awake, 1.8/day asleep.
+**Drawing:** the hediff's render nodes (body + head) use a copy of vanilla's firefoam overlay: a
+tiled splatter texture per stage, masked to the body/head graphic, drawn over apparel with the
+vanilla FirefoamOverlay shader. Fresh pawns only (not corpses). Stage changes clear the drawer
+cache and dirty the pawn's graphics.
+
+**Tests:** an adjacent cut stains attacker and victim; a distant shot stains only the target;
+cutting a mechanoid stains nobody; the hediff is visible and has render nodes; stages rise with
+more blood and cap at 1; it fades. Screenshot: splatter visible on body, clothes and face.

@@ -11,6 +11,7 @@ namespace Gesta
         public static void Postfix(Pawn ___pawn)
         {
             if (___pawn == null || !___pawn.Downed || !___pawn.Spawned) return;
+            if (___pawn.HostileTo(Faction.OfPlayer)) ___pawn.Map.GetComponent<TideWatcher>()?.Notify_HostileFell();
             if (___pawn.Faction != Faction.OfPlayer) return;
             LastStandTracker.Instance?.Notify_PawnDowned(___pawn);
             EngagementTracker.Instance?.QueueCheck(___pawn.Map);
@@ -79,6 +80,7 @@ namespace Gesta
             LastStandTracker.Instance?.Notify_PawnDied(__instance);
             FeatTracker.Instance?.Notify_Killed(__instance, __state);
             __state.map.GetComponent<PoppyField>()?.Notify_Killed(__instance, __state);
+            if (__state.victimWasHostile) __state.map.GetComponent<TideWatcher>()?.Notify_HostileFell();
             if (__instance.Faction == Faction.OfPlayer) EngagementTracker.Instance?.QueueCheck(__state.map);
         }
     }

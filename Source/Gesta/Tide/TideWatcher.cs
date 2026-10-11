@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -7,27 +8,28 @@ using Verse.AI;
 namespace Gesta
 {
     /// <summary>
-    /// Turning Tide: the sky goes cold and grey while the colony is losing a fight, and opens gold if
-    /// they turn it around. Drives a WeatherEvent (weather events may brighten the sky; game
-    /// conditions can only darken it). Nothing is saved. See DESIGN.md "Feature 5".
+    /// Turning Tide: the sky goes cold and grey while the colony is losing a fight (outmatched AND
+    /// already losing people), and warms to gold if they turn it around by bringing the enemy down.
+    /// The tint is applied to the colours of the final sky target only - glow (light levels, solar
+    /// power, darkness combat) is never touched, and night stays night. See DESIGN.md "Feature 5".
     /// </summary>
     public class TideWatcher : MapComponent
     {
-        public const float LosingRatio = 2f;      // hostile strength / colony strength
+        public const float LosingRatio = 2.5f;    // hostile strength / colony strength
         public const float TurnedRatio = 0.8f;
         const int CheckInterval = 250, ChecksToLose = 2;
-        public const int GoldTicks = 2500, GoldFadeTicks = 600;
+        public const int GoldTicks = 2500, GoldFadeTicks = 600, GoldRiseTicks = 180;
         const float EasePerTick = 1f / 300f;
 
         int losingChecks;
-        bool wasLosing;           // this engagement had a losing phase
-        public float losingIntensity;   // 0..1, eased
+        bool wasLosing;                  // this engagement had a losing phase
+        int hostilesAtLosing;            // active hostiles when the colony started losing
+        public int hostilesFelled;       // hostile pawns killed or downed since then
+        public float losingIntensity;    // 0..1, eased
         public int goldTicksLeft;
-        WeatherEvent_Tide sky;
 
         public bool Losing => losingChecks >= ChecksToLose;
         public bool Gold => goldTicksLeft > 0;
-        public WeatherEvent_Tide SkyEvent => sky;
 
         public TideWatcher(Map map) : base(map) { }
 
@@ -40,66 +42,81 @@ namespace Gesta
             }
             int now = Find.TickManager.TicksGame;
             if (now % CheckInterval == 0) Evaluate();
-            // while losing, notice the last enemy falling within a second instead of waiting for the engagement poll
-            else if (wasLosing && now % 60 == 0 && CombatUtil.ActiveHostilePawns(map) == 0 && CombatUtil.CountFighters(map) > 0)
-            {
-                StartGold();
-                losingChecks = 0;
-                wasLosing = false;
-            }
+            // while losing, notice the last enemy falling within a second instead of waiting for the poll
+            else if (wasLosing && now % 60 == 0 && CombatUtil.ActiveHostilePawns(map) == 0) TryTurn();
 
             float target = Losing && !Gold ? 1f : 0f;
             losingIntensity = Mathf.MoveTowards(losingIntensity, target, EasePerTick);
             if (goldTicksLeft > 0) goldTicksLeft--;
+        }
 
-            if ((losingIntensity > 0f || goldTicksLeft > 0) && !Suppressed()) EnsureSkyEvent();
+        /// <summary>Kill/down hooks: hostile pawns falling on this map.</summary>
+        public void Notify_HostileFell()
+        {
+            if (wasLosing) hostilesFelled++;
         }
 
         /// <summary>Public for tests.</summary>
         public void Evaluate()
         {
-            bool fight = EngagementTracker.Instance?.IsActive(map) == true;
-            if (!fight)
+            EngagementTracker.Engagement e = EngagementTracker.Instance?.Get(map);
+            if (e == null || !e.active)
             {
-                if (wasLosing && CombatUtil.CountFighters(map) > 0) StartGold();   // the fight ended with us standing
+                if (wasLosing) TryTurn();
                 losingChecks = 0;
                 wasLosing = false;
                 return;
             }
+            int fighters = CombatUtil.CountFighters(map);
             float ratio = Ratio(map);
-            if (ratio >= LosingRatio)
+            bool bleeding = fighters < e.maxFighters;   // someone already went down or died
+            if (ratio >= LosingRatio && bleeding)
             {
                 losingChecks++;
-                if (Losing) wasLosing = true;
+                if (Losing && !wasLosing)
+                {
+                    wasLosing = true;
+                    hostilesAtLosing = CombatUtil.ActiveHostilePawns(map);
+                    hostilesFelled = 0;
+                }
             }
             else
             {
-                if (wasLosing && ratio <= TurnedRatio)
-                {
-                    StartGold();
-                    wasLosing = false;
-                }
+                if (wasLosing && ratio <= TurnedRatio) TryTurn();
                 losingChecks = 0;
             }
         }
 
-        void StartGold()
+        /// <summary>
+        /// Gold only for a real turnaround: a fighter still standing and at least half of the enemy
+        /// present when the colony started losing brought down (not enemies walking off with loot).
+        /// </summary>
+        void TryTurn()
         {
+            bool earned = CombatUtil.CountFighters(map) > 0 && hostilesFelled >= Mathf.Max(1, (hostilesAtLosing + 1) / 2);
+            wasLosing = false;
+            losingChecks = 0;
+            if (!earned) return;
             goldTicksLeft = GoldTicks;
             losingIntensity = 0f;
-            Log.Message($"[Gesta] the tide turned on {map}");
+            Log.Message($"[Gesta] the tide turned on {map} ({hostilesFelled}/{hostilesAtLosing} enemies brought down)");
         }
 
-        bool Suppressed() =>
+        public bool Suppressed() =>
             map.Biome.disableSkyLighting
             || map.gameConditionManager.ConditionIsActive(GameConditionDefOf.Eclipse)
             || map.gameConditionManager.ConditionIsActive(GameConditionDefOf.Aurora);
 
-        void EnsureSkyEvent()
+        /// <summary>0..1 strength of the current tint and whether it is gold.</summary>
+        public float TintFactor(out bool gold)
         {
-            if (sky != null && !sky.Expired && map.weatherManager.eventHandler.LiveEventsListForReading.Contains(sky)) return;
-            sky = new WeatherEvent_Tide(map, this);
-            map.weatherManager.eventHandler.AddEvent(sky);
+            gold = Gold;
+            if (gold)
+            {
+                int left = goldTicksLeft, elapsed = GoldTicks - left;
+                return Mathf.Min(1f, elapsed / (float)GoldRiseTicks) * Mathf.Min(1f, left / (float)GoldFadeTicks);
+            }
+            return losingIntensity;
         }
 
         /// <summary>Hostile strength over colony strength, both weighted by health.</summary>
@@ -125,46 +142,32 @@ namespace Gesta
         }
     }
 
-    /// <summary>Cold steel-blue while losing, warm gold after a turned fight. Glow follows the current sky so lighting gameplay does not change.</summary>
-    public class WeatherEvent_Tide : WeatherEvent
+    /// <summary>
+    /// SkyManager.CurrentSkyTarget() (private): after vanilla has blended weather, conditions, events
+    /// and sky comps, tint only the colours - multiplicatively, so night stays dark. Glow and shine
+    /// are left exactly as vanilla computed them.
+    /// </summary>
+    [HarmonyPatch(typeof(SkyManager), "CurrentSkyTarget")]
+    public static class Patch_SkyManager_CurrentSkyTarget
     {
-        static readonly SkyColorSet ColdColors = new SkyColorSet(
-            new Color(0.56f, 0.63f, 0.78f), new Color(0.38f, 0.43f, 0.58f), new Color(0.6f, 0.66f, 0.8f), 0.25f);
-        static readonly SkyColorSet GoldColors = new SkyColorSet(
-            new Color(1f, 0.86f, 0.6f), new Color(0.82f, 0.68f, 0.5f), new Color(1f, 0.9f, 0.72f), 1.4f);
-        const float MaxColdLerp = 0.8f, MaxGoldLerp = 0.7f;
+        static readonly Color ColdTint = new Color(0.82f, 0.9f, 1.12f);
+        static readonly Color GoldTint = new Color(1.18f, 1.0f, 0.72f);
+        const float ColdSaturation = 0.25f, GoldSaturation = 1.45f;
 
-        readonly TideWatcher watcher;
-
-        public WeatherEvent_Tide(Map map, TideWatcher watcher) : base(map) { this.watcher = watcher; }
-
-        public override bool Expired => watcher.losingIntensity <= 0f && watcher.goldTicksLeft <= 0;
-
-        public override SkyTarget SkyTarget
+        public static void Postfix(Map ___map, ref SkyTarget __result)
         {
-            get
-            {
-                float glow = map.skyManager.CurSkyGlow;
-                return new SkyTarget(glow, watcher.Gold ? GoldColors : ColdColors, 1f, 1f);
-            }
+            if (___map == null || !GestaMod.Settings.turningTide) return;
+            TideWatcher tide = ___map.GetComponent<TideWatcher>();
+            if (tide == null) return;
+            float f = tide.TintFactor(out bool gold);
+            if (f <= 0f || tide.Suppressed()) return;
+            Color tint = gold ? GoldTint : ColdTint;
+            SkyColorSet c = __result.colors;
+            c.sky = Color.Lerp(c.sky, c.sky * tint, f);
+            c.shadow = Color.Lerp(c.shadow, c.shadow * tint, f);
+            c.overlay = Color.Lerp(c.overlay, c.overlay * tint, f);
+            c.saturation = Mathf.Lerp(c.saturation, gold ? GoldSaturation : ColdSaturation, f);
+            __result.colors = c;
         }
-
-        public override float SkyTargetLerpFactor
-        {
-            get
-            {
-                if (watcher.Gold)
-                {
-                    int left = watcher.goldTicksLeft, elapsed = TideWatcher.GoldTicks - left;
-                    float fade = Mathf.Min(1f, elapsed / 180f) * Mathf.Min(1f, left / (float)TideWatcher.GoldFadeTicks);
-                    return MaxGoldLerp * fade;
-                }
-                return MaxColdLerp * watcher.losingIntensity;
-            }
-        }
-
-        public override void FireEvent() { }
-
-        public override void WeatherEventTick() { }
     }
 }

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Blood-Stained: added by Gesta.BloodStains from damage; drawn like vanilla firefoam
+       (Gesta.PawnRenderNodeWorker_Blood + Gesta.PawnBloodDrawer), fades with time and sleep. -->
+  <HediffDef>
+    <defName>Gesta_Bloodstained</defName>
+    <label>blood-stained</label>
+    <description>Covered in blood from the last fight, some of it their own, some of it not. It washes off with time, faster with sleep.</description>
+    <hediffClass>Gesta.Hediff_Bloodstained</hediffClass>
+    <defaultLabelColor>(0.7, 0.2, 0.2)</defaultLabelColor>
+    <isBad>false</isBad>
+    <initialSeverity>0.1</initialSeverity>
+    <minSeverity>0</minSeverity>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_SeverityPerDay">
+        <compClass>Gesta.HediffComp_BloodFades</compClass>
+        <severityPerDay>-0.6</severityPerDay>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <label>speckled</label>
+      </li>
+      <li>
+        <minSeverity>0.35</minSeverity>
+        <label>spattered</label>
+      </li>
+      <li>
+        <minSeverity>0.7</minSeverity>
+        <label>drenched</label>
+      </li>
+    </stages>
+    <renderNodeProperties>
+      <li Class="PawnRenderNodeProperties_Overlay">
+        <debugLabel>Gesta blood (body)</debugLabel>
+        <workerClass>Gesta.PawnRenderNodeWorker_Blood</workerClass>
+        <parentTagDef>Body</parentTagDef>
+        <overlayLayer>Body</overlayLayer>
+        <baseLayer>39</baseLayer>
+      </li>
+      <li Class="PawnRenderNodeProperties_Overlay">
+        <debugLabel>Gesta blood (head)</debugLabel>
+        <workerClass>Gesta.PawnRenderNodeWorker_Blood</workerClass>
+        <parentTagDef>Head</parentTagDef>
+        <overlayLayer>Head</overlayLayer>
+        <baseLayer>84</baseLayer>
+      </li>
+    </renderNodeProperties>
+  </HediffDef>
+
+</Defs>

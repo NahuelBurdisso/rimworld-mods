@@ -18,6 +18,7 @@
   <Gesta_Ash_InspectBlast>Here {0} was caught in the blast, {1}.</Gesta_Ash_InspectBlast>
   <Gesta_Ash_InspectFire>Here {0} burned, {1}.</Gesta_Ash_InspectFire>
   <Gesta_Settings_Tide>Turning Tide (the sky follows the fight)</Gesta_Settings_Tide>
+  <Gesta_Settings_Blood>Blood-Stained (blood on those who fought up close)</Gesta_Settings_Blood>
   <Gesta_LastStand_Caption>{0} stands alone.</Gesta_LastStand_Caption>
   <Gesta_LastStand_Survived>{0} stood alone, and held.</Gesta_LastStand_Survived>
 </LanguageData>
