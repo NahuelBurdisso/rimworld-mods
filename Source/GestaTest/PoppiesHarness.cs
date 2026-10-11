@@ -75,7 +75,40 @@ namespace GestaTest
             killer.Kill(null);
             Kit.Check(field.Pending.Count == countBefore, "a death without a killer is not a battlefield");
 
+            // an execution is not a battle
+            IntVec3 execCell = FertileCell(map, root, cell, enemyCell);
+            if (execCell.IsValid)
+            {
+                Pawn prisoner = Kit.SpawnHostile(map, execCell);
+                Kit.Teleport(prisoner, execCell);
+                prisoner.Kill(new DamageInfo(DamageDefOf.ExecutionCut, 999f, 0f, -1f, mourner));
+                Kit.Check(field.Pending.All(m => m.cell != execCell), "an execution grows no poppy");
+            }
+
+            // bleeding out after being shot: no DamageInfo at death, the last attacker is remembered
+            IntVec3 bleedCell = FertileCell(map, root, cell, enemyCell, execCell);
+            if (bleedCell.IsValid)
+            {
+                Pawn bleeder = Kit.SpawnHostile(map, bleedCell);
+                Kit.Teleport(bleeder, bleedCell);
+                bleeder.TakeDamage(new DamageInfo(DamageDefOf.Bullet, 1f, 0f, -1f, mourner));
+                bleeder.Kill(null);
+                PoppyMemory bleedMem = field.Pending.FirstOrDefault(m => m.cell == bleedCell);
+                Kit.Check(bleedMem != null && bleedMem.killerName == mourner.LabelShort, "a raider who bleeds out still gets a poppy naming who shot them");
+            }
+
+            // a valuable wild plant on the death cell is never cleared
+            ThingDef healroot = DefDatabase<ThingDef>.GetNamedSilentFail("Plant_HealrootWild");
+            Plant herb = null;
+            if (healroot != null)
+            {
+                foreach (IntVec3 c in GenRadial.RadialCellsAround(cell, 2f, true))
+                    if (c.InBounds(map)) c.GetPlant(map)?.Destroy();
+                herb = (Plant)GenSpawn.Spawn(healroot, cell, map);
+            }
+
             field.TryBloomAll(force: true);
+            if (herb != null) Kit.Check(!herb.Destroyed, "blooming does not destroy a wild healroot");
             Plant_Poppy red = GenRadial.RadialCellsAround(cell, 2f, true).Select(c => c.GetPlant(map)).OfType<Plant_Poppy>().FirstOrDefault();
             Kit.Check(red != null && red.def == GestaDefOf.Gesta_PoppyRed, "a red poppy blooms where the colonist fell");
             Kit.Check(red != null && red.LabelNoCount.Contains(victim.LabelShort), $"its label names the fallen ({red?.LabelNoCount})");
@@ -95,17 +128,23 @@ namespace GestaTest
             }
         }
 
-        static IntVec3 FertileCell(Map map, IntVec3 root, IntVec3 awayFrom)
+        static IntVec3 FertileCell(Map map, IntVec3 root, params IntVec3[] awayFromAll)
         {
             foreach (IntVec3 c in GenRadial.RadialCellsAround(root, 40f, false))
             {
-                if (!c.InBounds(map) || !c.Standable(map) || c.Roofed(map) || map.fertilityGrid.FertilityAt(c) < 0.9f) continue;
-                if (c.GetEdifice(map) != null || c.GetZone(map) != null || c.GetPlant(map)?.def.plant.IsTree == true) continue;
-                if (awayFrom.IsValid && c.InHorDistOf(awayFrom, 8f)) continue;
-                if (!(c + IntVec3.East).InBounds(map) || (c + IntVec3.East).Roofed(map)) continue;
-                return c;
+                if (awayFromAll.Any(a => a.IsValid && c.InHorDistOf(a, 8f))) continue;
+                IntVec3 found = FertileCellAt(map, c);
+                if (found.IsValid) return found;
             }
             return IntVec3.Invalid;
+        }
+
+        static IntVec3 FertileCellAt(Map map, IntVec3 c)
+        {
+            if (!c.InBounds(map) || !c.Standable(map) || c.Roofed(map) || map.fertilityGrid.FertilityAt(c) < 0.9f) return IntVec3.Invalid;
+            if (c.GetEdifice(map) != null || c.GetZone(map) != null || c.GetPlant(map)?.def.plant.IsTree == true) return IntVec3.Invalid;
+            if (!(c + IntVec3.East).InBounds(map) || (c + IntVec3.East).Roofed(map)) return IntVec3.Invalid;
+            return c;
         }
 
         static Pawn NewColonist(Map map, IntVec3 at)

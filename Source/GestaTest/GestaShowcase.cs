@@ -18,7 +18,7 @@ namespace GestaTest
         bool active, started;
         int ticks;
         int framesSinceTrigger = -1;
-        readonly List<(int frame, string name)> shots = new List<(int, string)> { (45, "laststand-1-caption"), (260, "laststand-2-vignette"), (440, "feat-1-beam"), (500, "feat-2-fading"), (660, "poppies") };
+        readonly List<(int frame, string name)> shots = new List<(int, string)> { (45, "laststand-1-caption"), (260, "laststand-2-vignette"), (440, "feat-1-beam"), (500, "feat-2-fading"), (660, "poppies"), (800, "ash") };
         string shotDir;
         Map map;
         readonly List<Pawn> hostiles = new List<Pawn>();
@@ -58,6 +58,27 @@ namespace GestaTest
             EngagementTracker.Instance.PollNow();
             framesSinceTrigger = 0;
             Log.Message($"[Showcase] hero {hero.LabelShort}, last stand active: {LastStandTracker.ActiveHero != null}");
+        }
+
+        void StageAsh()
+        {
+            Pawn witness = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p => !p.Downed);
+            if (witness == null) return;
+            IntVec3 centre = witness.Position + new IntVec3(0, 0, 6);
+            var offsets = new[] { new IntVec3(-2, 0, 0), new IntVec3(1, 0, 1), new IntVec3(3, 0, -1) };
+            foreach (IntVec3 o in offsets)
+            {
+                IntVec3 c = CellFinder.StandableCellNear(centre + o, map, 2f);
+                if (!c.IsValid) continue;
+                Pawn h = Kit.SpawnHostile(map, c);
+                Kit.Teleport(h, c);
+                Kit.KillBy(h, witness, DamageDefOf.Bomb);
+            }
+            foreach (Thing t in map.listerThings.ThingsInGroup(ThingRequestGroup.Corpse).ToList()) t.Destroy();
+            foreach (Thing t in map.listerThings.ThingsInGroup(ThingRequestGroup.Weapon).ToList()) if (t.Position.InHorDistOf(centre, 6f)) t.Destroy();
+            foreach (Thing t in map.listerThings.ThingsInGroup(ThingRequestGroup.Apparel).ToList()) if (t.Position.InHorDistOf(centre, 6f)) t.Destroy();
+            Find.CameraDriver.SetRootPosAndSize(centre.ToVector3Shifted(), 8f);
+            Log.Message($"[Showcase] ash marks: {map.listerThings.ThingsOfDef(GestaDefOf.Gesta_AshSilhouette).Count}");
         }
 
         void StagePoppies()
@@ -117,7 +138,8 @@ namespace GestaTest
                 }
             }
             if (framesSinceTrigger == 560) StagePoppies();
-            if (framesSinceTrigger == 720)
+            if (framesSinceTrigger == 720) StageAsh();
+            if (framesSinceTrigger == 880)
             {
                 Log.Message("[Showcase] done");
                 framesSinceTrigger = -1;
