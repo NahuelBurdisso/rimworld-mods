@@ -189,3 +189,21 @@ Harness robustness (after the first in-game run):
   harness waited forever. The raid helper restores the speed right after `TryExecute`, and a
   `HarnessWatchdog` GameComponent (GameComponentUpdate runs while paused) resumes the game while any
   harness is unfinished. Every wait has a timeout that logs a FAIL.
+
+## Review fixes (after the in-game runs)
+
+1. **Drop-pod raids** (Spared.cs `Notify_RaidSpawned`/`JoinRaid`): `PostProcessSpawnedPawns` runs after
+   `Arrive`; on pod raids the raiders are still in incoming pods (`pawns[0]` not spawned). He then comes
+   the same way, `DropPodUtility.DropThingsNear(parms.spawnCenter, ...)` (MakeDropPodAt removes him from
+   the world pawns); with no valid spawnCenter he sits that raid out without a roll.
+2. **Manhunter packs** (Beasts.cs): scaria animals are never marked; at most one Marked beast per map per
+   day (a later attacker replaces it only if its tallied damage to colonists is higher; the tally is not
+   saved and resets every 2500 ticks); a beast returns at most `BeastMaxReturns` = 2 times, after that
+   leaving alive drops the record and unpins it; the queued incident is no longer `forced`, so the
+   storyteller guards (difficulty, scenario, game conditions, game ending) apply; it retries for a day
+   and the cleanup pass re-queues it a day later if it is overdue.
+3. **Hidden / non-humanlike factions** never give nicknames (ancients, entities, shamblers).
+4. **Spared records expire** (Away stage): his faction defeated, not hostile for 30 days in a row
+   (`notHostileSinceTick`, saved), or 2 in-game years since the capture -> record dropped, unpinned.
+5. **Friendly raids** (military aid, reinforcements) never bring him: `parms.faction.HostileTo(player)`.
+6. **Load**: a spared record dropped on load because its captor is gone unpins the pawn first.

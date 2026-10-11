@@ -75,6 +75,12 @@ namespace OldScores
         {
             if (!OldScoresMod.Settings.spared || spared.Count == 0 || pawns == null) return;
             if (!(parms.target is Map map) || !map.IsPlayerHome || parms.faction == null || parms.faction.IsPlayer) return;
+            // PostProcessSpawnedPawns also runs for friendly raids (military aid / reinforcements)
+            if (!parms.faction.HostileTo(Faction.OfPlayer)) return;
+            // drop-pod raids: the raiders are still falling in pods; he must come by pod near the same
+            // centre, so without a valid centre he sits this raid out (no roll)
+            bool podRaid = pawns.Count > 0 && !pawns[0].Spawned;
+            if (podRaid && (!parms.spawnCenter.IsValid || !parms.spawnCenter.InBounds(map))) return;
             int now = Find.TickManager.TicksGame;
             for (int i = 0; i < spared.Count; i++)
             {
@@ -84,21 +90,29 @@ namespace OldScores
                 if (p.Faction != parms.faction || now - rec.leftTick < OldScoresTuning.SparedMinTicksAway) continue;
                 if (rec.rescuer == null || rec.rescuer.Dead || !rec.rescuer.Spawned || rec.rescuer.Map != map) continue;
                 if (!Rand.Chance(OldScoresTuning.SparedReturnChance)) return;   // one roll per raid
-                JoinRaid(rec, parms, pawns, map);
+                JoinRaid(rec, parms, pawns, map, podRaid);
                 return;
             }
         }
 
-        static void JoinRaid(SparedRecord rec, IncidentParms parms, List<Pawn> pawns, Map map)
+        static void JoinRaid(SparedRecord rec, IncidentParms parms, List<Pawn> pawns, Map map, bool podRaid)
         {
             Pawn p = rec.pawn;
-            IntVec3 center = parms.spawnCenter;
-            if (!center.IsValid || !center.InBounds(map))
-                center = pawns.Count > 0 && pawns[0].Spawned ? pawns[0].Position : CellFinder.RandomEdgeCell(map);
-            IntVec3 cell = CellFinder.RandomClosewalkCellNear(center, map, 6);
-            GenSpawn.Spawn(p, cell, map, parms.spawnRotation);
             if (p.equipment != null && p.equipment.Primary == null)
                 PawnWeaponGenerator.TryGenerateWeaponFor(p, new PawnGenerationRequest(p.kindDef, p.Faction));
+            if (podRaid)
+            {
+                // same as the others: a pod near the raid's drop centre (MakeDropPodAt takes him out of the world)
+                DropPodUtility.DropThingsNear(parms.spawnCenter, map, new Thing[] { p }, forbid: false, faction: parms.faction);
+            }
+            else
+            {
+                IntVec3 center = parms.spawnCenter;
+                if (!center.IsValid || !center.InBounds(map))
+                    center = pawns.Count > 0 && pawns[0].Spawned ? pawns[0].Position : CellFinder.RandomEdgeCell(map);
+                IntVec3 cell = CellFinder.RandomClosewalkCellNear(center, map, 6);
+                GenSpawn.Spawn(p, cell, map, parms.spawnRotation);
+            }
             pawns.Add(p);
             if (parms.pawnGroups != null)
             {
@@ -107,7 +121,7 @@ namespace OldScores
                 parms.pawnGroups[p] = group;
             }
             rec.stage = SparedStage.Returned;
-            Log.Message($"[Old Scores] {p.LabelShort} came back with the {p.Faction.Name} raid");
+            Log.Message($"[Old Scores] {p.LabelShort} came back with the {p.Faction.Name} raid{(podRaid ? " (drop pod)" : "")}");
         }
 
         /// <summary>Every 30 ticks from the map component.</summary>
@@ -154,6 +168,17 @@ namespace OldScores
                 Pawn p = rec.pawn;
                 bool gone = p == null || p.Dead || p.Discarded || p.Faction == null || p.Faction.IsPlayer || p.IsSlave
                             || rec.rescuer == null || rec.rescuer.Dead || rec.rescuer.Discarded || rec.rescuer.Faction != Faction.OfPlayer;
+                if (!gone && rec.stage == SparedStage.Away)
+                {
+                    // old scores fade: his faction is gone, has been at peace with us for a long while, or
+                    // it has simply been too long
+                    int now = Find.TickManager.TicksGame;
+                    if (p.Faction.HostileTo(Faction.OfPlayer)) rec.notHostileSinceTick = -1;
+                    else if (rec.notHostileSinceTick < 0) rec.notHostileSinceTick = now;
+                    gone = p.Faction.defeated
+                           || now - rec.capturedTick > OldScoresTuning.SparedForgetTicks
+                           || (rec.notHostileSinceTick >= 0 && now - rec.notHostileSinceTick > OldScoresTuning.SparedPeaceForgetTicks);
+                }
                 if (!gone) continue;
                 spared.RemoveAt(i);
                 Unpin(p);

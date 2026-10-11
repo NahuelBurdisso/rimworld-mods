@@ -62,11 +62,15 @@ namespace OldScores
         public static int SparedMinTicksAway = 3 * GenDate.TicksPerDay;
         public static float SparedReturnChance = 0.35f;
         public static float SparedRecognizeRadius = 12f;
+        public static int SparedForgetTicks = 2 * GenDate.TicksPerYear;
+        public static int SparedPeaceForgetTicks = 30 * GenDate.TicksPerDay;
 
         // The Beast That Came Back
         public static float BeastMinDamage = 10f;
         public static IntRange BeastReturnDelay = new IntRange(GenDate.TicksPerQuadrum, 2 * GenDate.TicksPerQuadrum);
         public static IntRange BeastStayTicks = new IntRange(GenDate.TicksPerDay, 2 * GenDate.TicksPerDay);
+        public static int BeastMaxReturns = 2;
+        public static int BeastOnePerMapTicks = GenDate.TicksPerDay;
 
         public const int CleanupInterval = 2500;
     }

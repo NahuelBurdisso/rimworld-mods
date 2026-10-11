@@ -99,6 +99,9 @@ namespace OldScores
                 beasts ??= new List<BeastRecord>();
                 // references to pawns/factions that no longer exist load as null
                 nicknames.RemoveAll(r => r == null || r.faction == null);
+                // a spared pawn whose captor did not survive the load stays pinned unless unpinned here
+                foreach (SparedRecord r in spared)
+                    if (r != null && r.pawn != null && r.rescuer == null && Find.World?.worldPawns != null) Unpin(r.pawn);
                 spared.RemoveAll(r => r == null || r.pawn == null || r.rescuer == null);
                 beasts.RemoveAll(r => r == null || r.beast == null);
             }
@@ -149,10 +152,12 @@ namespace OldScores
         public SparedStage stage;
         public int capturedTick;
         public int leftTick = -1;
+        public int notHostileSinceTick = -1;
 
         public void ExposeData()
         {
             Scribe_References.Look(ref pawn, "pawn");
+            Scribe_Values.Look(ref notHostileSinceTick, "notHostileSinceTick", -1);
             Scribe_References.Look(ref rescuer, "rescuer");
             Scribe_Values.Look(ref stage, "stage");
             Scribe_Values.Look(ref capturedTick, "capturedTick");
@@ -173,6 +178,10 @@ namespace OldScores
         public Vector2 firstBloodLongLat;
         public BeastStage stage;
         public int fireTick = -1;
+        public int returns;
+        public float damageDealt;
+        public int markMapId = -1;
+        public int markedTick = -1;
 
         public string VictimList => victimNames.ToCommaList(useAnd: true);
 
@@ -187,6 +196,10 @@ namespace OldScores
             Scribe_Values.Look(ref firstBloodLongLat, "firstBloodLongLat");
             Scribe_Values.Look(ref stage, "stage");
             Scribe_Values.Look(ref fireTick, "fireTick", -1);
+            Scribe_Values.Look(ref returns, "returns");
+            Scribe_Values.Look(ref damageDealt, "damageDealt");
+            Scribe_Values.Look(ref markMapId, "markMapId", -1);
+            Scribe_Values.Look(ref markedTick, "markedTick", -1);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 victimNames ??= new List<string>();

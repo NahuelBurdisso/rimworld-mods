@@ -12,6 +12,7 @@ namespace OldScores
     {
         public static readonly Color GrudgeRed = new Color(1f, 0.32f, 0.28f);
         static readonly List<Hediff> tmpHediffs = new List<Hediff>();
+        readonly Dictionary<int, float> damageByAnimal = new Dictionary<int, float>();
 
         public BeastRecord GetBeast(Pawn p)
         {
@@ -25,21 +26,49 @@ namespace OldScores
             if (!OldScoresMod.Settings.beasts) return;
             if (!(dinfo.Instigator is Pawn beast) || beast == victim || beast.Dead || !beast.RaceProps.Animal || beast.Faction != null) return;
             if (!victim.IsColonist) return;
+            // scaria animals are a manhunter pack's doomed members, not a beast with a memory
+            if (beast.health.hediffSet.HasHediff(HediffDefOf.Scaria)) return;
+
+            // running tally of what this animal did to colonists (not saved: it only decides who of a
+            // day's attackers is the one that is remembered)
+            int id = beast.thingIDNumber;
+            damageByAnimal.TryGetValue(id, out float tally);
+            tally += totalDamageDealt;
+            damageByAnimal[id] = tally;
             if (totalDamageDealt < OldScoresTuning.BeastMinDamage && !victim.Downed && !victim.Dead) return;
 
             BeastRecord rec = GetBeast(beast);
+            Map map = beast.MapHeld;
+            int now = Find.TickManager.TicksGame;
             if (rec == null)
             {
+                // one beast per map per day: a pack or a second animal only replaces the remembered one
+                // if it did more harm
+                BeastRecord rival = null;
+                for (int i = 0; i < beasts.Count; i++)
+                {
+                    BeastRecord r = beasts[i];
+                    if (r.stage == BeastStage.Marked && map != null && r.markMapId == map.uniqueID && now - r.markedTick < OldScoresTuning.BeastOnePerMapTicks)
+                    { rival = r; break; }
+                }
+                if (rival != null)
+                {
+                    if (tally <= rival.damageDealt) return;
+                    beasts.Remove(rival);
+                }
                 rec = new BeastRecord
                 {
                     beast = beast,
                     stage = BeastStage.Marked,
                     kindLabel = beast.KindLabel,
                     firstBloodTickAbs = Find.TickManager.TicksAbs,
-                    firstBloodLongLat = beast.MapHeld != null ? Find.WorldGrid.LongLatOf(beast.MapHeld.Tile) : Vector2.zero,
+                    firstBloodLongLat = map != null ? Find.WorldGrid.LongLatOf(map.Tile) : Vector2.zero,
+                    markMapId = map?.uniqueID ?? -1,
+                    markedTick = now,
                 };
                 beasts.Add(rec);
             }
+            rec.damageDealt = tally;
             if (!rec.victimIds.Contains(victim.thingIDNumber))
             {
                 rec.victimIds.Add(victim.thingIDNumber);
@@ -58,6 +87,14 @@ namespace OldScores
                 return;
             }
             if (beast.Dead || beast.Spawned || !beast.IsWorldPawn()) return;
+            if (rec.returns >= OldScoresTuning.BeastMaxReturns)
+            {
+                // it came back twice and lived: it has had enough of this place and stays away for good
+                beasts.Remove(rec);
+                Unpin(beast);
+                Log.Message($"[Old Scores] {rec.nickname} left for good after {rec.returns} returns");
+                return;
+            }
             if (rec.stage == BeastStage.Marked)
             {
                 if (beast.Name == null)
@@ -108,7 +145,9 @@ namespace OldScores
             rec.fireTick = Find.TickManager.TicksGame + delay;
             Map target = preferred != null && preferred.IsPlayerHome ? preferred : Find.AnyPlayerHomeMap;
             if (target == null) return;   // re-queued by the cleanup pass once there is a home again
-            var parms = new IncidentParms { target = target, forced = true };
+            // not forced: the storyteller's guards (difficulty, scenario, game conditions, game ending)
+            // apply; a refused firing retries for a day, and the cleanup pass re-queues it after that
+            var parms = new IncidentParms { target = target };
             Find.Storyteller.incidentQueue.Add(OldScoresDefOf.OldScores_BeastReturns, rec.fireTick, parms, GenDate.TicksPerDay);
         }
 
@@ -146,6 +185,7 @@ namespace OldScores
             beast.mindState.exitMapAfterTick = Find.TickManager.TicksGame + OldScoresTuning.BeastStayTicks.RandomInRange;
             rec.stage = BeastStage.Returned;
             rec.fireTick = -1;
+            rec.returns++;
             Log.Message($"[Old Scores] {beast.LabelShort} came back to {map}");
             return beast;
         }
@@ -183,6 +223,7 @@ namespace OldScores
 
         void CleanupBeasts()
         {
+            damageByAnimal.Clear();   // the tally only has to cover one fight
             int now = Find.TickManager.TicksGame;
             int queued = 0, away = 0;
             foreach (object o in Find.Storyteller.incidentQueue)

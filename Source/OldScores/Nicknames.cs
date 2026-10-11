@@ -35,6 +35,8 @@ namespace OldScores
             if (killer == null || killer.Dead || !killer.IsFreeNonSlaveColonist || killer.IsQuestLodger()) return;
             Faction faction = ctx.victimFaction;
             if (!ctx.victimHumanlike || faction == null || faction.IsPlayer || !ctx.victimHostile || ctx.victimDowned) return;
+            // hidden factions (ancients, entities, shamblers) and non-human ones give no names
+            if (faction.Hidden || !faction.def.humanlikeFaction) return;
 
             NicknameRecord rec = GetNickname(killer, faction);
             if (rec == null)
