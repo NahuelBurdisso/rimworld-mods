@@ -42,6 +42,9 @@ namespace GestaTest
                     Faction mechFaction = Faction.OfMechanoids ?? Faction.OfPirates;
                     PawnKindDef kind = Faction.OfMechanoids != null ? PawnKindDef.Named("Mech_CentipedeGunner") : PawnKindDefOf.PirateBoss;
                     for (int i = 0; i < 8; i++) mechs.Add(Kit.SpawnHostile(map, root + new IntVec3(35, 0, i * 2 - 8), kind, mechFaction));
+                    // the colony's strength depends on the random colonists: add enemies until clearly outmatched
+                    for (int i = 0; i < 24 && TideWatcher.Ratio(map) < TideWatcher.LosingRatio * 1.5f; i++)
+                        mechs.Add(Kit.SpawnHostile(map, root + new IntVec3(38, 0, i - 12), kind, mechFaction));
                     EngagementTracker.Instance.PollNow();
                     float ratio = TideWatcher.Ratio(map);
                     tide.Evaluate();
@@ -63,7 +66,7 @@ namespace GestaTest
                     foreach (Pawn m in mechs) if (!m.Dead) m.Kill(null);
                     EngagementTracker.Instance.PollNow();
                     tide.Evaluate();
-                    Kit.Check(tide.Gold && tide.hostilesFelled >= 4, $"bringing the enemy down after losing opens the gold sky ({tide.hostilesFelled} felled)");
+                    Kit.Check(tide.Gold && tide.hostilesFelled >= mechs.Count / 2, $"bringing the enemy down after losing opens the gold sky ({tide.hostilesFelled} felled)");
                     break;
                 case 2150:
                     float f = tide.TintFactor(out bool gold);

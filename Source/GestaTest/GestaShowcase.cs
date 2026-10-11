@@ -63,6 +63,20 @@ namespace GestaTest
         readonly List<Pawn> mechs = new List<Pawn>();
         int goldFrame = -1, bloodFrame = -1;
 
+        void StageBrothers()
+        {
+            Pawn anchor = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p => !p.Downed) ?? map.mapPawns.FreeColonistsSpawned.First();
+            IntVec3 spot = CellFinder.StandableCellNear(anchor.Position + new IntVec3(3, 0, 3), map, 4f);
+            Pawn a = PawnGenerator.GeneratePawn(PawnKindDefOf.Colonist, Faction.OfPlayer);
+            Pawn b = PawnGenerator.GeneratePawn(PawnKindDefOf.Colonist, Faction.OfPlayer);
+            GenSpawn.Spawn(a, spot, map);
+            GenSpawn.Spawn(b, spot + IntVec3.East, map);
+            if (!BrothersTracker.AreBrothers(a, b)) BrothersTracker.Instance.Bond(a, b);
+            a.Rotation = Rot4.South; b.Rotation = Rot4.East;
+            Find.CameraDriver.SetRootPosAndSize(a.DrawPos, 5f);
+            Log.Message($"[Showcase] brothers: {a.LabelShort} & {b.LabelShort}");
+        }
+
         void StageBlood()
         {
             var standing = map.mapPawns.FreeColonistsSpawned.Where(p => !p.Downed).Take(3).ToList();
@@ -194,7 +208,13 @@ namespace GestaTest
                 ScreenCapture.CaptureScreenshot(Path.Combine(shotDir, "blood.png"));
                 Log.Message("[Showcase] captured blood");
             }
-            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 100)
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 100) StageBrothers();
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 170)
+            {
+                ScreenCapture.CaptureScreenshot(Path.Combine(shotDir, "brothers.png"));
+                Log.Message("[Showcase] captured brothers");
+            }
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 220)
             {
                 Log.Message("[Showcase] done");
                 framesSinceTrigger = -1;

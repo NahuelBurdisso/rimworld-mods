@@ -45,6 +45,14 @@ namespace GestaTest
             enemy2.TakeDamage(new DamageInfo(DamageDefOf.Bullet, 8f, 1f, -1f, shooter));
             Kit.Check(Stain(shooter) == null && Stain(enemy2) != null, "a shooter from afar stays clean; the target does not");
 
+            Pawn executioner = NewColonist(map, root + new IntVec3(-6, 0, -6));
+            Pawn doomed = Kit.SpawnHostile(map, executioner.Position + IntVec3.North);
+            Kit.Teleport(doomed, executioner.Position + IntVec3.North);
+            doomed.equipment?.DestroyAllEquipment();
+            for (int i = 0; i < 30 && !doomed.Dead; i++)
+                doomed.TakeDamage(new DamageInfo(DamageDefOf.Cut, 25f, 2f, -1f, executioner, doomed.health.hediffSet.GetBrain() ?? doomed.RaceProps.body.corePart));
+            Kit.Check(doomed.Dead && Stain(executioner) != null, "the killing blow stains the one who struck it");
+
             Pawn cutter = NewColonist(map, root + new IntVec3(10, 0, -6));
             if (Faction.OfMechanoids != null)
             {
