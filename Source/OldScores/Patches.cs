@@ -123,7 +123,7 @@ namespace OldScores
         {
             string extra = OldScoresTracker.Instance?.InspectLine(__instance);
             if (extra.NullOrEmpty()) return;
-            __result = __result.NullOrEmpty() ? extra : __result + "\n" + extra;
+            __result = __result.NullOrEmpty() ? extra : __result.TrimEndNewlines() + "\n" + extra;
         }
     }
 }

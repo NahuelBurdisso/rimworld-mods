@@ -113,40 +113,59 @@ namespace OldScores
         {
             if (!OldScoresMod.Settings.nicknames || nicknames.Count == 0) return;
             IReadOnlyList<Pawn> colonists = map.mapPawns.FreeColonistsSpawned;
-            float r2 = OldScoresTuning.DreadRadius * OldScoresTuning.DreadRadius;
-            for (int c = 0; c < colonists.Count; c++)
-            {
-                Pawn colonist = colonists[c];
-                if (colonist.Downed || colonist.Dead || colonist.Faction != Faction.OfPlayer) continue;
-                for (int i = 0; i < nicknames.Count; i++)
-                {
-                    NicknameRecord rec = nicknames[i];
-                    if (!rec.Named || rec.colonistId != colonist.thingIDNumber || rec.faction == null) continue;
-                    tmpRaiders.Clear();
-                    tmpRaiders.AddRange(map.mapPawns.SpawnedPawnsInFaction(rec.faction));
-                    for (int k = 0; k < tmpRaiders.Count; k++)
-                    {
-                        Pawn raider = tmpRaiders[k];
-                        if (!CanDread(raider, colonist, rec.faction, r2)) continue;
-                        if (!Rand.Chance(OldScoresTuning.DreadChance)) continue;
-                        if (raider.mindState.mentalStateHandler.TryStartMentalState(OldScoresDefOf.OldScores_Dread,
-                                "OldScores_Dread_Reason".Translate(colonist.LabelShort, rec.nickname), forced: true, otherPawn: colonist))
-                        {
-                            MoteMaker.ThrowText(raider.DrawPos + new Vector3(0f, 0f, 0.6f), map, "!", DreadColor, 2.5f);
-                        }
-                    }
-                    tmpRaiders.Clear();
-                }
-            }
+            for (int c = 0; c < colonists.Count; c++) DreadFrom(colonists[c]);
         }
 
-        static bool CanDread(Pawn raider, Pawn colonist, Faction faction, float r2)
+        /// <summary>
+        /// One colonist's share of the dread check: every raider of a faction that nicknamed her and can
+        /// see her rolls. Returns how many fell into dread. Public so the harness can attribute results
+        /// to one colonist when other nicknamed colonists are on the map.
+        /// </summary>
+        public int DreadFrom(Pawn colonist)
         {
-            return raider.Spawned && raider.Map == colonist.Map && !raider.Dead && !raider.Downed
-                   && raider.RaceProps.Humanlike && raider.Faction == faction && !raider.IsPrisoner
-                   && raider.MentalStateDef == null && raider.HostileTo(Faction.OfPlayer)
-                   && (raider.Position - colonist.Position).LengthHorizontalSquared <= r2
-                   && GenSight.LineOfSight(colonist.Position, raider.Position, colonist.Map);
+            if (!OldScoresMod.Settings.nicknames || nicknames.Count == 0) return 0;
+            if (colonist == null || !colonist.Spawned || colonist.Downed || colonist.Dead || colonist.Faction != Faction.OfPlayer) return 0;
+            Map map = colonist.Map;
+            int started = 0;
+            for (int i = 0; i < nicknames.Count; i++)
+            {
+                NicknameRecord rec = nicknames[i];
+                if (!rec.Named || rec.colonistId != colonist.thingIDNumber || rec.faction == null) continue;
+                tmpRaiders.Clear();
+                tmpRaiders.AddRange(map.mapPawns.SpawnedPawnsInFaction(rec.faction));
+                for (int k = 0; k < tmpRaiders.Count; k++)
+                {
+                    Pawn raider = tmpRaiders[k];
+                    if (WhyNoDread(raider, colonist, rec.faction) != null) continue;
+                    if (!Rand.Chance(OldScoresTuning.DreadChance)) continue;
+                    if (raider.mindState.mentalStateHandler.TryStartMentalState(OldScoresDefOf.OldScores_Dread,
+                            "OldScores_Dread_Reason".Translate(colonist.LabelShort, rec.nickname), forced: true, otherPawn: colonist))
+                    {
+                        started++;
+                        MoteMaker.ThrowText(raider.DrawPos + new Vector3(0f, 0f, 0.6f), map, "!", DreadColor, 2.5f);
+                    }
+                }
+                tmpRaiders.Clear();
+            }
+            return started;
+        }
+
+        /// <summary>Null if the raider can be frightened by the colonist now, else why not (for logs and tests).</summary>
+        public static string WhyNoDread(Pawn raider, Pawn colonist, Faction faction)
+        {
+            if (raider == null || !raider.Spawned || raider.Dead) return "not spawned";
+            if (raider.Map != colonist.Map) return "other map";
+            if (raider.Downed) return "downed";
+            if (!raider.RaceProps.Humanlike) return "not humanlike";
+            if (raider.Faction != faction) return "faction " + (raider.Faction?.Name ?? "none");
+            if (raider.IsPrisoner) return "prisoner";
+            if (raider.MentalStateDef != null)
+                return "already in " + raider.MentalStateDef.defName + (raider.MentalState?.causedByPawn != null ? " (caused by " + raider.MentalState.causedByPawn.LabelShort + ")" : "");
+            if (!raider.HostileTo(Faction.OfPlayer)) return "not hostile";
+            float r = OldScoresTuning.DreadRadius;
+            if ((raider.Position - colonist.Position).LengthHorizontalSquared > r * r) return "too far";
+            if (!GenSight.LineOfSight(colonist.Position, raider.Position, colonist.Map)) return "no line of sight";
+            return null;
         }
 
         void CleanupNicknames()
