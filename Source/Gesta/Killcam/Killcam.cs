@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
 using RimWorld;
 using RimWorld.Planet;
@@ -35,11 +36,18 @@ namespace Gesta
 
         public static bool SlowMoActive => instance != null && Time.realtimeSinceStartup - instance.startReal < SlowMoRealSeconds;
         public bool BarsActive => Time.realtimeSinceStartup - startReal < BarsRealSeconds;
+        public float BarsSecondsLeft => Mathf.Max(0f, BarsRealSeconds - (Time.realtimeSinceStartup - startReal));
         public float PointsOf(Lord lord) => lord != null && raidPoints.TryGetValue(lord.loadID, out float p) ? p : 0f;
 
         /// <summary>RaidStrategyWorker.MakeLords postfix: remember how big each raid was.</summary>
         public void Notify_RaidLords(IncidentParms parms, List<Pawn> pawns)
         {
+            // forget lords that ended without losing their last pawn (removed, left, map gone)
+            if (raidPoints.Count > 0)
+            {
+                var live = new HashSet<int>(Find.Maps.SelectMany(m => m.lordManager.lords).Select(l => l.loadID));
+                foreach (int id in raidPoints.Keys.Where(id => !live.Contains(id)).ToList()) raidPoints.Remove(id);
+            }
             foreach (Pawn p in pawns)
             {
                 Lord lord = p?.GetLord();
@@ -76,7 +84,7 @@ namespace Gesta
             caption = "Gesta_Killcam_Caption".Translate(shooter.LabelShort, factionName);
             Messages.Message(caption, new LookTargets(shooter), MessageTypeDefOf.PositiveEvent);
             Log.Message($"[Gesta] breaking blow: {shooter.LabelShort} ended the raid of {factionName}");
-            if (Find.CurrentMap != map) return;
+            if (Find.CurrentMap != map || WorldRendererUtility.WorldSelected) return;   // nobody is watching: no slow motion
             focus = (a + b) / 2f;
             pendingCamera = true;
             startReal = Time.realtimeSinceStartup;

@@ -8,14 +8,14 @@ namespace Gesta
     [HarmonyPatch(typeof(Pawn_HealthTracker), "MakeDowned")]
     public static class Patch_MakeDowned
     {
-        public static void Postfix(Pawn ___pawn)
+        public static void Postfix(Pawn ___pawn, DamageInfo? dinfo)
         {
             if (___pawn == null || !___pawn.Downed || !___pawn.Spawned) return;
             if (___pawn.HostileTo(Faction.OfPlayer)) ___pawn.Map.GetComponent<TideWatcher>()?.Notify_HostileFell();
             if (___pawn.Faction != Faction.OfPlayer) return;
             LastStandTracker.Instance?.Notify_PawnDowned(___pawn);
             BrothersTracker.Instance?.Notify_Downed(___pawn);
-            Chronicler.Instance?.Notify_ColonistDowned(___pawn);
+            Chronicler.Instance?.Notify_ColonistDowned(___pawn, dinfo?.Instigator as Pawn);
             EngagementTracker.Instance?.QueueCheck(___pawn.Map);
         }
     }

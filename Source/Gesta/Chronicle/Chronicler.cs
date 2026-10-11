@@ -27,6 +27,7 @@ namespace Gesta
 
         // not saved
         readonly Dictionary<int, bool> firstDownDone = new Dictionary<int, bool>();
+        readonly HashSet<int> downedInCombat = new HashSet<int>();   // so waking from surgery is not "getting back up"
         readonly Dictionary<int, Dictionary<Pawn, int>> killsThisFight = new Dictionary<int, Dictionary<Pawn, int>>();
         readonly Queue<string> recent = new Queue<string>();
         public string LastLine { get; private set; }
@@ -61,30 +62,38 @@ namespace Gesta
                 Speak(Beat.Victory, hero, null, map, total);
         }
 
-        public void Notify_ColonistDowned(Pawn pawn)
+        /// <param name="attacker">The instigator of the downing blow (null for surgery, hunger, ...).</param>
+        public void Notify_ColonistDowned(Pawn pawn, Pawn attacker)
         {
-            if (!pawn.IsFreeNonSlaveColonist) return;
+            if (!pawn.IsFreeNonSlaveColonist || attacker == null) return;   // only combat downs count
             timesDowned[pawn.thingIDNumber] = TimesDowned(pawn) + 1;
+            downedInCombat.Add(pawn.thingIDNumber);
             Map map = pawn.MapHeld;
             if (!InFight(map) || firstDownDone.ContainsKey(map.uniqueID)) return;
             firstDownDone[map.uniqueID] = true;
-            Speak(Beat.FirstDown, pawn, LastAttackers.Peek(pawn), map);
+            Speak(Beat.FirstDown, pawn, Hostile(attacker), map);
         }
 
         public void Notify_ColonistRecovered(Pawn pawn)
         {
+            if (!downedInCombat.Remove(pawn.thingIDNumber)) return;
             if (!pawn.IsFreeNonSlaveColonist || !InFight(pawn.MapHeld)) return;
             Speak(Beat.Recovered, pawn, null, pawn.MapHeld);
         }
+
+        /// <summary>Only an enemy gets named: friendly fire and berserk friends are not "that face".</summary>
+        static Pawn Hostile(Pawn p) => p != null && p.HostileTo(Faction.OfPlayer) && p.Faction != Faction.OfPlayer ? p : null;
 
         /// <summary>From the Kill postfix.</summary>
         public void Notify_Killed(Pawn victim, KillContext ctx)
         {
             Map map = ctx.map;
-            if (victim.IsFreeNonSlaveColonist || (victim.Faction == Faction.OfPlayer && victim.RaceProps.Humanlike && !victim.IsSlave))
+            if (victim.IsFreeNonSlaveColonist || (victim.Faction == Faction.OfPlayer && victim.RaceProps.Humanlike && !victim.IsSlave && !victim.IsMutant))
             {
-                if (InFight(map) || (ctx.attributedKiller != null && ctx.attributedKiller.HostileTo(Faction.OfPlayer)))
-                    Speak(Beat.Death, victim, ctx.attributedKiller, map);
+                downedInCombat.Remove(victim.thingIDNumber);
+                Pawn enemy = Hostile(ctx.attributedKiller);
+                if (InFight(map) || enemy != null)
+                    Speak(Beat.Death, victim, enemy, map);
                 return;
             }
             Pawn killer = ctx.killer;
@@ -119,7 +128,7 @@ namespace Gesta
             LastLine = line;
             LastBeat = beat;
             LinesSpoken++;
-            if (map != null && Find.CurrentMap == map) ChronicleOverlay.Show(line);
+            if (map != null && Find.CurrentMap == map) ChronicleOverlay.Show(line, Killcam.Instance?.BarsSecondsLeft ?? 0f);
             Log.Message($"[Gesta] chronicle ({beat}): {line}");
             return line;
         }
@@ -171,17 +180,19 @@ namespace Gesta
         static string text;
         static float start = -999f;
 
-        public static void Show(string line)
+        /// <param name="delay">Real seconds to wait (e.g. until the finale's bars are gone).</param>
+        public static void Show(string line, float delay = 0f)
         {
             text = line;
-            start = Time.realtimeSinceStartup;
+            start = Time.realtimeSinceStartup + Mathf.Max(0f, delay);
         }
 
         public static void Draw()
         {
             if (text == null || Event.current.type != EventType.Repaint || WorldRendererUtility.WorldSelected) return;
             float age = Time.realtimeSinceStartup - start;
-            if (age < 0f || age > FadeIn + Hold + FadeOut) { text = null; return; }
+            if (age < 0f) return;   // waiting for its turn
+            if (age > FadeIn + Hold + FadeOut) { text = null; return; }
             float a = age < FadeIn ? age / FadeIn : age < FadeIn + Hold ? 1f : 1f - (age - FadeIn - Hold) / FadeOut;
 
             var band = new Rect(0f, UI.screenHeight - BottomMargin - BandHeight, UI.screenWidth, BandHeight);
