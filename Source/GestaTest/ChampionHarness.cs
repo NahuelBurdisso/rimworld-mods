@@ -131,7 +131,7 @@ namespace GestaTest
 
         static void Forget(Map map, ThoughtDef def)
         {
-            foreach (Pawn p in map.mapPawns.FreeColonistsSpawned) p.needs?.mood?.thoughts?.memories?.RemoveMemoriesOfDef(def);
+            foreach (Pawn p in map.mapPawns.FreeColonistsSpawned.ToList()) p.needs?.mood?.thoughts?.memories?.RemoveMemoriesOfDef(def);
         }
 
         static Pawn NewFighter(Map map, IntVec3 near)
@@ -396,7 +396,7 @@ namespace GestaTest
                 try
                 {
                     KillHostiles(map);
-                    foreach (Pawn p in map.mapPawns.FreeColonistsSpawned) if (p.drafter != null) p.drafter.Drafted = false;
+                    foreach (Pawn p in map.mapPawns.FreeColonistsSpawned.ToList()) if (p.drafter != null) p.drafter.Drafted = false;
                 }
                 catch (System.Exception ex) { Kit.Check(false, $"{name} cleanup threw: {ex}"); }
             }
@@ -530,9 +530,9 @@ namespace GestaTest
                 liveChampion = live.champion;
                 liveStartDist = liveChampion.Position.DistanceTo(live.standCell);
                 holdersAt.Clear();
-                foreach (Pawn p in liveLord.ownedPawns) if (p != liveChampion) holdersAt[p] = p.Position;
+                foreach (Pawn p in liveLord.ownedPawns.ToList()) if (p != liveChampion) holdersAt[p] = p.Position;
             }
-            foreach (Pawn p in map.mapPawns.FreeColonistsSpawned) if (p.drafter != null) p.drafter.Drafted = false;
+            foreach (Pawn p in map.mapPawns.FreeColonistsSpawned.ToList()) if (p.drafter != null) p.drafter.Drafted = false;
         }
 
         // ------------------------------------------------------------------ stage B
