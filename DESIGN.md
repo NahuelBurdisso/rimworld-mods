@@ -285,7 +285,7 @@ with a raider in an aggro mental state waits. Then `Rand.Chance(championChance)`
 0.25).
 **Champion:** the faction's real leader if it is in the lord and able; otherwise the best
 `MeleeDPS` among able raiders holding a melee weapon or nothing; otherwise the best of all.
-**Banner:** `Gesta_ChallengeBanner` (passable, destructible, unowned building) at a random
+**Banner:** `Gesta_ChallengeBanner` (passable, unowned building; it can be damaged but not burned: flammability 0) at a random
 cell within 6 of the midpoint between the champion and the nearest colonist fighter (then 0.35,
 0.65 and 0.2 of the way if that ground is unusable): reachable by the champion, standable,
 unfogged, outside zones, with no building, frame, blueprint or item. The champion stands on a
@@ -315,13 +315,13 @@ challenge lasts. Letter (ThreatSmall).
 `CurLordToil.UpdateAllDuties()`, unless said otherwise):
 | Outcome | When | Effect |
 |---|---|---|
-| Colonist wins | champion downed or dead in the duel | raid goes to the lord graph's existing `LordToil_PanicFlee` (else its `LordToil_ExitMap`); winner gets `Gesta_ChampionVictory` (+8, 15 days), tale `Gesta_ChampionDuelTale` (winner, champion) and the feat `Gesta_Feat_Champion` (title, golden beam, message: see Feature 2) — if feats are off or already earned, just the golden beam |
+| Colonist wins | the challenger felled the champion: the downing or killing damage was theirs, or (no damage: bleeding, pain) they wounded him in the last 600 ticks. Also when a colonist steps into the circle and fells him with the first blows | raid goes to the lord graph's existing `LordToil_PanicFlee` (else its `LordToil_ExitMap`); winner gets `Gesta_ChampionVictory` (+8, 15 days), tale `Gesta_ChampionDuelTale` (winner, champion) and the feat `Gesta_Feat_Champion` (title, golden beam, message: see Feature 2) — if feats are off or already earned, just the golden beam |
 | Champion wins | challenger downed or dead | raid resumes |
-| Dishonor | after a 420-tick grace, any damage to a pawn of that lord whose instigator is of the player's faction (not fire, not helpful damage), other than the challenger hitting the champion | every colonist on the map gets `Gesta_ChallengeDishonor` (−5, 8 days); raid resumes |
-| Refused | nobody accepts within 2500 ticks (1 in-game hour) | every colonist on the map gets `Gesta_ChallengeRefused` (−3, 4 days); raid resumes |
-| Raiders break it | after the grace, a raider other than the dueling champion hurts a colonist | raid resumes, no memory |
-| Too long | the duel lasts 2500 ticks | raid resumes |
-| Aborted | the lord ends or leaves the assault toil (kidnap, steal, give up), the map goes, the champion dies, downs, despawns or breaks before the duel, the challenger leaves the map, the banner is destroyed, or the feature is turned off | raid resumes (if the lord still exists), no memory |
+| Dishonor | after a 90-tick grace (shots already in the air): any violent damage to a pawn of that lord or to the banner by the player's faction — fire counts when it is a direct incendiary hit (the damage has a weapon: molotov, incendiary round), not fire that spread on its own; any melee swing by a colonist at a raider, hit or miss; a raider hitting back at a colonist who provoked it (its `meleeThreat` is that colonist); a psychic shock / insanity / brain-damage lance or a hostile psycast or ability on a raider (or an area one covering a raider); the champion downed by a psychic shock with no damage behind it, or by another colonist's damage. The challenger's own blows on the champion are the duel | every colonist on the map gets `Gesta_ChallengeDishonor` (−5, 8 days); raid resumes |
+| Refused | nobody accepts within 2500 ticks (1 in-game hour), or the duel runs out its 1200 ticks with the challenger out of the champion's reach for most of it (kiting) | every colonist on the map gets `Gesta_ChallengeRefused` (−3, 4 days); raid resumes |
+| Raiders break it | after the grace, a raider other than the dueling champion hurts a colonist who did not provoke it | raid resumes, no memory |
+| Too long | the duel lasts 1200 ticks with the two mostly within reach | raid resumes |
+| Aborted | the lord ends or leaves the assault toil (kidnap, steal, give up), the map goes, the champion dies, downs or despawns to anything not listed above, or breaks before the duel, the challenger leaves the map, the banner is destroyed by something other than the colony, or the feature is turned off | raid resumes (if the lord still exists), no memory |
 
 **Engagement:** an active challenge counts as an ongoing fight for the EngagementTracker (held
 raiders are not "active threats", which would otherwise end the engagement mid-truce), and the
@@ -349,8 +349,12 @@ challenger goes down → raid resumes, and (control) the turret targets its raid
 hour passes → refused memory, raid resumes. Raid 4: the champion dies of other causes → clean abort,
 no dishonor. Raid 5: a raider hurts a colonist → raid resumes, no dishonor. Raid 6: the challenge
 state is wiped (as after a broken load) → the sweep restores duties and removes the banner (the
-sweep runs even with the feature off). Raid 7: the whole raid dies → quiet abort. Raid 8 stays up
+sweep runs even with the feature off). Raid 7: the whole raid dies → quiet abort. Then six-pirate
+assault lords for the exploits: fire that spread on its own is ignored but a molotov hit is dishonor;
+a champion downed by a psychic shock mid-duel is dishonor, not a win; shooting the banner is
+dishonor (and it cannot burn); a raider hitting back at a colonist who swung first is dishonor; a
+real melee swing at a holder is dishonor; a duel run out of reach is a refusal. Raid 8 stays up
 for 180 ticks of real play (holders do not move, the champion walks toward the banner); a shot inside
-the grace is ignored, then a colonist shooting a holder → dishonor for the whole colony, raid
+the grace (the truce restarted for the check) is ignored, then a colonist shooting a holder → dishonor for the whole colony, raid
 resumes. If vanilla switches raid 8 to kidnapping or stealing on its own, stage B checks the clean
 abort instead.

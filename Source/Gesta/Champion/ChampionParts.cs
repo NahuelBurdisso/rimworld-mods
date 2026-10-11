@@ -83,6 +83,12 @@ namespace Gesta
     /// <summary>The champion's banner: shows who is calling and how long is left.</summary>
     public class Building_ChallengeBanner : Building
     {
+        public override void PreApplyDamage(ref DamageInfo dinfo, out bool absorbed)
+        {
+            base.PreApplyDamage(ref dinfo, out absorbed);
+            if (!absorbed) ChampionsChallenge.Instance?.Notify_BannerDamaged(this, dinfo);
+        }
+
         public override string GetInspectString()
         {
             string s = base.GetInspectString();
@@ -111,6 +117,47 @@ namespace Gesta
         {
             ChampionsChallenge cc = ChampionsChallenge.Instance;
             if (cc != null && cc.Active.Count > 0) cc.Notify_DutiesUpdated(__instance.lord);
+        }
+    }
+
+    /// <summary>Verb_MeleeAttack.TryCastShot(): every swing, hit or miss (a miss sets the target's meleeThreat too).</summary>
+    [HarmonyPatch(typeof(Verb_MeleeAttack), "TryCastShot")]
+    public static class Patch_MeleeSwing
+    {
+        public static void Prefix(Verb_MeleeAttack __instance)
+        {
+            ChampionsChallenge cc = ChampionsChallenge.Instance;
+            if (cc == null || cc.Active.Count == 0) return;
+            if (__instance.CasterPawn is Pawn attacker && __instance.CurrentTarget.Thing is Pawn target) cc.Notify_MeleeSwing(attacker, target);
+        }
+    }
+
+    /// <summary>CompTargetable.DoEffect(Pawn usedBy): psychic shock and insanity lances. The target is cleared at the end, so read it first.</summary>
+    [HarmonyPatch(typeof(CompTargetable), nameof(CompTargetable.DoEffect))]
+    public static class Patch_TargetableUse
+    {
+        public static void Prefix(CompTargetable __instance, Pawn usedBy, Thing ___selectedTarget)
+        {
+            ChampionsChallenge cc = ChampionsChallenge.Instance;
+            if (cc == null || cc.Active.Count == 0 || !(___selectedTarget is Pawn target) || usedBy == null) return;
+            ThingWithComps item = __instance.parent;
+            if (item.GetComp<CompTargetEffect_PsychicShock>() != null || item.GetComp<CompTargetEffect_Berserk>() != null
+                || item.GetComp<CompTargetEffect_BrainDamageChance>() != null)
+                cc.Notify_HostileAct(usedBy, target);
+        }
+    }
+
+    /// <summary>Ability.Activate(LocalTargetInfo target, LocalTargetInfo dest): hostile psycasts and abilities (Psycast calls base).</summary>
+    [HarmonyPatch(typeof(Ability), nameof(Ability.Activate), new[] { typeof(LocalTargetInfo), typeof(LocalTargetInfo) })]
+    public static class Patch_AbilityActivate
+    {
+        public static void Postfix(Ability __instance, LocalTargetInfo target, bool __result)
+        {
+            ChampionsChallenge cc = ChampionsChallenge.Instance;
+            if (!__result || cc == null || cc.Active.Count == 0 || __instance.def == null || !__instance.def.hostile) return;
+            Pawn caster = __instance.pawn;
+            if (target.Thing is Pawn p) cc.Notify_HostileAct(caster, p);
+            if (__instance.def.HasAreaOfEffect && target.IsValid) cc.Notify_HostileArea(caster, target.Cell, __instance.def.EffectRadius);
         }
     }
 

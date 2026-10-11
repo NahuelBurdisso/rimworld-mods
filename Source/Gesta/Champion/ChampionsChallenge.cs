@@ -29,6 +29,13 @@ namespace Gesta
         public ChallengeOutcome pending;
         public Thing breaker;
         public Pawn pendingChallenger;
+        /// <summary>What downed or killed the champion (null instigator: no damage, e.g. a shock lance).</summary>
+        public bool fellRecorded;
+        public Thing fellTo;
+        public int lastTakerHitTick = -1;
+
+        // saved: how much of the duel the challenger spent within reach of the champion
+        public int duelChecks, duelChecksInReach;
 
         public void ExposeData()
         {
@@ -41,6 +48,8 @@ namespace Gesta
             Scribe_Values.Look(ref phase, "phase", ChallengePhase.Challenge);
             Scribe_Values.Look(ref startTick, "startTick", 0);
             Scribe_Values.Look(ref duelStartTick, "duelStartTick", -1);
+            Scribe_Values.Look(ref duelChecks, "duelChecks", 0);
+            Scribe_Values.Look(ref duelChecksInReach, "duelChecksInReach", 0);
         }
     }
 
@@ -50,7 +59,7 @@ namespace Gesta
     /// </summary>
     public class ChampionsChallenge : GameComponent
     {
-        public const int MinAssaultTicks = 600, MinRaiders = 4, AcceptTicks = 2500, DuelTicks = 2500, GraceTicks = 420;
+        public const int MinAssaultTicks = 600, MinRaiders = 4, AcceptTicks = 2500, DuelTicks = 1200, GraceTicks = 90, TakerWoundTicks = 600;
         public const int RollInterval = 250, ProcessInterval = 20;
         public const float CircleRadius = 4f, BannerSearchRadius = 6f;
         static readonly Color RingColor = new Color(1f, 0.82f, 0.35f);
@@ -147,19 +156,36 @@ namespace Gesta
                 End(c, c.pending);
                 return;
             }
-            // stepped into the circle and felled the champion with the first blows: that is a duel won
-            if (c.phase == ChallengePhase.Challenge && c.pendingChallenger != null && c.champion != null && (c.champion.Dead || c.champion.Downed)
-                && !c.pendingChallenger.Dead && !c.pendingChallenger.Downed)
+            // the champion is down or dead: who felled him decides it
+            if (c.champion != null && (c.champion.Dead || c.champion.Downed))
             {
-                c.challenger = c.pendingChallenger;
-                c.phase = ChallengePhase.Duel;
-                End(c, ChallengeOutcome.ColonistWon);
+                Pawn taker = c.phase == ChallengePhase.Duel ? c.challenger : c.pendingChallenger;
+                Thing by = FelledBy(c, taker, now, out bool shocked);
+                if (shocked && now - c.startTick >= GraceTicks)
+                {
+                    // a psychic shock with no damage behind it: a shock lance or psycast, the colony's doing
+                    c.breaker ??= PlayerStandIn(c, taker);
+                    End(c, ChallengeOutcome.BrokenByColony);
+                }
+                else if (taker != null && by == taker)
+                {
+                    // in the duel, or stepping into the circle and felling him with the first blows
+                    c.challenger = taker;
+                    c.phase = ChallengePhase.Duel;
+                    End(c, ChallengeOutcome.ColonistWon);
+                }
+                else if (by != null && by.Faction == Faction.OfPlayer && now - c.startTick >= GraceTicks)
+                {
+                    c.breaker = by;
+                    End(c, ChallengeOutcome.BrokenByColony);
+                }
+                else End(c, ChallengeOutcome.Aborted, "the champion fell to something else");
                 return;
             }
-            if (c.phase == ChallengePhase.Duel)
+            if (c.phase == ChallengePhase.Duel && (c.challenger == null || c.challenger.Dead || c.challenger.Downed))
             {
-                if (c.champion == null || c.champion.Dead || c.champion.Downed) { End(c, ChallengeOutcome.ColonistWon); return; }
-                if (c.challenger == null || c.challenger.Dead || c.challenger.Downed) { End(c, ChallengeOutcome.ChampionWon); return; }
+                End(c, ChallengeOutcome.ChampionWon);
+                return;
             }
             if (!LordValid(c)) { End(c, ChallengeOutcome.Aborted, "the raid changed plans or ended"); return; }
             // vanilla's kidnap and steal transitions wait for 300 quiet ticks: a truce is not quiet
@@ -170,7 +196,7 @@ namespace Gesta
 
             if (c.phase == ChallengePhase.Challenge)
             {
-                if (champ.Downed || champ.InMentalState || champ.GetLord() != c.lord) { End(c, ChallengeOutcome.Aborted, "champion can no longer fight"); return; }
+                if (champ.InMentalState || champ.GetLord() != c.lord) { End(c, ChallengeOutcome.Aborted, "champion can no longer fight"); return; }
                 Pawn taker = c.pendingChallenger;
                 c.pendingChallenger = null;
                 if (taker == null || !CanAccept(c, taker)) taker = FindChallenger(c);
@@ -181,9 +207,48 @@ namespace Gesta
             {
                 c.pendingChallenger = null;
                 if (!c.challenger.Spawned || c.challenger.Map != c.map) { End(c, ChallengeOutcome.Aborted, "challenger left"); return; }
-                if (now - c.duelStartTick > DuelTicks) { End(c, ChallengeOutcome.DuelTooLong); return; }
+                c.duelChecks++;
+                if (c.challenger.Position.AdjacentTo8WayOrInside(champ.Position)) c.duelChecksInReach++;
+                if (now - c.duelStartTick > DuelTicks)
+                {
+                    // kiting the champion to run out the clock is refusing the fight
+                    End(c, c.duelChecksInReach * 2 < c.duelChecks ? ChallengeOutcome.Refused : ChallengeOutcome.DuelTooLong);
+                    return;
+                }
                 KeepChallengerFighting(c);
             }
+        }
+
+        /// <summary>
+        /// Who brought the champion down: the instigator of the downing or killing damage. With no
+        /// damage behind it: a psychic shock is reported through <paramref name="shocked"/>; bleeding or
+        /// pain counts for the challenger only if they wounded him recently.
+        /// </summary>
+        static Thing FelledBy(Challenge c, Pawn taker, int now, out bool shocked)
+        {
+            shocked = false;
+            Thing by = c.fellRecorded ? c.fellTo : LastAttackers.Peek(c.champion);
+            if (by != null) return by;
+            if (HasPsychicShock(c.champion)) { shocked = true; return null; }
+            if (taker != null && c.lastTakerHitTick >= 0 && now - c.lastTakerHitTick <= TakerWoundTicks) return taker;
+            return null;
+        }
+
+        /// <summary>A colonist on the map, so a "broken by the colony" ending has someone to name.</summary>
+        static Thing PlayerStandIn(Challenge c, Pawn notThis)
+        {
+            List<Pawn> cs = c.map?.mapPawns.FreeColonistsSpawned;
+            if (cs == null) return null;
+            for (int i = 0; i < cs.Count; i++) if (cs[i] != notThis) return cs[i];
+            return notThis;
+        }
+
+        static bool HasPsychicShock(Pawn p)
+        {
+            HediffSet h = p?.health?.hediffSet;
+            if (h == null) return false;
+            return (HediffDefOf.PsychicShock != null && h.HasHediff(HediffDefOf.PsychicShock))
+                   || (HediffDefOf.DarkPsychicShock != null && h.HasHediff(HediffDefOf.DarkPsychicShock));
         }
 
         static bool LordValid(Challenge c) =>
@@ -518,19 +583,104 @@ namespace Gesta
         {
             Challenge c = For(lord);
             if (c == null || c.pending != ChallengeOutcome.None) return;
-            DamageDef def = dinfo.Def;
-            if (def == null || def.consideredHelpful || def == DamageDefOf.Flame || def == DamageDefOf.Burn || !def.ExternalViolenceFor(victim)) return;
+            if (!CountsAsViolence(dinfo, victim)) return;
             Thing inst = dinfo.Instigator;
             if (inst == null || inst.Faction != Faction.OfPlayer) return;
+            int now = Find.TickManager.TicksGame;
             if (victim == c.champion && inst is Pawn hitter)
             {
-                if (c.phase == ChallengePhase.Duel && hitter == c.challenger) return;
+                if (c.phase == ChallengePhase.Duel && hitter == c.challenger) { c.lastTakerHitTick = now; return; }
                 // stepping into the circle and striking first is accepting
-                if (c.phase == ChallengePhase.Challenge && CanAccept(c, hitter)) { c.pendingChallenger = hitter; return; }
+                if (c.phase == ChallengePhase.Challenge && CanAccept(c, hitter)) { c.pendingChallenger = hitter; c.lastTakerHitTick = now; return; }
             }
-            if (Find.TickManager.TicksGame - c.startTick < GraceTicks) return;   // shots already in the air
+            Break(c, inst);
+        }
+
+        /// <summary>
+        /// Violence for the truce. Fire that spread on its own (Fire.DoFireDamage: no weapon) does not
+        /// count; a direct incendiary hit (molotov, incendiary round: the weapon is set) does.
+        /// </summary>
+        static bool CountsAsViolence(DamageInfo dinfo, Thing victim)
+        {
+            DamageDef def = dinfo.Def;
+            if (def == null || def.consideredHelpful || !def.ExternalViolenceFor(victim)) return false;
+            if ((def == DamageDefOf.Flame || def == DamageDefOf.Burn) && dinfo.Weapon == null) return false;
+            return true;
+        }
+
+        /// <summary>The colony broke the truce (after a short grace for shots already in the air).</summary>
+        void Break(Challenge c, Thing by)
+        {
+            if (c.pending != ChallengeOutcome.None || Find.TickManager.TicksGame - c.startTick < GraceTicks) return;
             c.pending = ChallengeOutcome.BrokenByColony;
-            c.breaker = inst;
+            c.breaker = by;
+        }
+
+        /// <summary>The challenge a raider belongs to (by lord, or as its champion).</summary>
+        Challenge OfRaider(Pawn p)
+        {
+            if (p == null) return null;
+            Challenge c = For(p.GetLord());
+            if (c != null) return c;
+            for (int i = 0; i < active.Count; i++) if (active[i].champion == p) return active[i];
+            return null;
+        }
+
+        /// <summary>Verb_MeleeAttack.TryCastShot prefix: a swing, hit or miss (a miss provokes too).</summary>
+        public void Notify_MeleeSwing(Pawn attacker, Pawn target)
+        {
+            if (attacker?.Faction != Faction.OfPlayer) return;
+            Challenge c = OfRaider(target);
+            if (c == null) return;
+            if (target == c.champion)
+            {
+                if (c.phase == ChallengePhase.Duel && attacker == c.challenger) return;
+                if (c.phase == ChallengePhase.Challenge && CanAccept(c, attacker)) { c.pendingChallenger = attacker; return; }
+            }
+            Break(c, attacker);
+        }
+
+        /// <summary>A hostile item or psycast used by a colonist on a raider under the truce.</summary>
+        public void Notify_HostileAct(Pawn actor, Pawn target)
+        {
+            if (actor?.Faction != Faction.OfPlayer) return;
+            Challenge c = OfRaider(target);
+            if (c != null) Break(c, actor);
+        }
+
+        /// <summary>Hostile psycasts and abilities aimed at an area: every challenge with a raider inside it.</summary>
+        public void Notify_HostileArea(Pawn actor, IntVec3 cell, float radius)
+        {
+            if (actor?.Faction != Faction.OfPlayer) return;
+            for (int i = active.Count - 1; i >= 0; i--)
+            {
+                Challenge c = active[i];
+                if (c.map != actor.Map || c.lord == null) continue;
+                foreach (Pawn p in c.lord.ownedPawns)
+                    if (p.Spawned && p.Position.InHorDistOf(cell, radius)) { Break(c, actor); break; }
+            }
+        }
+
+        /// <summary>Building_ChallengeBanner.PreApplyDamage: the banner is part of the truce.</summary>
+        public void Notify_BannerDamaged(Thing banner, DamageInfo dinfo)
+        {
+            Challenge c = ForBanner(banner);
+            if (c == null || !CountsAsViolence(dinfo, banner)) return;
+            Thing inst = dinfo.Instigator;
+            if (inst != null && inst.Faction == Faction.OfPlayer) Break(c, inst);
+        }
+
+        /// <summary>Pawn_HealthTracker.MakeDowned postfix and Pawn.Kill prefix: remember what felled a champion.</summary>
+        public void Notify_PawnFell(Pawn p, DamageInfo? dinfo)
+        {
+            for (int i = 0; i < active.Count; i++)
+            {
+                Challenge c = active[i];
+                if (c.champion != p || c.fellRecorded) continue;
+                c.fellRecorded = true;
+                // fire that spread on its own names nobody, as for the truce itself
+                c.fellTo = dinfo.HasValue && CountsAsViolence(dinfo.Value, p) ? dinfo.Value.Instigator : null;
+            }
         }
 
         /// <summary>Pawn.PostApplyDamage postfix: a colonist was hurt by a pawn.</summary>
@@ -549,6 +699,13 @@ namespace Gesta
                 if (c.phase == ChallengePhase.Challenge && CanAccept(c, victim)) { c.pendingChallenger = victim; return; }
             }
             if (Find.TickManager.TicksGame - c.startTick < GraceTicks) return;
+            // a raider hitting back at a colonist who swung at him first: the colonist broke it
+            Pawn provoker = attacker.mindState?.meleeThreat;
+            if (provoker != null && provoker.Faction == Faction.OfPlayer && !(attacker == c.champion && provoker == c.challenger))
+            {
+                Break(c, provoker);
+                return;
+            }
             c.pending = ChallengeOutcome.BrokenByRaiders;
             c.breaker = attacker;
         }

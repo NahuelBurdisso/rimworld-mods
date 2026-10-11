@@ -11,6 +11,7 @@ namespace Gesta
         public static void Postfix(Pawn ___pawn, DamageInfo? dinfo)
         {
             if (___pawn == null || !___pawn.Downed || !___pawn.Spawned) return;
+            if (ChampionsChallenge.Instance is ChampionsChallenge cc && cc.Active.Count > 0) cc.Notify_PawnFell(___pawn, dinfo);
             if (___pawn.HostileTo(Faction.OfPlayer)) ___pawn.Map.GetComponent<TideWatcher>()?.Notify_HostileFell();
             if (___pawn.Faction != Faction.OfPlayer) return;
             LastStandTracker.Instance?.Notify_PawnDowned(___pawn);
@@ -67,6 +68,7 @@ namespace Gesta
             if (__instance.Dead) return;
             Map map = __instance.MapHeld;
             if (map == null) return;
+            if (ChampionsChallenge.Instance is ChampionsChallenge cc && cc.Active.Count > 0) cc.Notify_PawnFell(__instance, dinfo);
             try { AshMaker.TryMake(__instance, dinfo); }
             catch (System.Exception ex) { Log.ErrorOnce("[Gesta] ash silhouette failed: " + ex, 0x6E57A2); }
             Pawn killer = dinfo?.Instigator as Pawn;
