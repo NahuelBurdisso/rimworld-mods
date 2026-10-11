@@ -6,6 +6,7 @@ using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
+using Verse.AI.Group;
 
 namespace GestaTest
 {
@@ -85,6 +86,78 @@ namespace GestaTest
             Kit.KillBy(last, shooter);
             Find.TickManager.CurTimeSpeed = TimeSpeed.Normal;
             Log.Message($"[Showcase] killcam: finales {Killcam.Instance.FinalesPlayed}");
+        }
+
+        void Capture(string name)
+        {
+            string path = Path.Combine(shotDir, name + ".png");
+            ScreenCapture.CaptureScreenshot(path);
+            Log.Message("[Showcase] captured " + path);
+        }
+
+        Challenge champion;
+        Pawn duelist;
+
+        /// <summary>A raid whose champion plants the banner next to the camera.</summary>
+        void StageChampion()
+        {
+            foreach (Pawn p in map.mapPawns.AllPawnsSpawned.Where(p => p.HostileTo(Faction.OfPlayer)).ToList()) p.Kill(null);
+            var parms = StorytellerUtility.DefaultParmsNow(IncidentCategoryDefOf.ThreatBig, map);
+            parms.faction = Faction.OfPirates ?? Find.FactionManager.RandomEnemyFaction(allowNonHumanlike: false);
+            parms.points = 1500f;
+            parms.raidStrategy = RaidStrategyDefOf.ImmediateAttack;
+            parms.raidArrivalMode = PawnsArrivalModeDefOf.EdgeWalkIn;
+            var before = new HashSet<Pawn>(map.mapPawns.AllPawnsSpawned);
+            IncidentDefOf.RaidEnemy.Worker.TryExecute(parms);
+            Pawn any = map.mapPawns.AllPawnsSpawned.FirstOrDefault(p => !before.Contains(p) && p.GetLord() != null && p.HostileTo(Faction.OfPlayer));
+            Verse.AI.Group.Lord lord = any?.GetLord();
+            if (lord == null || !ChampionsChallenge.Instance.TryStart(lord, Find.TickManager.TicksGame))
+            {
+                Log.Message("[Showcase] champion: no challenge");
+                Find.TickManager.CurTimeSpeed = TimeSpeed.Normal;
+                return;
+            }
+            champion = ChampionsChallenge.Instance.For(lord);
+            Kit.Teleport(champion.champion, champion.standCell);
+            // bring a few holders into the frame: the raid waiting behind its champion
+            IntVec3 b = champion.banner.Position;
+            int n = 0;
+            foreach (Pawn h in lord.ownedPawns.Where(p => p != champion.champion).Take(4).ToList())
+            {
+                IntVec3 c = CellFinder.StandableCellNear(b + new IntVec3(4 + n % 2, 0, -2 + n * 2), map, 2f, x => x.GetFirstPawn(map) == null);
+                if (c.IsValid) Kit.Teleport(h, c);
+                n++;
+            }
+            Find.CameraDriver.SetRootPosAndSize(b.ToVector3Shifted(), 11f);
+            Find.Selector.ClearSelection();
+            Find.Selector.Select(champion.banner);
+            Find.TickManager.CurTimeSpeed = TimeSpeed.Normal;
+            Log.Message($"[Showcase] champion: {champion.champion.LabelShort} at {b}");
+        }
+
+        void StageDuel()
+        {
+            if (champion == null || !ChampionsChallenge.Instance.Active.Contains(champion)) return;
+            duelist = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p => CombatUtil.IsFighter(p) && !p.Drafted);
+            if (duelist == null) return;
+            IntVec3 cell = CellFinder.StandableCellNear(champion.banner.Position + new IntVec3(-2, 0, 0), map, 2f,
+                x => x.InHorDistOf(champion.banner.Position, 3f) && x.GetFirstPawn(map) == null);
+            duelist.drafter.Drafted = true;
+            Kit.Teleport(duelist, cell);
+            ChampionsChallenge.Instance.ProcessNow();
+            Find.Selector.ClearSelection();
+            Find.TickManager.CurTimeSpeed = TimeSpeed.Normal;
+            Log.Message($"[Showcase] duel: {duelist.LabelShort} vs {champion.champion.LabelShort} ({champion.phase})");
+        }
+
+        void EndDuel()
+        {
+            if (champion == null || duelist == null || !ChampionsChallenge.Instance.Active.Contains(champion)) return;
+            Kit.DownBy(champion.champion, duelist);
+            ChampionsChallenge.Instance.ProcessNow();
+            Find.CameraDriver.SetRootPosAndSize(duelist.DrawPos + new Vector3(0f, 0f, 2f), 10f);
+            Find.TickManager.CurTimeSpeed = TimeSpeed.Normal;
+            Log.Message($"[Showcase] duel over: {ChampionsChallenge.Instance.LastOutcome}");
         }
 
         void StageBrothers()
@@ -254,7 +327,13 @@ namespace GestaTest
                 ScreenCapture.CaptureScreenshot(Path.Combine(shotDir, "killcam.png"));
                 Log.Message("[Showcase] captured killcam");
             }
-            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 520)
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 460) StageChampion();
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 540) Capture("champion-1-banner");
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 560) StageDuel();
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 640) Capture("champion-2-duel");
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 660) EndDuel();
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 690) Capture("champion-3-victory");
+            if (bloodFrame > 0 && framesSinceTrigger == bloodFrame + 800)
             {
                 Log.Message("[Showcase] done");
                 framesSinceTrigger = -1;
