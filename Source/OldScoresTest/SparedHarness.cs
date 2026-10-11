@@ -31,7 +31,7 @@ namespace OldScoresTest
         {
             if (!active || done) return;
             ticks++;
-            if (ticks < TestUtil.SparedStart) return;
+            if (TestUtil.Prelude(ticks, TestUtil.SparedStart, "spared")) return;
             try { Step(); }
             catch (System.Exception ex) { Kit.Check(false, "spared harness threw: " + ex); Finish(); }
         }

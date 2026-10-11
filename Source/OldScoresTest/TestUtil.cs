@@ -10,7 +10,42 @@ namespace OldScoresTest
     public static class TestUtil
     {
         /// <summary>The Gesta harness owns ticks 60-2200 of the same game; ours start here.</summary>
-        public const int NicknamesStart = 2700, SparedStart = 3100, BeastsStart = 3700;
+        // Gesta's harnesses own ticks 60-~2900 of the same game (ChampionHarness runs real raids up to
+        // ~2900). Each of ours first clears the map of hostiles at its start tick and begins work
+        // ClearTicks later. Worst-case ends: nicknames ~3380, spared ~3670, beasts ~3760 (all < 4400).
+        public const int NicknamesStart = 3000, SparedStart = 3400, BeastsStart = 3750, ClearTicks = 5;
+
+        /// <summary>
+        /// Start-of-harness prelude: at the start tick removes every hostile pawn and hostile building
+        /// left on the map (earlier harness raids, turrets, manhunters); returns true while the harness
+        /// should still wait.
+        /// </summary>
+        public static bool Prelude(int ticks, int start, string who)
+        {
+            if (ticks < start) return true;
+            if (ticks == start) ClearHostiles(Find.CurrentMap, who);
+            return ticks < start + ClearTicks;
+        }
+
+        public static void ClearHostiles(Map map, string who)
+        {
+            if (map == null) return;
+            int pawns = 0, buildings = 0;
+            foreach (Pawn p in map.mapPawns.AllPawnsSpawned.ToList())
+            {
+                if (p.Dead || p.Destroyed || !p.HostileTo(Faction.OfPlayer) || p.IsPrisonerOfColony) continue;
+                p.Kill(null);
+                p.Corpse?.Destroy();
+                pawns++;
+            }
+            foreach (Thing t in map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial).ToList())
+            {
+                if (t.Destroyed || t.Faction == null || !t.HostileTo(Faction.OfPlayer)) continue;
+                t.Destroy();
+                buildings++;
+            }
+            Log.Message($"[Test] ({who}: cleared {pawns} hostile pawns and {buildings} hostile buildings before starting)");
+        }
 
         public static Pawn NewColonist(Map map, IntVec3 near, System.Predicate<Pawn> accept = null)
         {

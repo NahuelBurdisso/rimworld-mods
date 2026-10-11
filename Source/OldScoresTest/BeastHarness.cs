@@ -25,7 +25,7 @@ namespace OldScoresTest
         {
             if (!active || done) return;
             ticks++;
-            if (ticks < TestUtil.BeastsStart) return;
+            if (TestUtil.Prelude(ticks, TestUtil.BeastsStart, "beasts")) return;
             try { Step(); }
             catch (System.Exception ex) { Kit.Check(false, "beast harness threw: " + ex); Finish(); }
         }

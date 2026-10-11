@@ -29,7 +29,7 @@ namespace OldScoresTest
         {
             if (!active || done) return;
             ticks++;
-            if (ticks < TestUtil.NicknamesStart) return;
+            if (TestUtil.Prelude(ticks, TestUtil.NicknamesStart, "nicknames")) return;
             try { Step(); }
             catch (System.Exception ex) { Kit.Check(false, "nickname harness threw: " + ex); Finish(); }
         }
@@ -57,12 +57,19 @@ namespace OldScoresTest
                 Dread();
                 return;
             }
-            if (phase == 1 && ticks >= TestUtil.NicknamesStart + 90)
+            if (phase == 1 && ticks >= TestUtil.NicknamesStart + TestUtil.ClearTicks + 90)
             {
                 phase = 2;
+                if (fleer == null || fleer.Dead || !fleer.Spawned || ana == null || ana.Dead || !ana.Spawned)
+                {
+                    Kit.Check(false, $"the frightened raider runs away: cannot tell, raider dead {fleer?.Dead} spawned {fleer?.Spawned} downed {fleer?.Downed}; "
+                                     + $"her dead {ana?.Dead} spawned {ana?.Spawned} downed {ana?.Downed}");
+                    Finish();
+                    return;
+                }
                 JobDef job = fleer.CurJobDef;
                 Kit.Check(fleer.MentalStateDef == OldScoresDefOf.OldScores_Dread && job == JobDefOf.Flee,
-                    $"the frightened raider runs away (think tree wired: state {fleer.MentalStateDef?.defName}, job {job?.defName})");
+                    $"the frightened raider runs away (think tree wired: state {fleer.MentalStateDef?.defName ?? "none"}, job {job?.defName ?? "none"}, downed {fleer.Downed})");
                 Kit.Check(fleer.Position.DistanceTo(ana.Position) > 8f, $"...and is farther from her than before ({fleer.Position.DistanceTo(ana.Position):0.0} cells)");
                 // periodic path: a fresh raider close to her, the map component's 250-tick check must catch him
                 IntVec3 cell = CellFinder.StandableCellNear(ana.Position + new IntVec3(6, 0, 0), map, 3f,
@@ -75,7 +82,12 @@ namespace OldScoresTest
             }
             if (phase == 2)
             {
-                if (periodicRaider.MentalStateDef == OldScoresDefOf.OldScores_Dread)
+                if (periodicRaider == null || periodicRaider.Dead || !periodicRaider.Spawned)
+                {
+                    Kit.Check(false, $"the map component's 250-tick check: the test raider is gone (dead {periodicRaider?.Dead}, spawned {periodicRaider?.Spawned})");
+                    Finish();
+                }
+                else if (periodicRaider.MentalStateDef == OldScoresDefOf.OldScores_Dread)
                 {
                     Pawn cause = periodicRaider.MentalState.causedByPawn;
                     Kit.Check(cause != null && cause.Faction == Faction.OfPlayer,
