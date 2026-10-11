@@ -36,6 +36,13 @@ namespace GestaTest
 
         /// <summary>Verse/HealthUtility.cs:245 / :327.</summary>
         public static void Down(Pawn p) => HealthUtility.DamageUntilDowned(p, allowBleedingWounds: false);
+        /// <summary>Downs a pawn with real blows from an attacker (so the downing has an instigator).</summary>
+        public static void DownBy(Pawn victim, Pawn attacker)
+        {
+            for (int i = 0; i < 60 && !victim.Downed && !victim.Dead; i++)
+                victim.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 4f, 0f, -1f, attacker));
+        }
+
         public static void KillBy(Pawn victim, Pawn killer, DamageDef def = null)
         {
             // Pawn.Kill(DamageInfo? dinfo, Hediff exactCulprit) - Verse/Pawn.cs:2096

@@ -56,13 +56,13 @@ namespace GestaTest
             eng.PollNow();
             Kit.Check(eng.IsActive(map), "setup: a fight is on");
             ResetCooldown();
-            Kit.Down(a);
+            Kit.DownBy(a, enemy);
             Kit.Check(chron.LastBeat == Chronicler.Beat.FirstDown && chron.LastLine.Contains(a.LabelShort), $"the first colonist down gets a line ({chron.LastLine})");
             int spoken = chron.LinesSpoken;
             // cooldown: right after a line, ordinary beats wait
             Kit.Check(chron.Speak(Chronicler.Beat.Recovered, a, null, map) == null && chron.LinesSpoken == spoken, "an ordinary line inside the cooldown is skipped");
             ResetCooldown();
-            Kit.Down(b);
+            Kit.DownBy(b, enemy);
             Kit.Check(chron.LinesSpoken == spoken, "the second one down in the same fight does not");
             Traverse.Create(chron).Field("lastLineTick").SetValue(Find.TickManager.TicksGame - Chronicler.DeathGapTicks - 1);
             Kit.KillBy(b, enemy);
