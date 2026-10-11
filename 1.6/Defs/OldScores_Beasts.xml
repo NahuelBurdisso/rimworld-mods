@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Queued by code 1-2 quadrums after a marked beast escapes; never rolled by the storyteller. -->
+  <IncidentDef>
+    <defName>OldScores_BeastReturns</defName>
+    <label>beast returns</label>
+    <targetTags>
+      <li>Map_PlayerHome</li>
+    </targetTags>
+    <workerClass>OldScores.IncidentWorker_BeastReturns</workerClass>
+    <baseChance>0</baseChance>
+    <category>ThreatSmall</category>
+  </IncidentDef>
+
+  <HediffDef>
+    <defName>OldScores_Veteran</defName>
+    <label>old grudge</label>
+    <description>This animal has met your colony before and carries the scars to prove it. It hits harder and shrugs off wounds that would stop others of its kind.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.35, 0.3)</defaultLabelColor>
+    <isBad>false</isBad>
+    <everCurableByItem>false</everCurableByItem>
+    <scenarioCanAdd>false</scenarioCanAdd>
+    <stages>
+      <li>
+        <statFactors>
+          <MeleeDamageFactor>1.35</MeleeDamageFactor>
+          <IncomingDamageFactor>0.75</IncomingDamageFactor>
+        </statFactors>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <!-- Dropped where a returned beast dies; CompBeastTrophy writes its history in the inspect pane. -->
+  <ThingDef ParentName="ResourceBase">
+    <defName>OldScores_BeastTrophy</defName>
+    <label>beast trophy</label>
+    <description>A fang and a strip of scarred hide, lashed to a scrap of board. Someone carved the story into the wood.</description>
+    <graphicData>
+      <texPath>Things/Item/OldScores/BeastTrophy</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+    </graphicData>
+    <resourceReadoutPriority>Last</resourceReadoutPriority>
+    <stackLimit>1</stackLimit>
+    <statBases>
+      <MaxHitPoints>80</MaxHitPoints>
+      <MarketValue>120</MarketValue>
+      <Mass>1</Mass>
+      <Beauty>6</Beauty>
+      <Flammability>1</Flammability>
+    </statBases>
+    <thingCategories>
+      <li>ItemsMisc</li>
+    </thingCategories>
+    <tradeability>Sellable</tradeability>
+    <comps>
+      <li Class="OldScores.CompProperties_BeastTrophy" />
+    </comps>
+  </ThingDef>
+
+  <ThoughtDef>
+    <defName>OldScores_SettledOldScore</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>10</durationDays>
+    <stackLimit>3</stackLimit>
+    <stages>
+      <li>
+        <label>settled an old score</label>
+        <description>That beast hurt one of us and walked away. It came back, and I finished it.</description>
+        <baseMoodEffect>6</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <!-- Root keyword r_name. Rules ANIMAL_* (the beast) and VICTIM_name; constant hasVictim. -->
+  <RulePackDef>
+    <defName>OldScores_Namer_Beast</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>r_name(p=4)->[scarName]</li>
+        <li>r_name(p=2)->Old [scarWord]</li>
+        <li>r_name(hasVictim==true,p=2)->[VICTIM_name]'s Bane</li>
+        <li>r_name(hasVictim==true,p=1)->[VICTIM_name]'s Shadow</li>
+        <li>r_name(p=1)->the Grey [greyWord]</li>
+
+        <li>scarName->Torn Ear</li>
+        <li>scarName->Three-Toes</li>
+        <li>scarName->Half-Tail</li>
+        <li>scarName->Crookjaw</li>
+        <li>scarName->Ragged Ear</li>
+        <li>scarName->Bent Fang</li>
+        <li>scarName->One-Eye</li>
+        <li>scarName->Burnt Hide</li>
+        <li>scarName->Notch</li>
+        <li>scarName->Limp</li>
+
+        <li>scarWord->Scar</li>
+        <li>scarWord->Teeth</li>
+        <li>scarWord->Trouble</li>
+        <li>scarWord->Grudge</li>
+        <li>scarWord->Hunger</li>
+
+        <li>greyWord->Widow</li>
+        <li>greyWord->Thief</li>
+        <li>greyWord->Debt</li>
+        <li>greyWord->Rumor</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+</Defs>

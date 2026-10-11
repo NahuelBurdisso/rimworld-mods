@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Old Scores</name>
+  <packageId>nahuel.oldscores</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+  </loadAfter>
+  <description>Your enemies remember you. So do the beasts.
+
+Old Scores gives the people and animals your colony fights a memory. Every feature can be switched off in the mod settings.
+
+&lt;b&gt;Enemy Nickname&lt;/b&gt;
+Kill five of a faction's people, or bring down their real leader, and they give your colonist a name: "the Unkillable Toaster", "the Revolver Ghost", "the Smiling Dentist" - drawn from her weapon and her traits. A letter tells you what they call her, and her inspect pane remembers it. From then on, their raiders who see her up close may lose their nerve and run from her.
+
+&lt;b&gt;The One You Spared&lt;/b&gt;
+Capture a raider, then let him go. Days later he may walk back in with his faction's next raid. If he gets close enough to see the colonist who carried him in, he stops, says something you will not forget ("You carried me out of the snow."), throws down his weapon and joins you.
+
+&lt;b&gt;The Beast That Came Back&lt;/b&gt;
+A wild animal that mauls one of your colonists and gets away does not forget the way. It gets a name - Old Scar, Three-Toes, Kerr's Bane - its wounds become scars, and one or two quadrums later it comes back: tougher, angrier, with a red line under its name listing who it hurt. Kill it to settle the old score; it leaves a trophy that tells the whole story.
+
+Safe to add to an existing save. Requires Harmony.</description>
+</ModMetaData>

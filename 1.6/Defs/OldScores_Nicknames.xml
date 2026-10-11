@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Raiders who see a colonist their faction has nicknamed may break and run from her.
+       Same state class as Odyssey's Terror (which needs Odyssey), wired into the think tree by
+       Patches/OldScores_ThinkTree.xml. JobGiver_FleeTerror flees from MentalState.causedByPawn. -->
+  <MentalStateDef>
+    <defName>OldScores_Dread</defName>
+    <label>dread</label>
+    <stateClass>Verse.AI.MentalState_Terror</stateClass>
+    <category>Misc</category>
+    <nameColor>(0.65, 0.9, 0.93)</nameColor>
+    <baseInspectLine>Mental state: Running from a legend</baseInspectLine>
+    <blockNormalThoughts>true</blockNormalThoughts>
+    <minTicksBeforeRecovery>300</minTicksBeforeRecovery>
+    <maxTicksBeforeRecovery>600</maxTicksBeforeRecovery>
+    <recoveryMtbDays>0.3</recoveryMtbDays>
+  </MentalStateDef>
+
+  <!-- Root keyword r_name. Constants: weapon (melee/ranged/none), trait (see Nicknames.cs), PAWN_gender.
+       Rule WEAPON_label exists only when armed. Words are capitalised here: the code does not title-case. -->
+  <RulePackDef>
+    <defName>OldScores_Namer_EnemyNickname</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>r_name(p=4)->the [adj] [noun]</li>
+        <li>r_name(p=2)->the [noun] of [place]</li>
+        <li>r_name(p=1)->the [noun] Nobody Ordered</li>
+        <li>r_name(weapon==ranged,p=3)->the [WEAPON_label] [ghost]</li>
+        <li>r_name(weapon==melee,p=3)->the [WEAPON_label] [ghost]</li>
+        <li>r_name(weapon==melee,p=3)->the [adj] [meleeNoun]</li>
+        <li>r_name(weapon==ranged,p=3)->the [adj] [rangedNoun]</li>
+        <li>r_name(weapon==none,p=4)->the [adj] [fistNoun]</li>
+        <li>r_name(PAWN_gender==Female,p=1)->the [adj] [femaleNoun]</li>
+        <li>r_name(trait==Tough,p=6)->the Unkillable [noun]</li>
+        <li>r_name(trait==Tough,p=3)->the [noun] That Would Not Die</li>
+        <li>r_name(trait==Brawler,p=6)->the [adj] Knuckles</li>
+        <li>r_name(trait==Pyromaniac,p=6)->the [adj] Matchstick</li>
+        <li>r_name(trait==Nimble,p=6)->the Greased [noun]</li>
+        <li>r_name(trait==Wimp,p=6)->the Screaming [noun]</li>
+        <li>r_name(trait==Bloodlust,p=6)->the [adj] Butcher</li>
+        <li>r_name(trait==Psychopath,p=6)->the Smiling [noun]</li>
+        <li>r_name(trait==Kind,p=6)->the Apologetic [noun]</li>
+        <li>r_name(trait==Cannibal,p=6)->the Hungry [noun]</li>
+        <li>r_name(trait==Masochist,p=6)->the Grinning [noun]</li>
+        <li>r_name(trait==Gourmand,p=6)->the [adj] Lunchbox</li>
+        <li>r_name(trait==Ascetic,p=6)->the [adj] Monk</li>
+
+        <li>adj->Unkillable</li>
+        <li>adj->Grinning</li>
+        <li>adj->Quiet</li>
+        <li>adj->Red</li>
+        <li>adj->Laughing</li>
+        <li>adj->Patient</li>
+        <li>adj->Polite</li>
+        <li>adj->Barefoot</li>
+        <li>adj->Tireless</li>
+        <li>adj->Smoking</li>
+        <li>adj->Iron</li>
+        <li>adj->Rusty</li>
+        <li>adj->Midnight</li>
+        <li>adj->Cheerful</li>
+        <li>adj->Terrible</li>
+        <li>adj->Silent</li>
+        <li>adj->Unstoppable</li>
+        <li>adj->Very Angry</li>
+        <li>adj->Humming</li>
+        <li>adj->Last</li>
+
+        <li>noun->Toaster</li>
+        <li>noun->Kettle</li>
+        <li>noun->Accountant</li>
+        <li>noun->Lawnmower</li>
+        <li>noun->Grandmother</li>
+        <li>noun->Cabbage</li>
+        <li>noun->Ghost</li>
+        <li>noun->Storm</li>
+        <li>noun->Wolf</li>
+        <li>noun->Reaper</li>
+        <li>noun->Nightmare</li>
+        <li>noun->Teapot</li>
+        <li>noun->Badger</li>
+        <li>noun->Hurricane</li>
+        <li>noun->Rumor</li>
+        <li>noun->Tax Collector</li>
+        <li>noun->Dentist</li>
+        <li>noun->Landlord</li>
+        <li>noun->Weather</li>
+        <li>noun->Funeral</li>
+
+        <li>place->the Ditch</li>
+        <li>place->Bad News</li>
+        <li>place->the Treeline</li>
+        <li>place->Many Holes</li>
+        <li>place->No Mercy</li>
+        <li>place->the Last Door</li>
+        <li>place->Sudden Silence</li>
+
+        <li>ghost->Ghost</li>
+        <li>ghost->Widowmaker</li>
+        <li>ghost->Reaper</li>
+        <li>ghost->Problem</li>
+        <li>ghost->Sermon</li>
+        <li>ghost->Lullaby</li>
+        <li>ghost->Saint</li>
+
+        <li>meleeNoun->Cleaver</li>
+        <li>meleeNoun->Woodchopper</li>
+        <li>meleeNoun->Barber</li>
+        <li>meleeNoun->Hedge Trimmer</li>
+        <li>meleeNoun->Tailor</li>
+
+        <li>rangedNoun->Hailstorm</li>
+        <li>rangedNoun->Nail Gun</li>
+        <li>rangedNoun->Rattlesnake</li>
+        <li>rangedNoun->Thunder</li>
+        <li>rangedNoun->Woodpecker</li>
+
+        <li>fistNoun->Knuckles</li>
+        <li>fistNoun->Fists</li>
+        <li>fistNoun->Headbutt</li>
+        <li>fistNoun->Bear Hug</li>
+
+        <li>femaleNoun->Widow</li>
+        <li>femaleNoun->Aunt</li>
+        <li>femaleNoun->Duchess</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+</Defs>
