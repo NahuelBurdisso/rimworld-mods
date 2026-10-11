@@ -53,7 +53,8 @@ namespace Gesta
             if (__instance.Dead) return;
             Map map = __instance.MapHeld;
             if (map == null) return;
-            AshMaker.TryMake(__instance, dinfo);
+            try { AshMaker.TryMake(__instance, dinfo); }
+            catch (System.Exception ex) { Log.ErrorOnce("[Gesta] ash silhouette failed: " + ex, 0x6E57A2); }
             Pawn killer = dinfo?.Instigator as Pawn;
             __state = new KillContext
             {

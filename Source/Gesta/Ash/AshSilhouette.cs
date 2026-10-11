@@ -21,7 +21,10 @@ namespace Gesta
         public int deathTicksAbs;
         public TerrainDef terrainAtDeath;
 
-        Material material;   // built lazily on the main thread (saves load asynchronously)
+        // built lazily on the main thread (saves load asynchronously); owned by this mark, never pooled,
+        // and destroyed with it - MaterialPool never forgets a texture, which would leak one per mark per load
+        Material material;
+        Texture2D texture;
 
         public Material Material
         {
@@ -29,12 +32,29 @@ namespace Gesta
             {
                 if (material == null && png != null)
                 {
-                    var tex = new Texture2D(2, 2, TextureFormat.ARGB32, false) { wrapMode = TextureWrapMode.Clamp };
-                    if (tex.LoadImage(png))
-                        material = MaterialPool.MatFrom(tex, ShaderDatabase.Transparent, Color.white);
+                    texture = new Texture2D(2, 2, TextureFormat.ARGB32, false) { wrapMode = TextureWrapMode.Clamp };
+                    if (texture.LoadImage(png, markNonReadable: true))
+                    {
+                        material = new Material(ShaderDatabase.Transparent);
+                        material.mainTexture = texture;
+                    }
+                    else
+                    {
+                        Object.Destroy(texture);
+                        texture = null;
+                    }
                 }
                 return material;
             }
+        }
+
+        public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
+        {
+            base.DeSpawn(mode);
+            if (material != null) Object.Destroy(material);
+            if (texture != null) Object.Destroy(texture);
+            material = null;
+            texture = null;
         }
 
         public override void Print(SectionLayer layer)
@@ -49,7 +69,9 @@ namespace Gesta
         public override void TickLong()
         {
             if (Destroyed || !Spawned) return;
-            if (Find.TickManager.TicksGame - createdTick > LifetimeTicks || Position.GetTerrain(Map) != terrainAtDeath)
+            Building edifice = Position.GetEdifice(Map);
+            if (Find.TickManager.TicksGame - createdTick > LifetimeTicks || Position.GetTerrain(Map) != terrainAtDeath
+                || (edifice != null && edifice.def.passability == Traversability.Impassable))
                 Destroy();
         }
 

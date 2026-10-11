@@ -15,6 +15,7 @@
     <useHitPoints>false</useHitPoints>
     <rotatable>false</rotatable>
     <selectable>true</selectable>
+    <neverMultiSelect>true</neverMultiSelect>
     <graphicData>
       <texPath>Things/Gesta/Glow</texPath>
       <graphicClass>Graphic_Single</graphicClass>

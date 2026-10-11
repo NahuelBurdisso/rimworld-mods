@@ -132,9 +132,10 @@ next to it gets the memory.
 **Pitch:** someone killed by an explosion or fire leaves their shadow burned into the ground,
 like the shadows of Hiroshima.
 
-**Trigger** (Pawn.Kill prefix, while the pawn is still drawn standing): humanlike, spawned, and
-the killing damage is Bomb, BombSuper, Flame, Burn or Vaporize, or the pawn is on fire. At most
-3 per tick and 40 per map.
+**Trigger** (Pawn.Kill prefix, while the pawn is still drawn standing; wrapped in try/catch so a
+cosmetic failure can never stop a death): humanlike, spawned, and the killing damage is explosive
+(`isExplosive`, so modded explosives count), Flame, Burn or Vaporize, or the pawn is on fire. At
+most 3 per tick; at 40 per map the oldest mark fades to make room.
 
 **Snapshot:** the pawn's own render (body, head, hair, apparel; portrait pose, facing south) is
 drawn by vanilla's `PawnCacheRenderer` into a 128×128 render texture covering 2.6 × 2.6 cells,
@@ -144,9 +145,33 @@ stored as PNG bytes. This uses the real renderer, so alien races and modded appa
 **The mark** (`Gesta.AshSilhouette`, def `Gesta_AshSilhouette`): drawn flat on the floor layer at the
 death cell (map mesh, built lazily on the main thread because saves load asynchronously). Not
 filth: it cannot be cleaned. It fades after one in-game year, or at once if the floor under it
-changes (the colony rebuilt there). Inspect: "Here Ruiz was caught in the blast, 12th of Aprimay
+changes or a wall is built on it. Its texture and material belong to the mark (not MaterialPool,
+which never forgets) and are destroyed with it. `neverMultiSelect`, so drag-selection skips it. Inspect: "Here Ruiz was caught in the blast, 12th of Aprimay
 5502." (fire: "burned"). Saved: PNG bytes (deflated by the scribe), name, cause, tick, terrain.
 
 **Tests:** a hostile killed by Bomb leaves one silhouette at its cell whose texture has a visible
 shape (non-transparent pixel count in a sane range); a bullet death leaves none; a burning pawn
 killed by a cut leaves one; the inspect text names the pawn; changing the terrain removes it.
+
+## Feature 5 — Turning Tide (`turning-tide`)
+
+**Pitch:** the sky turns cold and grey while you are losing a fight, and opens gold when you turn
+it around.
+
+**Strength** (every 250 ticks during an engagement, home maps only): hostile = Σ combatPower ×
+health of active hostile pawns; colony = Σ (40 + 4 × best of Shooting/Melee) × health of fighters.
+- ratio ≥ 2 for 2 checks → **losing**: the cold sky eases in over ~5 s.
+- after losing, ratio ≤ 0.8, or no active hostile left with a fighter standing (checked every 60
+  ticks while losing, so it does not wait for the engagement poll) → **gold** for 2500
+  ticks (eases in 3 s, fades the last 600 ticks); the cold drops at once.
+
+**Sky:** a `WeatherEvent` (vanilla blends weather events with plain Lerp, while game conditions can
+only darken). Cold: steel blue, saturation 0.25, up to 80 %. Gold: warm amber, saturation 1.4, up
+to 70 % (screenshots: centre of the screen went from (92,59,31) to (62,58,55) losing and
+(103,67,31) after winning). The event's glow is the sky's current glow, so light levels (and gameplay) do not change.
+Not during eclipse, aurora or on maps without sky lighting. Nothing saved: after a load the sky is
+simply normal.
+
+**Tests:** a quiet map has no hostile strength; 8 centipedes against the colony count as losing;
+the cold eases in and a live sky event pulls saturation down; killing them opens the gold sky with
+saturation above 1 and the cold gone.

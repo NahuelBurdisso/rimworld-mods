@@ -37,6 +37,9 @@ namespace Gesta
             list.GapLine();
             list.Label("Gesta_Settings_Ash".Translate());
             list.CheckboxLabeled("Gesta_Settings_Enabled".Translate(), ref Settings.ashSilhouettes);
+            list.GapLine();
+            list.Label("Gesta_Settings_Tide".Translate());
+            list.CheckboxLabeled("Gesta_Settings_Enabled".Translate(), ref Settings.turningTide);
             list.End();
         }
     }
@@ -52,6 +55,7 @@ namespace Gesta
         public bool featTitles = true;
         public bool poppies = true;
         public bool ashSilhouettes = true;
+        public bool turningTide = true;
 
         public override void ExposeData()
         {
@@ -64,6 +68,7 @@ namespace Gesta
             Scribe_Values.Look(ref featTitles, "featTitles", true);
             Scribe_Values.Look(ref poppies, "poppies", true);
             Scribe_Values.Look(ref ashSilhouettes, "ashSilhouettes", true);
+            Scribe_Values.Look(ref turningTide, "turningTide", true);
         }
     }
 }

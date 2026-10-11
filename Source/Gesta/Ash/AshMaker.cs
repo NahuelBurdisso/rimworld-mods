@@ -28,7 +28,7 @@ namespace Gesta
                     if (d != null) blastDefs.Add(d);
                 }
             }
-            return blastDefs.Contains(def);
+            return def.isExplosive || blastDefs.Contains(def);
         }
 
         /// <summary>Called from the Kill prefix: the pawn is alive, spawned and drawable.</summary>
@@ -43,8 +43,6 @@ namespace Gesta
             if (now != lastTick) { lastTick = now; madeThisTick = 0; }
             if (madeThisTick >= MaxPerTick) return;
             Map map = pawn.Map;
-            if (map.listerThings.ThingsOfDef(GestaDefOf.Gesta_AshSilhouette).Count >= MaxPerMap) return;
-
             byte[] png = Snapshot(pawn);
             if (png == null) return;
             madeThisTick++;
@@ -56,18 +54,26 @@ namespace Gesta
             mark.createdTick = now;
             mark.deathTicksAbs = GenTicks.TicksAbs;
             mark.terrainAtDeath = pawn.Position.GetTerrain(map);
-            // one silhouette per cell: a new death replaces an older mark
+            // one silhouette per cell: a new death replaces an older mark; at the cap the oldest fades
             foreach (Thing old in pawn.Position.GetThingList(map).ToArray())
                 if (old is AshSilhouette) old.Destroy();
+            List<Thing> all = map.listerThings.ThingsOfDef(GestaDefOf.Gesta_AshSilhouette);
+            if (all.Count >= MaxPerMap)
+                all.OfType<AshSilhouette>().OrderBy(a => a.createdTick).First().Destroy();
             GenSpawn.Spawn(mark, pawn.Position, map);
         }
 
         /// <summary>Vanilla's pawn renderer into a render texture, read back and turned to soot.</summary>
+        /// <summary>For tests: visible pixels in the last snapshot.</summary>
+        public static int LastVisiblePixels;
+
         public static byte[] Snapshot(Pawn pawn)
         {
-            RenderTexture rt = RenderTexture.GetTemporary(TexSize, TexSize, 24, RenderTextureFormat.ARGB32);
+            RenderTexture rt = null;
+            Texture2D tex = null;
             try
             {
+                rt = RenderTexture.GetTemporary(TexSize, TexSize, 24, RenderTextureFormat.ARGB32);
                 RenderTexture prev = RenderTexture.active;
                 RenderTexture.active = rt;
                 GL.Clear(true, true, Color.clear);
@@ -76,7 +82,7 @@ namespace Gesta
                 // camera zoom z shows 2/z cells; 2/0.77 ~= 2.6 cells, the size the mark is printed at
                 Find.PawnCacheRenderer.RenderPawn(pawn, rt, Vector3.zero, 2f / AshSilhouette.SizeCells, 0f, Rot4.South,
                     renderHead: pawn.health.hediffSet.HasHead, renderHeadgear: true, renderClothes: true, portrait: true);
-                Texture2D tex = rt.CreateTexture2D();
+                tex = rt.CreateTexture2D();
                 Color32[] px = tex.GetPixels32();
                 int visible = 0;
                 for (int i = 0; i < px.Length; i++)
@@ -85,12 +91,11 @@ namespace Gesta
                     px[i] = new Color32(Soot.r, Soot.g, Soot.b, a);
                     if (a > 20) visible++;
                 }
-                if (visible < 40) { Object.Destroy(tex); return null; }   // nothing was drawn
+                LastVisiblePixels = visible;
+                if (visible < 40) return null;   // nothing was drawn
                 tex.SetPixels32(px);
                 tex.Apply();
-                byte[] png = tex.EncodeToPNG();
-                Object.Destroy(tex);
-                return png;
+                return tex.EncodeToPNG();
             }
             catch (System.Exception ex)
             {
@@ -99,7 +104,8 @@ namespace Gesta
             }
             finally
             {
-                RenderTexture.ReleaseTemporary(rt);
+                if (tex != null) Object.Destroy(tex);
+                if (rt != null) RenderTexture.ReleaseTemporary(rt);
             }
         }
     }
