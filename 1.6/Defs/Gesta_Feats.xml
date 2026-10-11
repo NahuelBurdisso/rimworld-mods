@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Feats of Arms: awarded by Gesta.FeatTracker, each once per pawn. -->
+  <Gesta.FeatDef>
+    <defName>Gesta_Feat_TripleKill</defName>
+    <label>triple kill</label>
+    <description>Three enemies down in ten seconds.</description>
+    <epithets>
+      <li>Reaper</li>
+      <li>Scythe</li>
+      <li>Thricefold</li>
+    </epithets>
+    <tale>Gesta_Tale_TripleKill</tale>
+  </Gesta.FeatDef>
+
+  <Gesta.FeatDef>
+    <defName>Gesta_Feat_BeastBreaker</defName>
+    <label>beast breaker</label>
+    <description>Brought down something enormous with nothing but close combat.</description>
+    <epithets>
+      <li>Giantkiller</li>
+      <li>Beastbreaker</li>
+      <li>Thrumbo-bane</li>
+    </epithets>
+    <tale>Gesta_Tale_BeastBreaker</tale>
+  </Gesta.FeatDef>
+
+  <Gesta.FeatDef>
+    <defName>Gesta_Feat_Kingslayer</defName>
+    <label>kingslayer</label>
+    <description>Killed the one leading the enemy.</description>
+    <epithets>
+      <li>Kingslayer</li>
+      <li>Crownbreaker</li>
+      <li>Headsman</li>
+    </epithets>
+    <tale>Gesta_Tale_Kingslayer</tale>
+  </Gesta.FeatDef>
+
+  <Gesta.FeatDef>
+    <defName>Gesta_Feat_Lifeline</defName>
+    <label>lifeline</label>
+    <description>Carried a fallen friend out while the enemy was still close.</description>
+    <epithets>
+      <li>Lifeline</li>
+      <li>Shield-bearer</li>
+      <li>Unflinching</li>
+    </epithets>
+    <tale>Gesta_Tale_Lifeline</tale>
+  </Gesta.FeatDef>
+
+  <ThoughtDef>
+    <defName>Gesta_DidAFeat</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>6</durationDays>
+    <stackLimit>3</stackLimit>
+    <stages>
+      <li>
+        <label>earned a name</label>
+        <description>They saw what I did out there. People are already calling me something new.</description>
+        <baseMoodEffect>5</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <!-- Golden column of light: a tall vertical glow, anchored at its centre (lifted in code). -->
+  <FleckDef ParentName="FleckBase">
+    <defName>Gesta_Fleck_FeatBeam</defName>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.2</fadeInTime>
+    <solidTime>1.0</solidTime>
+    <fadeOutTime>1.4</fadeOutTime>
+    <graphicData>
+      <texPath>Things/Gesta/FeatBeam</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <drawSize>(1.4, 7.2)</drawSize>
+      <color>(255, 214, 110)</color>
+    </graphicData>
+  </FleckDef>
+
+  <FleckDef ParentName="FleckBase">
+    <defName>Gesta_Fleck_FeatBloom</defName>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.1</fadeInTime>
+    <solidTime>0.3</solidTime>
+    <fadeOutTime>1.2</fadeOutTime>
+    <growthRate>1.2</growthRate>
+    <graphicData>
+      <texPath>Things/Gesta/Glow</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <drawSize>(1, 1)</drawSize>
+      <color>(255, 220, 130)</color>
+    </graphicData>
+  </FleckDef>
+
+  <TaleDef>
+    <defName>Gesta_Tale_TripleKill</defName>
+    <label>triple kill</label>
+    <taleClass>Tale_SinglePawn</taleClass>
+    <type>PermanentHistorical</type>
+    <baseInterest>3</baseInterest>
+    <rulePack>
+      <rulesStrings>
+        <li>tale_noun->[PAWN_nameDef]'s triple kill</li>
+        <li>image->[PAWN_nameFull] cutting down three attackers in a single breath [circumstance_group]</li>
+        <li>image->[PAWN_nameFull] standing over three fallen raiders [circumstance_group]</li>
+        <li>circumstance_phrase->with smoke still curling from [PAWN_possessive] weapon</li>
+        <li>circumstance_phrase->as the rest of the attackers falter</li>
+        <li>circumstance_phrase->in a blur of motion</li>
+        <li>desc_sentence->[PAWN_pronoun] has a look of cold focus.</li>
+        <li>desc_sentence->The three bodies are arranged like the points of a triangle.</li>
+      </rulesStrings>
+    </rulePack>
+  </TaleDef>
+
+  <TaleDef>
+    <defName>Gesta_Tale_BeastBreaker</defName>
+    <label>beast breaker</label>
+    <taleClass>Tale_SinglePawn</taleClass>
+    <type>PermanentHistorical</type>
+    <baseInterest>3</baseInterest>
+    <rulePack>
+      <rulesStrings>
+        <li>tale_noun->[PAWN_nameDef]'s fight with the giant</li>
+        <li>image->[PAWN_nameFull] felling a creature many times [PAWN_possessive] size [circumstance_group]</li>
+        <li>image->[PAWN_nameFull] wrestling a monster to the ground [circumstance_group]</li>
+        <li>circumstance_phrase->with nothing but a blade and nerve</li>
+        <li>circumstance_phrase->while the earth shakes</li>
+        <li>desc_sentence->The beast towers over [PAWN_objective] even as it falls.</li>
+        <li>desc_sentence->[PAWN_pronoun] is bloodied and grinning.</li>
+      </rulesStrings>
+    </rulePack>
+  </TaleDef>
+
+  <TaleDef>
+    <defName>Gesta_Tale_Kingslayer</defName>
+    <label>kingslayer</label>
+    <taleClass>Tale_SinglePawn</taleClass>
+    <type>PermanentHistorical</type>
+    <baseInterest>3.5</baseInterest>
+    <rulePack>
+      <rulesStrings>
+        <li>tale_noun->the day [PAWN_nameDef] killed the enemy's leader</li>
+        <li>image->[PAWN_nameFull] striking down the leader of the attack [circumstance_group]</li>
+        <li>image->[PAWN_nameFull] taking the enemy commander's life [circumstance_group]</li>
+        <li>circumstance_phrase->as the leader's followers scatter</li>
+        <li>circumstance_phrase->with a single decisive blow</li>
+        <li>desc_sentence->The fallen leader's banner lies in the dirt.</li>
+        <li>desc_sentence->[PAWN_pronoun] does not look triumphant, only tired.</li>
+      </rulesStrings>
+    </rulePack>
+  </TaleDef>
+
+  <TaleDef>
+    <defName>Gesta_Tale_Lifeline</defName>
+    <label>carried a friend under fire</label>
+    <taleClass>Tale_SinglePawn</taleClass>
+    <type>PermanentHistorical</type>
+    <baseInterest>3</baseInterest>
+    <rulePack>
+      <rulesStrings>
+        <li>tale_noun->[PAWN_nameDef]'s rescue under fire</li>
+        <li>image->[PAWN_nameFull] carrying a wounded friend through gunfire [circumstance_group]</li>
+        <li>image->[PAWN_nameFull] dragging a fallen comrade to safety [circumstance_group]</li>
+        <li>circumstance_phrase->while bullets kick up the dirt around [PAWN_objective]</li>
+        <li>circumstance_phrase->with the enemy only steps away</li>
+        <li>desc_sentence->[PAWN_pronoun] is shielding the wounded with [PAWN_possessive] own body.</li>
+        <li>desc_sentence->The wounded friend's hand clutches [PAWN_possessive] shoulder.</li>
+      </rulesStrings>
+    </rulePack>
+  </TaleDef>
+
+</Defs>

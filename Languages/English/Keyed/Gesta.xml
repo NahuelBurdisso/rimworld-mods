@@ -6,6 +6,14 @@
   <Gesta_Settings_SlowDown>Drop to normal speed</Gesta_Settings_SlowDown>
   <Gesta_Settings_Music>Fade the battle music to silence</Gesta_Settings_Music>
   <Gesta_Settings_Vignette>Pulsing red screen edges</Gesta_Settings_Vignette>
+  <Gesta_Settings_Feats>Feats of Arms</Gesta_Settings_Feats>
+  <Gesta_Settings_FeatTitles>Give the earned name as the colonist's title (never replaces a title you typed)</Gesta_Settings_FeatTitles>
+  <Gesta_Feat_EarnedTitle>{0} earned a name: {2} ({1}).</Gesta_Feat_EarnedTitle>
+  <Gesta_Feat_Earned>{0} accomplished a feat of arms: {1}.</Gesta_Feat_Earned>
+  <Gesta_Settings_Poppies>Battlefield Poppies</Gesta_Settings_Poppies>
+  <Gesta_Poppy_VictimOfFaction>{0} of {1}</Gesta_Poppy_VictimOfFaction>
+  <Gesta_Poppy_Inspect>Here fell {0}, killed by {1}, {2}.</Gesta_Poppy_Inspect>
+  <Gesta_Poppy_InspectWeapon>Here fell {0}, killed by {1} with a {2}, {3}.</Gesta_Poppy_InspectWeapon>
   <Gesta_LastStand_Caption>{0} stands alone.</Gesta_LastStand_Caption>
   <Gesta_LastStand_Survived>{0} stood alone, and held.</Gesta_LastStand_Survived>
 </LanguageData>

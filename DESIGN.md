@@ -62,16 +62,19 @@ trigger attempt on the same pawn is refused by the cooldown.
 
 **Pitch:** do something legendary in a fight and the colony gives you a name for it.
 
-**Feats** (each at most once per pawn; only free colonists; only against pawns hostile to the
-player at the moment of death; on any map, caravans included):
+**Feats** (each at most once per pawn; only free non-slave colonists who are not quest lodgers;
+only against pawns that were hostile, on their feet and not of the player's faction at the moment
+of death — finishing off downed enemies or a berserk colonist is not a feat; never by fire, whose
+instigator lingers for minutes; on any map, caravans included):
 | Feat | Condition | Epithets (one picked at random) |
 |---|---|---|
 | Triple kill | 3 hostile kills within 600 ticks (10 s) | Reaper, Scythe, Thricefold |
-| Beast breaker | melee kill (`!dinfo.Def.isRanged`) of a hostile with BodySize ≥ 2.5 or combatPower ≥ 300 | Giantkiller, Beastbreaker, Thrumbo-bane |
-| Kingslayer | kills a hostile who is its faction's leader, or whose kind is `factionLeader` or `isBoss` | Kingslayer, Crownbreaker, Headsman |
-| Lifeline | carries a downed colonist (job Rescue or CarryDownedPawnDrafted) with an active hostile within 15 cells for 2 consecutive checks (60 ticks apart) | Lifeline, the Shield, Unflinching |
+| Beast breaker | melee kill (not ranged, explosive or fire, killer adjacent to the victim) of a hostile with BodySize ≥ 2.5 or combatPower ≥ 300 | Giantkiller, Beastbreaker, Thrumbo-bane |
+| Kingslayer | kills a hostile who is its faction's real leader (`Faction.leader`) or whose kind `isBoss` (raid-group bosses like PirateBoss do not count: almost every raid has one) | Kingslayer, Crownbreaker, Headsman |
+| Lifeline | carries a downed humanlike colonist who is not a baby, with an active hostile in line of sight within 15 cells, for 4 consecutive checks (60 ticks apart; any gap restarts the count). The job is not checked: a drafted carry ends its job once the pawn is picked up | Lifeline, the Shield, Unflinching |
 
-**On a feat:**
+**On a feat** (several feats from the same kill are awarded together: one tale each, but one beam,
+one title — named by the last feat — one memory and one message):
 - A golden column of light rises at the pawn (fleck `Gesta_Fleck_FeatBeam`, tall vertical glow,
   ~2.5 s) with a bloom at the feet, and gold floating text with the feat name.
 - The epithet becomes the pawn's title (`story.Title`, vanilla, saved, shown as "Ana, Kingslayer"
@@ -89,3 +92,32 @@ tale, memory; kills of non-hostiles don't count; a 2nd triple kill gives nothing
 kill of a thrumbo gives Beast breaker but a ranged kill of one does not; killing a pawn whose
 kind is a faction leader gives Kingslayer; a player-set custom title is not overwritten;
 a colonist carrying a downed colonist near a hostile for 2 checks gets Lifeline.
+
+## Feature 3 — Battlefield Poppies (`battlefield-poppies`)
+
+**Pitch:** where someone fell in battle, a poppy grows the next season: red for your people,
+white for the enemy, and it remembers who.
+
+**Recording** (Pawn.Kill postfix with the KillContext): the victim is humanlike, the killer is a
+pawn (a combat death), the death cell is in bounds, unroofed, with fertility ≥ 0.5. Stored per map
+(MapComponent `PoppyField`): cell, colonist?, victim name, victim faction name, killer name, weapon
+label, death tick, and the living colonists who loved the victim (opinion ≥ 20 or any relation;
+only for colonist victims). A new record is skipped if a poppy or record already exists within 1
+cell (killboxes); at most 80 poppies + records per map.
+
+**Blooming:** every 2500 ticks, records at least 3 days old bloom if it is growing season there.
+Target cell: the death cell or the nearest valid cell within 2 (in bounds, unroofed, fertile, no
+edifice, not in a growing zone, no tree). An existing small wild plant is cleared. A record that
+cannot bloom within 60 days is dropped.
+
+**The plant** (`Gesta.Plant_Poppy`, defs `Gesta_PoppyRed` / `Gesta_PoppyWhite`): decorative, not
+sowable, not harvestable, not edible, not auto-cut, never blighted, never dies of age or light; it
+can still burn or be cut by the player. Beauty +8. Label "red poppy (Mía)". Inspect: "Here fell
+Mía, killed by Kerr with a bolt-action rifle, 12th of Aprimay 5502."
+**Mourners:** every long tick, a mourner within 4 cells gets `Gesta_VisitedPoppy` (+3, 1 day).
+
+**Tests:** a colonist killed by a hostile on fertile open ground creates a record with the right
+names; a death under a roof does not; a second death in the adjacent cell is merged; forcing the
+record's age blooms a red poppy at the cell with the victim's name in its label and inspect text;
+an enemy's poppy is white; the poppy is not ingestible and does not die of age; a mourner standing
+next to it gets the memory.

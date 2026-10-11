@@ -16,5 +16,11 @@
   <loadAfter>
     <li>brrainz.harmony</li>
   </loadAfter>
-  <description>Combat that becomes legend.\n\nGesta turns the rare, decisive moments of a fight into something the colony remembers. Every feature can be switched off in the mod settings.\n\n&lt;b&gt;The Last One Standing&lt;/b&gt;\nWhen everyone else is down and a single colonist is still on their feet against a real attack, the game stops to watch them: the camera finds them, the battle music fades to silence, the screen edges pulse like a heartbeat and their name turns gold. They fight without pain or panic for an hour, then crash. If they hold, they never forget it, the friends they stood over remember it too, and the colony's artists will carve it.</description>
+  <description>Combat that becomes legend.\n\nGesta turns the rare, decisive moments of a fight into something the colony remembers. Every feature can be switched off in the mod settings.\n\n&lt;b&gt;The Last One Standing&lt;/b&gt;\nWhen everyone else is down and a single colonist is still on their feet against a real attack, the game stops to watch them: the camera finds them, the battle music fades to silence, the screen edges pulse like a heartbeat and their name turns gold. They fight without pain or panic for an hour, then crash. If they hold, they never forget it, the friends they stood over remember it too, and the colony's artists will carve it.
+
+&lt;b&gt;Feats of Arms&lt;/b&gt;
+Three kills in ten seconds, a thrumbo felled in close combat, the enemy's true leader brought down, a wounded friend carried out under fire: a column of golden light marks the moment and the colony gives the colonist a name for it (shown as their title, never replacing one you typed), plus a tale for the artists.
+
+&lt;b&gt;Battlefield Poppies&lt;/b&gt;
+Where someone fell in battle, a poppy blooms the next growing season: red for your people, white for the enemy. Inspect it to read who fell there, who killed them and when. Those who loved the fallen are moved when they pass by.</description>
 </ModMetaData>
