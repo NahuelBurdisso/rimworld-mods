@@ -1,3 +1,4 @@
+using HarmonyLib;
 using System.Collections.Generic;
 using System.Linq;
 using OldScores;
@@ -105,8 +106,15 @@ namespace OldScoresTest
             Kit.Check(rec != null && rec.nickname.StartsWith("the ") && !rec.nickname.Contains("[") && rec.nickname.Length > 6,
                 "the nickname is a resolved 'the ...' phrase");
             Kit.Check(TestUtil.LetterAbout(ana.LabelShort, pirates), "a letter with relatedFaction = the pirates announces it");
-            string inspect = ana.GetInspectString();
-            Kit.Check(rec != null && inspect.Contains(rec.nickname) && !inspect.Contains("\n\n"), "her inspect pane shows the nickname");
+            string direct = T.InspectLine(ana);
+            Kit.Check(rec != null && direct != null && direct.Contains(rec.nickname), $"the mod builds her inspect line ({direct ?? "null"})");
+            Patches inspectPatches = Harmony.GetPatchInfo(AccessTools.Method(typeof(Pawn), nameof(Pawn.GetInspectString)));
+            bool patched = inspectPatches != null && inspectPatches.Postfixes.Any(x => x.owner == "nahuel.oldscores");
+            Kit.Check(patched, $"Pawn.GetInspectString carries the Old Scores postfix (owners: {(inspectPatches == null ? "none" : string.Join(",", inspectPatches.Owners))})");
+            string inspect = ana.GetInspectString() ?? "";
+            Kit.Check(rec != null && inspect.Contains(rec.nickname),
+                $"her inspect pane shows the nickname (inspect: {inspect.Replace("\n", " | ")})");
+            Kit.Check(direct == null || !inspect.Contains("\n\n" + direct), "...on its own line, with no blank line before it");
             KillHostiles(ana, 2, pirates);
             Kit.Check(T.GetNickname(ana, pirates).nickname == rec.nickname, "more kills do not rename her");
 
@@ -165,10 +173,13 @@ namespace OldScoresTest
                 Pawn stranger = other != null ? SpawnUnarmed(origin + new IntVec3(6, 0, -1), other) : null;
                 Kit.Check(!GenSight.LineOfSight(origin, hidden.Position, map), "setup: the wall blocks her line of sight");
 
-                T.DreadCheck(map);
+                // only her share of the check: other colonists in this game may already have a nickname
+                // from the same faction (the Gesta harness kills its leaders), and could frighten him first
+                string before = OldScoresTracker.WhyNoDread(fleer, ana, pirates);
+                int started = T.DreadFrom(ana);
 
                 Kit.Check(fleer.MentalStateDef == OldScoresDefOf.OldScores_Dread && fleer.MentalState.causedByPawn == ana,
-                    "a raider 8 cells away in plain sight falls into dread of her");
+                    $"a raider 8 cells away in plain sight falls into dread of her (eligible before: {before ?? "yes"}; started {started}; now {fleer.MentalStateDef?.defName ?? "no mental state"}, caused by {fleer.MentalState?.causedByPawn?.LabelShort ?? "-"})");
                 Kit.Check(!DreadOf(far, ana), "a raider 20 cells away does not");
                 Kit.Check(!DreadOf(downed, ana), "a downed raider does not");
                 Kit.Check(!DreadOf(hidden, ana), "a raider behind a wall does not");
