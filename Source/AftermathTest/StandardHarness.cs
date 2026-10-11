@@ -152,7 +152,7 @@ namespace AftermathTest
         }
 
         List<MinifiedThing> Standards() =>
-            map.listerThings.ThingsOfDef(ThingDefOf.MinifiedThing).OfType<MinifiedThing>()
+            map.listerThings.ThingsInGroup(ThingRequestGroup.MinifiedThing).OfType<MinifiedThing>()
                 .Where(m => m.InnerThing is Building_CapturedStandard).ToList();
 
         protected override string Facts() =>
