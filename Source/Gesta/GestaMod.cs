@@ -17,10 +17,16 @@ namespace Gesta
 
         public override string SettingsCategory() => "Gesta";
 
+        static Vector2 scroll;
+        static float contentHeight = 1200f;
+
         public override void DoSettingsWindowContents(Rect inRect)
         {
+            // ten features do not fit in the settings window: scroll
+            var view = new Rect(0f, 0f, inRect.width - 20f, contentHeight);
+            Widgets.BeginScrollView(inRect, ref scroll, view);
             var list = new Listing_Standard();
-            list.Begin(inRect);
+            list.Begin(view);
             list.Label("Gesta_Settings_LastStand".Translate());
             list.CheckboxLabeled("Gesta_Settings_Enabled".Translate(), ref Settings.lastStand);
             list.CheckboxLabeled("Gesta_Settings_Camera".Translate(), ref Settings.lastStandCamera);
@@ -59,7 +65,9 @@ namespace Gesta
             list.GapLine();
             list.Label("Gesta_Settings_WarStories".Translate());
             list.CheckboxLabeled("Gesta_Settings_Enabled".Translate(), ref Settings.warStories);
+            contentHeight = list.CurHeight + 20f;
             list.End();
+            Widgets.EndScrollView();
         }
     }
 
