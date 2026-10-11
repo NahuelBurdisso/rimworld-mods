@@ -49,6 +49,13 @@ namespace Gesta
             list.GapLine();
             list.Label("Gesta_Settings_Chronicler".Translate());
             list.CheckboxLabeled("Gesta_Settings_Enabled".Translate(), ref Settings.chronicler);
+            list.GapLine();
+            list.Label("Gesta_Settings_Killcam".Translate());
+            list.CheckboxLabeled("Gesta_Settings_Enabled".Translate(), ref Settings.killcam);
+            list.CheckboxLabeled("Gesta_Settings_Camera".Translate(), ref Settings.killcamCamera);
+            list.CheckboxLabeled("Gesta_Settings_SlowMo".Translate(), ref Settings.killcamSlowMo);
+            list.Label("Gesta_Settings_KillcamPoints".Translate(Mathf.RoundToInt(Settings.killcamMinPoints)));
+            Settings.killcamMinPoints = list.Slider(Settings.killcamMinPoints, 200f, 5000f);
             list.End();
         }
     }
@@ -68,6 +75,10 @@ namespace Gesta
         public bool bloodStains = true;
         public bool brothers = true;
         public bool chronicler = true;
+        public bool killcam = true;
+        public bool killcamCamera = true;
+        public bool killcamSlowMo = true;
+        public float killcamMinPoints = 1000f;
 
         public override void ExposeData()
         {
@@ -84,6 +95,10 @@ namespace Gesta
             Scribe_Values.Look(ref bloodStains, "bloodStains", true);
             Scribe_Values.Look(ref brothers, "brothers", true);
             Scribe_Values.Look(ref chronicler, "chronicler", true);
+            Scribe_Values.Look(ref killcam, "killcam", true);
+            Scribe_Values.Look(ref killcamCamera, "killcamCamera", true);
+            Scribe_Values.Look(ref killcamSlowMo, "killcamSlowMo", true);
+            Scribe_Values.Look(ref killcamMinPoints, "killcamMinPoints", 1000f);
         }
     }
 }

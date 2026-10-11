@@ -35,6 +35,8 @@ namespace Gesta
         public static HediffDef Gesta_BrotherSash;
         public static HediffDef Gesta_BrotherSashMourning;
 
+        public static FleckDef Gesta_Fleck_Tracer;
+
         static GestaDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(GestaDefOf)); }
     }
 }

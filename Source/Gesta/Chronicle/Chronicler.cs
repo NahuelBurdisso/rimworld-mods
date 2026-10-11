@@ -167,7 +167,7 @@ namespace Gesta
     /// <summary>A letterbox caption across the bottom of the screen, in real time (also while paused).</summary>
     public static class ChronicleOverlay
     {
-        const float FadeIn = 0.8f, Hold = 5.5f, FadeOut = 1.4f, BandHeight = 64f, BottomMargin = 40f;
+        const float FadeIn = 0.8f, Hold = 5.5f, FadeOut = 1.4f, BandHeight = 64f, BottomMargin = 48f;
         static string text;
         static float start = -999f;
 
@@ -185,11 +185,11 @@ namespace Gesta
             float a = age < FadeIn ? age / FadeIn : age < FadeIn + Hold ? 1f : 1f - (age - FadeIn - Hold) / FadeOut;
 
             var band = new Rect(0f, UI.screenHeight - BottomMargin - BandHeight, UI.screenWidth, BandHeight);
-            GUI.color = new Color(0f, 0f, 0f, 0.62f * a);
+            GUI.color = new Color(0f, 0f, 0f, 0.74f * a);
             GUI.DrawTexture(band, BaseContent.WhiteTex);
             Text.Font = GameFont.Medium;
             Text.Anchor = TextAnchor.MiddleCenter;
-            GUI.color = new Color(0.92f, 0.86f, 0.74f, a);
+            GUI.color = new Color(1f, 0.95f, 0.86f, a);
             Widgets.Label(band.ContractedBy(40f, 4f), "<i>" + text + "</i>");
             Text.Anchor = TextAnchor.UpperLeft;
             Text.Font = GameFont.Small;

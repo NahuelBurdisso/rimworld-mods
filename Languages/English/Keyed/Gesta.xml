@@ -28,6 +28,11 @@ They are now {3}, and wear the same red sash.</Gesta_Brothers_LetterText>
   <Gesta_Brothers_Sisters>sisters in arms</Gesta_Brothers_Sisters>
   <Gesta_Brothers_Mixed>bonded in arms, brother and sister</Gesta_Brothers_Mixed>
   <Gesta_Settings_Chronicler>The Chronicler (a narrator's line at the decisive moments of a fight)</Gesta_Settings_Chronicler>
+  <Gesta_Settings_Killcam>The Breaking Blow (finale when the last raider of a big raid falls)</Gesta_Settings_Killcam>
+  <Gesta_Settings_SlowMo>Brief slow motion</Gesta_Settings_SlowMo>
+  <Gesta_Settings_KillcamPoints>Only for raids of at least {0} points</Gesta_Settings_KillcamPoints>
+  <Gesta_Killcam_Caption>{0} breaks the attack of {1}.</Gesta_Killcam_Caption>
+  <Gesta_Killcam_TheEnemy>the enemy</Gesta_Killcam_TheEnemy>
   <Gesta_LastStand_Caption>{0} stands alone.</Gesta_LastStand_Caption>
   <Gesta_LastStand_Survived>{0} stood alone, and held.</Gesta_LastStand_Survived>
 </LanguageData>

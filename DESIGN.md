@@ -218,3 +218,36 @@ Graphic_Multi south/north/east, layer 49: above body apparel, under the head). P
 **Tests:** two shared fights are not enough; three bond both ways with sashes and a letter; a
 colonist who missed a fight is not bonded; seeing a brother go down gives the memory; the death
 turns the survivor's sash black and gives the grief memory. Screenshot: matching sashes.
+
+## Feature 8 — The Chronicler (`battle-narrator`)
+
+**Pitch:** an offline, Darkest-Dungeon-style narrator: one line across the bottom of the screen at
+the decisive moments of a fight, written from the colonist's real history.
+
+**Beats:** first colonist downed in an engagement (FirstDown) · a colonist killed in a fight or by
+a hostile (Death) · a colonist kills the enemy's real leader or a boss (Kingslayer) · a colonist
+gets back up during a fight (Recovered, `MakeUndowned` postfix) · the engagement ends normally with
+at least 2 enemy kills and a fighter standing; the subject is the colonist with most kills
+(Victory). Ordinary beats share a cooldown of 5000 ticks; deaths always speak (600 ticks apart).
+
+**Text:** RulePackDefs `Gesta_Chronicle_<Beat>` resolved with GrammarResolver (root `r_line`):
+PAWN (and OTHER: the killer / the leader) symbols from `GrammarUtility.RulesForPawn`; constants for
+conditional lines — storyteller (Cassandra/Phoebe/Randy tone), kills, timesDowned (counted by the
+mod, saved), count, hasLover, veteran (10+ kills), hasOther; number rules [kills] [timesDowned]
+[count]. Up to 6 attempts avoid repeating one of the last 10 lines.
+**Display:** letterbox band at the bottom (real time, also while paused), italic, ~8 s.
+
+## Feature 9 — The Breaking Blow (`killcam-finale`)
+
+**Pitch:** when the last raider of a big raid falls, the camera finds the shooter, time slows for a
+breath, black bars close in and the moment is named.
+
+**Tracking:** `RaidStrategyWorker.MakeLords` postfix stores each raid lord's points. `Lord.Notify_PawnLost`
+postfix: when that lord's last pawn is killed or downed by a free colonist, the raid had at least
+the configured points (default 1000), the map is a home and no other hostile is still active, and
+no finale played in the last half day → finale.
+**Finale:** golden tracer from shooter to victim (`FleckMaker.ConnectingLine`, real-time fleck),
+positive message "X breaks the attack of Y", and only if that map is on screen: camera pan to the
+midpoint (size 12), speed to Normal, 2.2 real seconds at 0.3× (`TickManager.TickRateMultiplier`
+postfix), letterbox bars with the caption for 4.5 s. Settings: on/off, camera, slow motion, points.
+**Known:** the slow-motion patch is not multiplayer-safe.

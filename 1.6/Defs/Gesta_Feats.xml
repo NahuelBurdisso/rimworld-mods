@@ -94,6 +94,21 @@
     </graphicData>
   </FleckDef>
 
+  <!-- The Breaking Blow: a golden tracer from the shooter to the last raider (FleckMaker.ConnectingLine). -->
+  <FleckDef ParentName="FleckBase">
+    <defName>Gesta_Fleck_Tracer</defName>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <realTime>true</realTime>
+    <fadeInTime>0.05</fadeInTime>
+    <solidTime>1.2</solidTime>
+    <fadeOutTime>1.6</fadeOutTime>
+    <graphicData>
+      <texPath>Things/Gesta/FeatBeam</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <color>(255, 222, 140)</color>
+    </graphicData>
+  </FleckDef>
+
   <TaleDef>
     <defName>Gesta_Tale_TripleKill</defName>
     <label>triple kill</label>
