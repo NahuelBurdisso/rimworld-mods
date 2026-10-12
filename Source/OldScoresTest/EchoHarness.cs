@@ -28,8 +28,36 @@ namespace OldScoresTest
         readonly List<Pawn> raidPawns = new List<Pawn>();
         readonly List<IntVec3> painted = new List<IntVec3>();
         int linesBefore, labelsBefore, frames = -1;
+        int guiProbe;   // 1: measure the play-settings row in the next OnGUI repaint; 2: done
+        float rowOn = -1, rowOff = -1, worldOn = -1, worldOff = -1;
+        string guiError;
 
         public EchoHarness(Game game) { }
+
+        /// <summary>The real DoPlaySettingsGlobalControls, called from OnGUI with fresh rows: how wide is the icon row?</summary>
+        public override void GameComponentOnGUI()
+        {
+            if (!active || done || guiProbe != 1 || Event.current.type != EventType.Repaint) return;
+            guiProbe = 2;
+            bool old = OldScoresMod.Settings.echoes;
+            try
+            {
+                rowOn = RowWidth(true, false);
+                rowOff = RowWidth(false, false);
+                worldOn = RowWidth(true, true);
+                worldOff = RowWidth(false, true);
+            }
+            catch (System.Exception ex) { guiError = ex.Message; }
+            finally { OldScoresMod.Settings.echoes = old; }
+        }
+
+        static float RowWidth(bool feature, bool worldView)
+        {
+            OldScoresMod.Settings.echoes = feature;
+            var row = new WidgetRow(0f, 0f, UIDirection.RightThenUp);
+            Find.PlaySettings.DoPlaySettingsGlobalControls(row, worldView);
+            return row.FinalX;
+        }
 
         public override void FinalizeInit() { active = Kit.HarnessArmed; }
 
@@ -126,6 +154,17 @@ namespace OldScoresTest
             OldScoresMapComponent.Decimate(many);
             Kit.Check(many.Count == 33 && many[0].x == 0 && many[32].x == 63, $"a full track (64 points) is halved keeping both ends ({many.Count}, last x {many.Last().x})");
 
+            // the old road: same faction within 20 cells; not 25 cells off, not another faction, not an old pod raid
+            var walk = new RaidEcho { factionId = 9001, walkIn = true, arrival = new IntVec3(50, 0, 0) };
+            walk.laneStarts.Add(0); walk.points.Add(new IntVec3(50, 0, 1)); walk.points.Add(new IntVec3(55, 0, 20));
+            var pod = new RaidEcho { factionId = 9002, walkIn = false, arrival = new IntVec3(100, 0, 0) };
+            pod.laneStarts.Add(0); pod.points.Add(new IntVec3(100, 0, 1)); pod.points.Add(new IntVec3(100, 0, 20));
+            var roads = new List<RaidEcho> { walk, pod };
+            Kit.Check(OldScoresMapComponent.MatchesOldRoad(roads, 9001, new IntVec3(65, 0, 0)), "old road: the same faction 15 cells from where it came before matches");
+            Kit.Check(!OldScoresMapComponent.MatchesOldRoad(roads, 9001, new IntVec3(75, 0, 0)), "old road: 25 cells off does not");
+            Kit.Check(!OldScoresMapComponent.MatchesOldRoad(roads, 9003, new IntVec3(50, 0, 0)), "old road: another faction at the very same spot does not");
+            Kit.Check(!OldScoresMapComponent.MatchesOldRoad(roads, 9002, new IntVec3(100, 0, 0)), "old road: an old drop-pod raid is no road");
+
             // loitering: no farther from the road's start for 8 samples -> no points until he pushes on
             var t = new RaidTrack();
             t.points.Add(new IntVec3(10, 0, 10));
@@ -158,18 +197,28 @@ namespace OldScoresTest
 
         void FireNeutral(IncidentDef def, string what)
         {
-            var before = new HashSet<Pawn>(map.mapPawns.AllPawnsSpawned);
+            var before = new HashSet<Pawn>(map.mapPawns.AllPawns);
             IncidentParms parms = StorytellerUtility.DefaultParmsNow(def.category, map);
             parms.forced = true;
             parms.points = Mathf.Max(parms.points, 300f);
-            bool ok = Execute(def, parms);
-            List<Pawn> arrived = map.mapPawns.AllPawnsSpawned.Where(p => !before.Contains(p)).ToList();
-            if (!ok || arrived.Count == 0)
+            if (def == IncidentDefOf.RaidFriendly)
             {
-                Log.Message($"[Test] (skipped: {what} could not fire on this world: fired {ok}, {arrived.Count} pawns)");
+                // name an ally that can send fighters, walking in, so the worker has no reason to refuse
+                parms.faction = Find.FactionManager.AllFactionsListForReading.FirstOrDefault(f =>
+                    !f.IsPlayer && !f.Hidden && !f.defeated && f.def.humanlikeFaction && !f.HostileTo(Faction.OfPlayer)
+                    && f.def.pawnGroupMakers != null && f.def.pawnGroupMakers.Any(g => g.kindDef == PawnGroupKindDefOf.Combat));
+                parms.raidArrivalMode = PawnsArrivalModeDefOf.EdgeWalkIn;
+                if (parms.faction == null) { Log.Message($"[Test] SKIP {what}: no non-hostile faction with fighters on this world"); return; }
+            }
+            bool ok = Execute(def, parms);
+            List<Pawn> arrived = map.mapPawns.AllPawns.Where(p => !before.Contains(p)).ToList();
+            if (!ok)
+            {
+                Log.Message($"[Test] SKIP {what}: the incident did not fire on this world");
                 return;
             }
-            Kit.Check(comp.ActiveRaids.Count == 0, $"{what} ({arrived.Count} pawns of {arrived[0].Faction?.Name}) creates no echo");
+            // asserted whenever it fired, even if its pawns are still in drop pods
+            Kit.Check(comp.ActiveRaids.Count == 0, $"{what} ({arrived.Count} pawns of {arrived.FirstOrDefault()?.Faction?.Name ?? parms.faction?.Name}) creates no echo");
             foreach (Pawn p in arrived) if (!p.Destroyed) p.Destroy(DestroyMode.Vanish);   // out of the way of the raids
         }
 
@@ -179,6 +228,7 @@ namespace OldScoresTest
         {
             ActiveRaid raid = comp.ActiveRaids.FirstOrDefault();
             if (raid == null) { Kit.Check(false, "the first raid is still on after 600 ticks of walking (it ended early)"); Next(3); return; }
+            ComponentRoundtrip(raid);
             RaidTrack lead = raid.tracks.Where(t => t.pawn != null && t.pawn.Spawned).OrderByDescending(t => t.points.Count).FirstOrDefault();
             int moving = raid.tracks.Count(t => t.points.Count >= 2);
             float went = lead == null ? 0f : lead.points[0].DistanceTo(lead.points[lead.points.Count - 1]);
@@ -203,6 +253,24 @@ namespace OldScoresTest
             RaidTrack b = raid?.tracks.FirstOrDefault(t => t.breach.IsValid);
             Kit.Check(b != null && !b.recording && b.points.Last() == b.breach && map.areaManager.Home[b.breach],
                 $"stepping into the Home area is a breach and ends that road ({b?.breach.ToString() ?? "none"})");
+
+            // a raider carried off while downed is still on the map (MapHeld): his track stays, and his death counts
+            RaidTrack carriedTrack = raid?.tracks.FirstOrDefault(t => t != b && t.pawn != null && t.pawn.Spawned && !t.pawn.Downed);
+            if (carriedTrack != null && raid.tracks.Count(t => t.pawn != null && t.pawn.Spawned && !t.pawn.Downed) >= 2)
+            {
+                Pawn r = carriedTrack.pawn;
+                Kit.Down(r);
+                bool carried = r.Downed && !r.Dead && killer.carryTracker.TryStartCarry(r, 1, reserve: false) == 1;   // the overload carrying jobs use: despawns him
+                comp.SampleRaidsNow();
+                Kit.Check(carried && !r.Spawned && r.MapHeld == map && carriedTrack.pawn == r && comp.ActiveRaids.Contains(raid),
+                    $"a downed raider carried by someone is still the raid's (carried {carried}, spawned {r.Spawned}, track kept {carriedTrack.pawn == r}, raid on {comp.ActiveRaids.Contains(raid)})");
+                int deathsBefore = raid.deaths.Count;
+                if (!r.Dead) r.Kill(new DamageInfo(DamageDefOf.Bullet, 40f, 0f, -1f, killer));
+                Kit.Check(raid.deaths.Count == deathsBefore + 1 && raid.deaths.Last() == killer.Position,
+                    $"...and when he dies in someone's arms his death is remembered where he was held ({raid.deaths.LastOrDefault()} vs {killer.Position})");
+                if (killer.carryTracker.CarriedThing != null) killer.carryTracker.TryDropCarriedThing(killer.Position, ThingPlaceMode.Near, out Thing _);
+            }
+            else Log.Message("[Test] SKIP carried-raider check: fewer than two raiders still standing");
             KillRaid();
             Next(3);
         }
@@ -313,6 +381,7 @@ namespace OldScoresTest
             {
                 Patches info = Harmony.GetPatchInfo(AccessTools.Method(typeof(PlaySettings), nameof(PlaySettings.DoPlaySettingsGlobalControls)));
                 Kit.Check(info != null && info.Postfixes.Any(p => p.owner == "nahuel.oldscores"), "the play-settings icon row carries the Raid Echoes toggle postfix");
+                guiProbe = 1;
                 RaidEcho first = comp.Echoes.FirstOrDefault();
                 IntVec3 look = first == null ? map.Center : first.breaches.Count > 0 ? first.breaches[0] : first.points[first.LaneEnd(0) - 1];
                 Find.CameraDriver.SetRootPosAndSize(look.ToVector3Shifted(), 24f);
@@ -322,7 +391,10 @@ namespace OldScoresTest
                 frames = 0;
                 return;
             }
-            if (frames < 20 && Waited < 3000) return;
+            if ((frames < 20 || guiProbe == 1) && Waited < 3000) return;
+            Kit.Check(guiProbe == 2 && guiError == null && rowOn - rowOff >= 20f && rowOn - rowOff <= 32f,
+                $"the map-view icon row gets one more icon with the feature on (row width {rowOn} vs {rowOff} off{(guiError == null ? "" : ", error " + guiError)})");
+            Kit.Check(guiProbe == 2 && Mathf.Abs(worldOn - worldOff) < 0.01f, $"...and none in the world view ({worldOn} vs {worldOff})");
             Kit.Check(EchoStats.Lines == linesBefore && EchoStats.Labels == labelsBefore,
                 $"overlay off: nothing drawn over {frames} frames (lines +{EchoStats.Lines - linesBefore}, labels +{EchoStats.Labels - labelsBefore})");
             OldScoresTracker.Instance.showEchoes = true;
@@ -341,6 +413,48 @@ namespace OldScoresTest
             OldScoresTracker.Instance.showEchoes = false;
             frames = -1;
             Next(14);
+        }
+
+        /// <summary>
+        /// The whole map component through Scribe while a raid is on: tracks keep their live pawns (the test
+        /// registers them with the loader, as a real game load would have them deep-loaded), points and flags
+        /// survive; and a component saved before this feature existed (no nodes) loads empty, not null.
+        /// </summary>
+        void ComponentRoundtrip(ActiveRaid raid)
+        {
+            string path = Path.Combine(GenFilePaths.SaveDataFolderPath, "OldScoresEchoComponent.xml");
+            OldScoresMapComponent saved = comp, loaded = null, empty = null;
+            try
+            {
+                Scribe.saver.InitSaving(path, "echoTest");
+                Scribe.saver.savingForDebug = true;   // the pawns are deep-saved by the map in a real save
+                Scribe_Deep.Look(ref saved, "comp", map);
+                Scribe.saver.FinalizeSaving();
+                Scribe.loader.InitLoading(path);
+                Scribe_Deep.Look(ref loaded, "comp", map);
+                var dir = (LoadedObjectDirectory)AccessTools.Field(typeof(CrossRefHandler), "loadedObjectDirectory").GetValue(Scribe.loader.crossRefs);
+                foreach (Pawn p in raid.tracks.Select(t => t.pawn).Where(p => p != null).Distinct()) dir.RegisterLoaded(p);
+                Scribe.loader.FinalizeLoading();
+
+                File.WriteAllText(path, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<echoTest><comp Class=\"OldScores.OldScoresMapComponent\" /></echoTest>");
+                Scribe.loader.InitLoading(path);
+                Scribe_Deep.Look(ref empty, "comp", map);
+                Scribe.loader.FinalizeLoading();
+            }
+            finally
+            {
+                if (Scribe.mode != LoadSaveMode.Inactive) Scribe.ForceStop();
+                if (File.Exists(path)) File.Delete(path);
+            }
+            ActiveRaid back = loaded?.ActiveRaids.FirstOrDefault();
+            bool same = back != null && loaded.ActiveRaids.Count == comp.ActiveRaids.Count && back.factionId == raid.factionId
+                        && back.arrival == raid.arrival && back.walkIn == raid.walkIn && back.startTick == raid.startTick
+                        && back.tracks.Count == raid.tracks.Count
+                        && back.tracks.Zip(raid.tracks, (a, b) => a.pawn == b.pawn && a.points.SequenceEqual(b.points) && a.breach == b.breach
+                                                                 && a.recording == b.recording && a.seen == b.seen && a.stall == b.stall).All(x => x);
+            Kit.Check(same, $"save/load mid-raid: the map component comes back with its active raid, live pawns and roads ({back?.tracks.Count ?? 0} tracks, {back?.tracks.Count(t => t.pawn != null) ?? 0} pawns)");
+            Kit.Check(empty != null && empty.Echoes != null && empty.ActiveRaids != null && empty.Echoes.Count == 0 && empty.ActiveRaids.Count == 0,
+                "an old save without Raid Echoes data loads with empty lists");
         }
 
         // --- 14: save/load and forgetting ---------------------------------------------------------
@@ -451,6 +565,7 @@ namespace OldScoresTest
             if (map != null) foreach (IntVec3 c in painted) map.areaManager.Home[c] = false;
             frames = -1;
             KillAll(raidPawns);
+            comp?.ClearEchoes();   // nothing of the test (e.g. "The Lost Patrol") stays on the map
             Kit.Summary("OldScores/Echoes");
             TestUtil.MarkFinished("Echoes");
             done = true;
