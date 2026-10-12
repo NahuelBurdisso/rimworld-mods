@@ -12,13 +12,19 @@ using Verse.AI.Group;
 namespace RimMcpGovTest
 {
     /// <summary>
-    /// Drives the RimMcp governor through real fights during `rw launch --ticks 12000` (quicktest):
-    /// A raid, B manhunters, C retreat + rescue, D capture, E manual-draft respect.
+    /// Drives the RimMcp governor through real fights during `rw launch --ticks 25000` (quicktest).
+    /// 0 baseline raid (governor off, Claude-like late draft) / A same raid with the governor /
+    /// B manhunters / C retreat + rescue / D capture / E manual-draft respect / F big raid /
+    /// G attack from two directions. Headline: did the colonists win unaided (no harness kills)?
     /// Test setup uses dev-style spawning; the governor itself only drafts and gives orders.
     /// </summary>
     public class GovHarness : GameComponent
     {
         const string Mod = "RimMcp/Governor";
+        const int LastStep = 8;
+        const int RaidSeed = 7301;      // baseline and A get the same raiders
+        const int ClaudeDelay = 600;    // baseline: Claude drafts everyone where they stand this late
+
         bool armed, done;
         int ticks, step, phase;
         Map map;
@@ -28,18 +34,30 @@ namespace RimMcpGovTest
         readonly List<IntVec3> standCells = new List<IntVec3>();
         string originalPolicy;
         Run run;
+        string baselineSummary;
+
+        static readonly string[] Names =
+        {
+            "", "0 baseline raid (governor off)", "A raid", "B manhunters", "C retreat+rescue", "D capture",
+            "E manual draft", "F big raid", "G two directions",
+        };
 
         class Run
         {
             public string name;
+            public bool governor = true;
             public long cursor;
             public int spawnTick, seenTick = -1, endTick = -1, killAt, guardAt, postMin, postMax;
+            public int firstShotTick = -1, nextTrace;
+            public string firstShot;
             public readonly List<Pawn> enemies = new List<Pawn>();
             public readonly HashSet<Pawn> assigned = new HashSet<Pawn>(), reached = new HashSet<Pawn>(), excluded = new HashSet<Pawn>();
-            public readonly List<Pawn> lastRanged = new List<Pawn>(); // shooters assigned at the last tick of the fight
+            public readonly List<Pawn> lastRanged = new List<Pawn>();
             public readonly List<Pawn> startColonists = new List<Pawn>();
+            public readonly List<Pawn> eligibleAtSeen = new List<Pawn>();
+            public readonly Dictionary<Pawn, float[]> records = new Dictionary<Pawn, float[]>();
             public bool draftChecked, forced, hookDone, hook2Done;
-            public int hookTick;
+            public int forcedCount, hookTick;
             public Pawn x, y, z;
         }
 
@@ -62,10 +80,10 @@ namespace RimMcpGovTest
             try
             {
                 if (ticks == 60) Setup();
-                else if (step >= 1 && step <= 5) Scenario();
-                if (!done && ticks >= 11900)
+                else if (step >= 1 && step <= LastStep) Scenario();
+                if (!done && ticks >= 24900)
                 {
-                    Kit.Check(false, $"harness finished before 11900 ticks (stuck in scenario {step}, phase {phase})");
+                    Kit.Check(false, $"harness finished before 24900 ticks (stuck in {Names[Math.Min(step, LastStep)]}, phase {phase})");
                     Finish();
                 }
             }
@@ -85,7 +103,7 @@ namespace RimMcpGovTest
                 Tools.Run("governor", new Dictionary<string, object> { ["action"] = "reload" });
             }
             catch (Exception e) { Kit.Info("could not restore governor.json: " + e.Message); }
-            Kit.Info("events file: " + GovernorEvents.FilePath);
+            Kit.Info($"events file: {GovernorEvents.FilePath}; harness ran {ticks} ticks");
             Kit.Summary(Mod);
         }
 
@@ -103,23 +121,26 @@ namespace RimMcpGovTest
             int k = 0;
             foreach (var p in map.mapPawns.FreeColonistsSpawned.ToList()) Kit.Teleport(p, standCells[k++ % standCells.Count]);
             Build();
-            foreach (var p in map.mapPawns.FreeColonistsSpawned.ToList()) Arm(p);
+            k = 0;
+            foreach (var p in map.mapPawns.FreeColonistsSpawned.ToList()) Arm(p, 500 + k++);
             originalPolicy = File.Exists(GovernorPolicy.FilePath) ? File.ReadAllText(GovernorPolicy.FilePath) : null;
-            WritePolicy(0.5f);
+            WritePolicy(true, 0.5f);
             Kit.Check(GovernorPolicy.Current.enabled, "governor enabled through governor.json + the governor tool (reload)");
             var status = Tools.Run("governor", new Dictionary<string, object> { ["action"] = "status" }) as Dictionary<string, object>;
             Kit.Check(status != null && status["policyPath"] as string == GovernorPolicy.FilePath, "governor status prints the policy path: " + GovernorPolicy.FilePath);
             var home = GovernorPositions.HomeCenter(map, GovernorPolicy.Current);
-            Kit.Info($"base at {origin}, home center {home}, map {map.Size}, colonists: " +
-                     string.Join(", ", map.mapPawns.FreeColonistsSpawned.Select(p => $"{p.LabelShort}({p.equipment?.Primary?.def.defName ?? "unarmed"}{(p.WorkTagIsDisabled(WorkTags.Violent) ? ", non-violent" : "")})")));
+            Kit.Info($"base at {origin}, home center {home}, sandbags x={origin.x + 12}, map {map.Size}, colonists: " +
+                     string.Join(", ", map.mapPawns.FreeColonistsSpawned.Select(p =>
+                         $"{p.LabelShort}({p.equipment?.Primary?.LabelCap ?? "unarmed"}, shoot {p.skills?.GetSkill(SkillDefOf.Shooting)?.Level}{(Violent(p) ? "" : ", non-violent")})")));
             step = 1;
             phase = 0;
         }
 
-        void WritePolicy(float retreatPct)
+        void WritePolicy(bool enabled, float retreatPct)
         {
             File.WriteAllText(GovernorPolicy.FilePath,
-                "{\"enabled\": true, \"combat\": {\"autoDraft\": true, \"retreatHealthPct\": " + retreatPct.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                "{\"enabled\": " + (enabled ? "true" : "false") + ", \"combat\": {\"autoDraft\": true, \"retreatHealthPct\": " +
+                retreatPct.ToString(System.Globalization.CultureInfo.InvariantCulture) +
                 ", \"retreatBleedRate\": 0.8, \"undraftAfterQuietTicks\": 300, \"engageMeleeRadius\": 5, \"defendIndoorsIfRatioAbove\": 2.5}," +
                 " \"rescue\": {\"downedColonists\": true, \"captureDowned\": true}, \"nonCombatants\": {\"shelter\": true}, \"events\": {\"maxFileKb\": 512}}\n");
             Tools.Run("governor", new Dictionary<string, object> { ["action"] = "reload" });
@@ -139,7 +160,10 @@ namespace RimMcpGovTest
 
         static bool Violent(Pawn p) => !p.WorkTagIsDisabled(WorkTags.Violent);
 
-        bool FindBaseSpot(out IntVec3 result)
+        // 40 cells from the edges so raiders can start ~35 cells away on any side; smaller maps: 6.
+        bool FindBaseSpot(out IntVec3 result) => FindBaseSpot(40, out result) || FindBaseSpot(6, out result);
+
+        bool FindBaseSpot(int margin, out IntVec3 result)
         {
             var cols = map.mapPawns.FreeColonistsSpawned;
             var center = cols.Count > 0 ? new IntVec3((int)cols.Average(p => p.Position.x), 0, (int)cols.Average(p => p.Position.z)) : map.Center;
@@ -147,7 +171,7 @@ namespace RimMcpGovTest
             {
                 var o = c - new IntVec3(8, 0, 6);
                 var rect = new CellRect(o.x, o.z, 16, 12);
-                if (!rect.InBounds(map) || rect.minX < 5 || rect.minZ < 5 || rect.maxX > map.Size.x - 6 || rect.maxZ > map.Size.z - 6) continue;
+                if (!rect.InBounds(map) || rect.minX < margin || rect.minZ < margin || rect.maxX > map.Size.x - margin - 1 || rect.maxZ > map.Size.z - margin - 1) continue;
                 int standable = 0;
                 bool ok = true;
                 foreach (var cell in rect)
@@ -193,7 +217,8 @@ namespace RimMcpGovTest
             for (int i = 0; i < 5; i++) Place(ThingDefOf.Sandbags, new IntVec3(origin.x + 12, 0, origin.z + 1 + 2 * i), Rot4.North);
             foreach (var c in new CellRect(origin.x - 5, origin.z - 5, 26, 22).ClipInsideMap(map)) map.areaManager.Home[c] = true;
             var beds = map.listerBuildings.AllBuildingsColonistOfClass<Building_Bed>().Count();
-            Kit.Check(beds >= 4 && prisonBed != null && prisonBed.ForPrisoners && prisonBed.Position.IsInPrisonCell(map), $"test base built: {beds} beds, prison bed {(prisonBed != null ? prisonBed.Position.ToString() : "missing")}");
+            Kit.Check(beds >= 4 && prisonBed != null && prisonBed.ForPrisoners && prisonBed.Position.IsInPrisonCell(map),
+                $"test base built: {beds} beds, prison bed {(prisonBed != null ? prisonBed.Position.ToString() : "missing")}");
         }
 
         Thing Place(ThingDef def, IntVec3 c, Rot4 rot)
@@ -203,19 +228,19 @@ namespace RimMcpGovTest
             return GenSpawn.Spawn(thing, c, map, rot);
         }
 
-        void Arm(Pawn p)
+        // Same loadout every scenario: a bolt-action rifle (seeded quality).
+        void Arm(Pawn p, int seed)
         {
-            if (p.equipment == null || !Violent(p) || Governor.IsRanged(p)) return;
-            var def = DefDatabase<ThingDef>.GetNamedSilentFail(p.skills?.GetSkill(SkillDefOf.Shooting)?.Level >= 6 ? "Gun_BoltActionRifle" : "Gun_Revolver")
-                      ?? DefDatabase<ThingDef>.GetNamedSilentFail("Gun_Revolver");
+            if (p.equipment == null || !Violent(p)) return;
+            var def = DefDatabase<ThingDef>.GetNamedSilentFail("Gun_BoltActionRifle");
             if (def == null) return;
             p.equipment.DestroyAllEquipment();
-            p.equipment.AddEquipment((ThingWithComps)ThingMaker.MakeThing(def));
+            Rand.PushState(seed);
+            try { p.equipment.AddEquipment((ThingWithComps)ThingMaker.MakeThing(def)); }
+            finally { Rand.PopState(); }
         }
 
         // ------------------------------------------------------------------ scenarios
-
-        static readonly string[] Names = { "", "A raid", "B manhunters", "C retreat+rescue", "D capture", "E manual draft" };
 
         void Scenario()
         {
@@ -223,34 +248,25 @@ namespace RimMcpGovTest
             var st = gov.StateFor(map);
             switch (phase)
             {
-                case 0:
-                    run = new Run { name = Names[step], cursor = GovernorEvents.Seq, spawnTick = now };
-                    run.startColonists.AddRange(map.mapPawns.FreeColonistsSpawned);
-                    switch (step)
-                    {
-                        case 1: SpawnRaiders(4, 1, 34); run.killAt = now + 1300; run.postMin = 480; run.postMax = 480; break;
-                        case 2: SpawnManhunters(3, 34); run.killAt = now + 1200; run.postMin = 480; run.postMax = 480; break;
-                        case 3: SpawnRaiders(3, 0, 34); run.killAt = now + 1300; run.postMin = 480; run.postMax = 1200; break;
-                        case 4: SpawnRaiders(2, 0, 25); run.killAt = now + 1000; run.postMin = 480; run.postMax = 1500; break;
-                        case 5: SpawnRaiders(2, 0, 30); run.killAt = now + 1000; run.postMin = 480; run.postMax = 480; break;
-                    }
-                    run.guardAt = run.killAt + 900;
-                    Kit.Info($"{run.name}: spawned {run.enemies.Count} {string.Join(",", run.enemies.Select(e => e.KindLabel).Distinct())} at {run.enemies.FirstOrDefault()?.Position}");
-                    if (run.enemies.Count == 0) { Kit.Check(false, run.name + ": could not spawn enemies"); NextScenario(); return; }
-                    phase = 1;
-                    break;
+                case 0: Begin(now); break;
                 case 1:
                     Monitor(st, now);
                     Hooks(st, now);
-                    if (run.seenTick >= 0 && !st.active)
+                    if (Ended(st))
                     {
                         run.endTick = now;
                         phase = 2;
+                        if (!run.governor)
+                        {
+                            Tools.Run("draft", new Dictionary<string, object> { ["drafted"] = false });
+                            WritePolicy(true, 0.5f);
+                        }
                     }
                     else if (now >= run.guardAt)
                     {
                         Kit.Check(false, $"{run.name}: threat ended (seen={run.seenTick >= 0}, active={st.active})");
                         KillEnemies();
+                        if (!run.governor) WritePolicy(true, 0.5f);
                         run.endTick = now;
                         phase = 2;
                     }
@@ -258,55 +274,161 @@ namespace RimMcpGovTest
                 case 2:
                     Hooks(st, now);
                     int post = now - run.endTick;
-                    if (post >= run.postMax || post >= run.postMin && post % 30 == 0 && PostDone()) { EndChecks(st); NextScenario(); }
+                    if (post >= run.postMax || post >= run.postMin && post % 30 == 0 && PostDone()) { EndChecks(st, now); NextScenario(); }
                     break;
             }
         }
+
+        void Begin(int now)
+        {
+            run = new Run { name = Names[step], cursor = GovernorEvents.Seq, spawnTick = now };
+            run.startColonists.AddRange(map.mapPawns.FreeColonistsSpawned);
+            foreach (var p in run.startColonists) run.records[p] = Records(p);
+            var east = new Vector2(1, 0);
+            int limit;
+            switch (step)
+            {
+                case 1:
+                    run.governor = false;
+                    WritePolicy(false, 0.5f);
+                    SpawnRaiders(4, 1, 34, east, RaidSeed); limit = 3000; run.postMin = run.postMax = 120; break;
+                case 2: SpawnRaiders(4, 1, 34, east, RaidSeed); limit = 4000; run.postMin = run.postMax = 480; break;
+                case 3: SpawnManhunters(3, 34, east, 7302); limit = 2500; run.postMin = run.postMax = 480; break;
+                case 4: SpawnRaiders(2, 2, 34, east, 7303); limit = 3500; run.postMin = 480; run.postMax = 1200; break;
+                case 5: SpawnRaiders(2, 0, 25, east, 7304); limit = 2500; run.postMin = 480; run.postMax = 1500; break;
+                case 6: SpawnRaiders(2, 0, 30, east, 7305); limit = 2500; run.postMin = run.postMax = 480; break;
+                case 7: SpawnRaiders(7, 2, 36, east, 7306); limit = 4000; run.postMin = run.postMax = 480; break;
+                default:
+                    SpawnRaiders(3, 0, 34, east, 7307);
+                    SpawnRaiders(3, 1, 30, new Vector2(0, 1), 7308);
+                    limit = 4000; run.postMin = run.postMax = 480; break;
+            }
+            run.killAt = now + limit;
+            run.guardAt = run.killAt + 600;
+            run.nextTrace = now + 240;
+            Kit.Info($"{run.name}: spawned " + string.Join("; ", run.enemies.GroupBy(e => e.Position.x / 8 * 1000 + e.Position.z / 8)
+                .Select(g => $"{g.Count()} at {g.First().Position} ({string.Join(", ", g.Select(e => e.equipment?.Primary?.def.label ?? "unarmed"))})")));
+            if (run.enemies.Count == 0) { Kit.Check(false, run.name + ": could not spawn enemies"); NextScenario(); return; }
+            phase = 1;
+        }
+
+        bool Ended(GovMapState st) => run.governor
+            ? run.seenTick >= 0 && !st.active
+            : run.seenTick >= 0 && run.enemies.All(e => e.Dead || e.Downed || !e.Spawned);
 
         void NextScenario()
         {
             Restore();
             step++;
             phase = 0;
-            if (step > 5) Finish();
+            if (step > LastStep) Finish();
+        }
+
+        static float[] Records(Pawn p) => new[]
+        {
+            p.records.GetValue(RecordDefOf.ShotsFired), p.records.GetValue(RecordDefOf.DamageDealt), p.records.GetValue(RecordDefOf.Kills),
+            p.records.GetValue(RecordDefOf.PawnsDowned), p.records.GetValue(RecordDefOf.DamageTaken),
+        };
+
+        float[] Delta(Pawn p)
+        {
+            var now = Records(p);
+            if (run.records.TryGetValue(p, out var a)) for (int i = 0; i < now.Length; i++) now[i] -= a[i];
+            return now;
         }
 
         void Monitor(GovMapState st, int now)
         {
-            if (run.seenTick < 0 && st.active)
+            if (run.seenTick < 0 && (run.governor ? st.active : now - run.spawnTick >= 60))
             {
                 run.seenTick = now;
-                Kit.Info($"{run.name}: threat seen after {now - run.spawnTick} ticks");
+                run.eligibleAtSeen.AddRange(ExpectedFighters());
+                Kit.Info($"{run.name}: threat seen after {now - run.spawnTick} ticks; eligible fighters [{string.Join(",", run.eligibleAtSeen.Select(p => p.LabelShort))}]");
             }
             if (run.seenTick < 0) return;
-            if (st.active && st.assign.Count > 0) run.lastRanged.Clear();
-            foreach (var kv in st.assign)
+            if (!run.governor && now - run.seenTick == ClaudeDelay)
             {
-                run.assigned.Add(kv.Key);
-                if (kv.Value.role == GovRole.Ranged) run.lastRanged.Add(kv.Key);
-                if (kv.Key.Position == kv.Value.cell) run.reached.Add(kv.Key);
+                Tools.Run("draft", new Dictionary<string, object> { ["drafted"] = true });
+                Kit.Info($"{run.name}: 'Claude' drafted everyone where they stand, {ClaudeDelay} ticks after the threat appeared");
             }
-            foreach (var p in run.assigned)
-                if (p.Downed || p.Dead || st.retreated.Contains(p) || gov.Manual.Contains(p)) run.excluded.Add(p);
-            if (!run.draftChecked && now - run.seenTick >= 120)
+            if (run.firstShotTick < 0)
+                foreach (var p in run.startColonists)
+                {
+                    if (p.Dead || Delta(p)[0] <= 0) continue;
+                    run.firstShotTick = now;
+                    var near = Nearest(p.Position);
+                    var home = GovernorPositions.HomeCenter(map, GovernorPolicy.Current);
+                    run.firstShot = $"{p.LabelShort} fired first at t+{now - run.seenTick} (nearest enemy {(near == null ? "-" : ((int)(near.Position - p.Position).LengthHorizontal).ToString())} cells from him, " +
+                                    $"enemy front {(int)Front(home)} cells from home)";
+                    Kit.Info($"{run.name}: {run.firstShot}");
+                    break;
+                }
+            if (run.governor)
             {
-                run.draftChecked = true;
-                var exp = ExpectedFighters();
-                var drafted = exp.Count(p => p.Drafted && gov.Drafted.Contains(p));
-                int delay = st.firstDeployTick >= 0 ? st.firstDeployTick - st.startTick : -1;
-                Kit.Check(exp.Count > 0 && drafted == exp.Count && delay >= 0 && delay <= 120,
-                    $"{run.name}: governor drafted {drafted}/{exp.Count} fighters within 120 ticks of seeing the threat (deploy after {delay} ticks, mode {st.planMode})");
+                if (st.active && st.assign.Count > 0) run.lastRanged.Clear();
+                foreach (var kv in st.assign)
+                {
+                    run.assigned.Add(kv.Key);
+                    if (kv.Value.role == GovRole.Ranged) run.lastRanged.Add(kv.Key);
+                    if (kv.Key.Position == kv.Value.cell) run.reached.Add(kv.Key);
+                }
+                foreach (var p in run.assigned)
+                    if (p.Downed || p.Dead || st.retreated.Contains(p) || gov.Manual.Contains(p)) run.excluded.Add(p);
+                if (!run.draftChecked && now - run.seenTick >= 120)
+                {
+                    run.draftChecked = true;
+                    var exp = run.eligibleAtSeen.Where(p => p.Spawned && !p.Downed && !p.Dead).ToList();
+                    var drafted = exp.Count(p => p.Drafted && gov.Drafted.Contains(p));
+                    int delay = st.firstDeployTick >= 0 ? st.firstDeployTick - st.startTick : -1;
+                    Kit.Check(exp.Count > 0 && drafted == exp.Count && delay >= 0 && delay <= 120,
+                        $"{run.name}: governor drafted {drafted}/{exp.Count} eligible fighters within 120 ticks of seeing the threat (deploy after {delay} ticks, mode {st.planMode})");
+                }
+            }
+            if (now >= run.nextTrace)
+            {
+                run.nextTrace = now + 240;
+                Trace(st, now);
             }
             if (!run.forced && now >= run.killAt)
             {
-                int n = KillEnemies();
-                run.forced = true;
-                if (n > 0) Kit.Info($"{run.name}: harness killed {n} enemies still standing at the time limit");
+                run.forcedCount = KillEnemies();
+                run.forced = run.forcedCount > 0;
+                if (run.forced) Kit.Info($"{run.name}: time limit reached, harness killed {run.forcedCount} enemies still standing");
             }
         }
 
+        Pawn Nearest(IntVec3 c) => run.enemies.Where(e => e.Spawned && !e.Dead && !e.Downed)
+            .OrderBy(e => (e.Position - c).LengthHorizontalSquared).FirstOrDefault();
+
+        float Front(IntVec3 home)
+        {
+            var n = Nearest(home);
+            return n == null ? -1f : (n.Position - home).LengthHorizontal;
+        }
+
+        // One compact line every 240 ticks: what each colonist is doing and where the enemy is.
+        void Trace(GovMapState st, int now)
+        {
+            var home = GovernorPositions.HomeCenter(map, GovernorPolicy.Current);
+            var cols = run.startColonists.Where(p => !p.Dead).Select(p =>
+            {
+                var near = Nearest(p.Position);
+                string stn = st.assign.TryGetValue(p, out var a) ? (p.Position == a.cell ? "@stn" : $"->stn {(int)(a.cell - p.Position).LengthHorizontal}") : "-";
+                string los = near == null ? "-" : GovernorPositions.HasLineOfFire(p.Position, near.Position, map) ? "los" : "noLOS";
+                var d = Delta(p);
+                return $"{p.LabelShort}{(p.Downed ? "(down)" : "")} {p.Position.x},{p.Position.z} {stn} {p.CurJobDef?.defName ?? "-"}" +
+                       $"{(p.stances.curStance is Stance_Busy ? " busy" : "")}{(p.Drafted ? " D" : "")}{(p.drafter != null && p.Drafted && !p.drafter.FireAtWill ? " noFire" : "")}" +
+                       $" near {(near == null ? "-" : ((int)(near.Position - p.Position).LengthHorizontal).ToString())} {los}" +
+                       $" shots {d[0]:0} hp {p.health.summaryHealth.SummaryHealthPercent:P0}";
+            });
+            var alive = run.enemies.Where(e => e.Spawned && !e.Dead && !e.Downed).ToList();
+            var jobs = string.Join(" ", alive.GroupBy(e => e.CurJobDef?.defName ?? "-").Select(g => $"{g.Key}:{g.Count()}"));
+            Kit.Info($"TRACE {run.name} t+{now - run.seenTick}{(run.governor ? $" [{st.planMode}{(st.closeCombat ? ", close" : "")}{(st.overwhelmed ? ", overwhelmed" : "")}]" : "")}: " +
+                     $"{string.Join(" | ", cols)} || enemies {alive.Count} standing, front {(int)Front(home)} from home, jobs {jobs}");
+        }
+
         List<Pawn> ExpectedFighters() => map.mapPawns.FreeColonistsSpawned.Where(p =>
-            !p.Downed && Violent(p) && p.IsColonistPlayerControlled && !p.IsSlave && !gov.Manual.Contains(p) &&
+            !p.Downed && Violent(p) && p.IsColonistPlayerControlled && !p.IsSlave && !gov.Manual.Contains(p) && !p.InBed() &&
             p.health.summaryHealth.SummaryHealthPercent >= GovernorPolicy.Current.retreatHealthPct &&
             p.health.hediffSet.BleedRateTotal < GovernorPolicy.Current.retreatBleedRate).ToList();
 
@@ -315,7 +437,7 @@ namespace RimMcpGovTest
             if (run.seenTick < 0) return;
             switch (step)
             {
-                case 3: // C: wound one fighter past the retreat threshold, down another
+                case 4: // C: wound one fighter past the retreat threshold, down another
                     if (!run.hookDone && phase == 1 && (now - run.seenTick >= 300 || run.assigned.Count >= 2 && run.assigned.All(run.reached.Contains)))
                     {
                         var ranked = st.assign.Keys.Where(p => !p.Downed).ToList();
@@ -324,22 +446,23 @@ namespace RimMcpGovTest
                         run.hookTick = now;
                         run.x = ranked[0];
                         run.y = ranked[1];
-                        WritePolicy(0.9f); // a high threshold so one or two cuts are enough (no risk of downing him)
+                        WritePolicy(true, 0.9f); // a high threshold so one or two cuts are enough (no risk of downing him)
                         var legs = run.x.health.hediffSet.GetNotMissingParts().Where(bp => bp.def == BodyPartDefOf.Leg).ToList();
                         for (int i = 0; i < 12 && !run.x.Downed && run.x.health.summaryHealth.SummaryHealthPercent >= 0.86f; i++)
                             run.x.TakeDamage(new DamageInfo(DamageDefOf.Cut, 4f, 0f, -1f, null, legs.Count > 0 ? legs[i % legs.Count] : null));
                         Kit.Down(run.y);
                         Kit.Info($"C: wounded {run.x.LabelShort} to {run.x.health.summaryHealth.SummaryHealthPercent:P0} (downed={run.x.Downed}), downed {run.y.LabelShort}");
                     }
-                    if (run.hookDone && !run.hook2Done && now - run.hookTick >= 250)
+                    // back to 0.5 as soon as he retreated, so the last fighter is not pulled out by a scratch
+                    if (run.hookDone && !run.hook2Done && (st.retreated.Contains(run.x) || now - run.hookTick >= 250))
                     {
                         run.hook2Done = true;
                         Kit.Check(!run.x.Drafted && st.retreated.Contains(run.x) && !st.assign.ContainsKey(run.x),
-                            $"C: wounded {run.x.LabelShort} retreated: undrafted={!run.x.Drafted}, retreated={st.retreated.Contains(run.x)}, job={run.x.CurJobDef?.defName}");
-                        WritePolicy(0.5f);
+                            $"C: wounded {run.x.LabelShort} retreated after {now - run.hookTick} ticks: undrafted={!run.x.Drafted}, retreated={st.retreated.Contains(run.x)}, job={run.x.CurJobDef?.defName}");
+                        WritePolicy(true, 0.5f);
                     }
                     break;
-                case 4: // D: down one raider once the threat is seen, so the governor captures him after the fight
+                case 5: // D: down one raider once the threat is seen, so the governor captures him after the fight
                     if (!run.hookDone)
                     {
                         run.hookDone = true;
@@ -349,7 +472,7 @@ namespace RimMcpGovTest
                         Kit.Info($"D: downed raider {run.x.LabelShort}; prison bed free: {prisonBed != null && !prisonBed.AnyOccupants}");
                     }
                     break;
-                case 5: // E: Claude drafts a fighter through the bridge mid-fight
+                case 6: // E: Claude drafts a fighter through the bridge mid-fight
                     if (!run.hookDone && phase == 1 && now - run.seenTick >= 150 && st.assign.Count > 0)
                     {
                         run.hookDone = true;
@@ -369,19 +492,42 @@ namespace RimMcpGovTest
                 .OfType<Dictionary<string, object>>().Any(e => e["type"] as string == type);
             switch (step)
             {
-                case 3: return run.y == null || run.y.InBed() && Has("rescued");
-                case 4: return run.x == null || run.x.IsPrisonerOfColony && Has("captured");
+                case 4: return run.y == null || run.y.InBed() && Has("rescued");
+                case 5: return run.x == null || run.x.IsPrisonerOfColony && Has("captured");
                 default: return true;
             }
         }
 
-        void EndChecks(GovMapState st)
+        string Outcome(int now)
+        {
+            int killedE = run.enemies.Count(e => e.Dead) - run.forcedCount, downedE = run.enemies.Count(e => !e.Dead && e.Downed);
+            var per = run.startColonists.Select(p =>
+            {
+                var d = Delta(p);
+                return $"{p.LabelShort}: shots {d[0]:0}, dmg dealt {d[1]:0}, kills {d[2]:0}, downs {d[3]:0}, dmg taken {d[4]:0}, " +
+                       $"hp {(p.Dead ? "dead" : p.health.summaryHealth.SummaryHealthPercent.ToString("P0"))}{(p.Downed ? " downed" : "")}";
+            });
+            float hp = run.startColonists.Sum(p => p.Dead ? 0f : p.health.summaryHealth.SummaryHealthPercent);
+            float taken = run.startColonists.Sum(p => Delta(p)[4]);
+            int fight = (run.endTick >= 0 ? run.endTick : now) - Math.Max(run.seenTick, run.spawnTick);
+            return $"fight {fight} ticks, first shot {(run.firstShotTick >= 0 ? "t+" + (run.firstShotTick - run.seenTick) : "never")}, " +
+                   $"enemies {run.enemies.Count}: {killedE} killed / {downedE} downed by colonists, {run.forcedCount} killed by the harness; " +
+                   $"colonist hp sum {hp:0.00}/{run.startColonists.Count}, dmg taken {taken:0}, dead {run.startColonists.Count(p => p.Dead)} || {string.Join(" | ", per)}";
+        }
+
+        void EndChecks(GovMapState st, int now)
         {
             var name = run.name;
+            var summary = Outcome(now);
+            Kit.Info($"{name}: OUTCOME {summary}");
+            if (!run.governor)
+            {
+                baselineSummary = summary;
+                return;
+            }
+            Kit.Check(!run.forced, $"{name}: colonists won unaided (harness killed {run.forcedCount})");
             int died = run.startColonists.Count(p => p.Dead);
             Kit.Check(died == 0, $"{name}: no colonist died ({died})");
-            // shooters still on station duty at the end (helpers pulled off for a rescue and melee
-            // pawns that went to fight are not expected to stand on a cell)
             var required = run.lastRanged.Where(p => !run.excluded.Contains(p)).ToList();
             Kit.Check(required.Count > 0 && required.All(run.reached.Contains),
                 $"{name}: fighters reached their stations ({required.Count(run.reached.Contains)}/{required.Count}; assigned {run.assigned.Count})");
@@ -394,22 +540,25 @@ namespace RimMcpGovTest
             foreach (var t in new[] { "threat_start", "governor_deploy", "threat_end" })
                 Kit.Check(types.Contains(t), $"{name}: events.jsonl has {t}");
             var end = events.OfType<Dictionary<string, object>>().LastOrDefault(e => e["type"] as string == "threat_end");
-            Kit.Info($"{name}: outcome {(end != null ? Json.Write(end) : "(no threat_end)")}");
-            Kit.Info($"{name}: event types [{string.Join(",", types)}]");
-            Kit.Info($"{name}: colonists " + string.Join(", ", run.startColonists.Select(p =>
-                $"{p.LabelShort}={(p.Dead ? "dead" : p.health.summaryHealth.SummaryHealthPercent.ToString("P0"))}{(p.Downed ? " downed" : "")}{(p.InBed() ? " in bed" : "")}")));
+            Kit.Info($"{name}: threat_end {(end != null ? Json.Write(end) : "(none)")}");
+            Kit.Info($"{name}: events [{string.Join(",", types)}]");
+            foreach (var e in events.OfType<Dictionary<string, object>>().Where(e => e["type"] as string == "governor_deploy" || e["type"] as string == "decision_needed" || e["type"] as string == "retreat"))
+                Kit.Info($"{name}: {Json.Write(e)}");
             switch (step)
             {
-                case 3:
+                case 2:
+                    Kit.Info($"COMPARE raid A, same raiders/loadout/cover:\n  baseline (governor off, late draft): {baselineSummary ?? "(not run)"}\n  governor:                            {summary}");
+                    break;
+                case 4:
                     if (run.y != null) Kit.Check(run.y.InBed(), $"C: downed {run.y.LabelShort} was rescued to a bed (in bed={run.y.InBed()}, downed={run.y.Downed})");
                     Kit.Check(types.Contains("retreat") && types.Contains("rescued"), "C: events have retreat and rescued");
                     break;
-                case 4:
+                case 5:
                     if (run.x != null)
                         Kit.Check(run.x.IsPrisonerOfColony, $"D: downed raider {run.x.LabelShort} was captured (prisoner={run.x.IsPrisonerOfColony}, in bed={run.x.InBed()}, dead={run.x.Dead})");
                     Kit.Check(types.Contains("captured"), "D: events have captured");
                     break;
-                case 5:
+                case 6:
                     if (run.z != null) Kit.Check(run.z.Drafted, $"E: {run.z.LabelShort}, drafted by Claude mid-fight, is still drafted after the fight");
                     break;
             }
@@ -417,10 +566,10 @@ namespace RimMcpGovTest
 
         // ------------------------------------------------------------------ spawning and cleanup
 
-        IntVec3 FindSpawnCell(int dist)
+        IntVec3 FindSpawnCell(int dist, Vector2 preferred)
         {
             var home = GovernorPositions.HomeCenter(map, GovernorPolicy.Current);
-            var dirs = new[] { new Vector2(1, 0), new Vector2(1, 1), new Vector2(1, -1), new Vector2(0, 1), new Vector2(0, -1), new Vector2(-1, 1), new Vector2(-1, -1), new Vector2(-1, 0) };
+            var dirs = new List<Vector2> { preferred, new Vector2(1, 0), new Vector2(1, 1), new Vector2(1, -1), new Vector2(0, 1), new Vector2(0, -1), new Vector2(-1, 1), new Vector2(-1, -1), new Vector2(-1, 0) };
             var tp = TraverseParms.For(TraverseMode.PassDoors);
             for (int d = dist; d >= 15; d -= 5)
                 foreach (var v in dirs)
@@ -434,42 +583,59 @@ namespace RimMcpGovTest
             return IntVec3.Invalid;
         }
 
-        void SpawnRaiders(int n, int armedCount, int dist)
+        // Baseliner raiders (no fire-spewing xenotypes), stripped, then revolvers / knives. Seeded so
+        // the baseline and the governor run fight the same raiders.
+        void SpawnRaiders(int n, int meleeCount, int dist, Vector2 dir, int seed)
         {
-            var at = FindSpawnCell(dist);
-            if (!at.IsValid) return;
-            var faction = Find.FactionManager.RandomEnemyFaction(allowHidden: false, allowDefeated: false, allowNonHumanlike: false) ?? Faction.OfPirates;
-            if (faction == null) return;
-            var kind = faction.def.basicMemberKind ?? PawnKindDefOf.Pirate;
-            var revolver = DefDatabase<ThingDef>.GetNamedSilentFail("Gun_Revolver");
-            for (int i = 0; i < n; i++)
+            Rand.PushState(seed);
+            try
             {
-                var p = PawnGenerator.GeneratePawn(kind, faction);
-                p.equipment?.DestroyAllEquipment();
-                p.inventory?.DestroyAll();
-                if (i < armedCount && revolver != null) p.equipment?.AddEquipment((ThingWithComps)ThingMaker.MakeThing(revolver));
-                var cell = CellFinder.StandableCellNear(at, map, 4f, x => !x.Fogged(map) && x.GetFirstPawn(map) == null);
-                GenSpawn.Spawn(p, cell.IsValid ? cell : at, map);
-                run.enemies.Add(p);
+                var at = FindSpawnCell(dist, dir);
+                if (!at.IsValid) return;
+                var faction = Find.FactionManager.RandomEnemyFaction(allowHidden: false, allowDefeated: false, allowNonHumanlike: false) ?? Faction.OfPirates;
+                if (faction == null) return;
+                var kind = faction.def.basicMemberKind ?? PawnKindDefOf.Pirate;
+                var revolver = DefDatabase<ThingDef>.GetNamedSilentFail("Gun_Revolver");
+                var knife = DefDatabase<ThingDef>.GetNamedSilentFail("MeleeWeapon_Knife");
+                var group = new List<Pawn>();
+                for (int i = 0; i < n; i++)
+                {
+                    var p = PawnGenerator.GeneratePawn(new PawnGenerationRequest(kind, faction, mustBeCapableOfViolence: true,
+                        forcedXenotype: ModsConfig.BiotechActive ? XenotypeDefOf.Baseliner : null));
+                    p.equipment?.DestroyAllEquipment();
+                    p.inventory?.DestroyAll();
+                    var w = i < meleeCount ? knife : revolver;
+                    if (w != null) p.equipment?.AddEquipment((ThingWithComps)ThingMaker.MakeThing(w, w.MadeFromStuff ? ThingDefOf.Steel : null));
+                    var cell = CellFinder.StandableCellNear(at, map, 4f, x => !x.Fogged(map) && x.GetFirstPawn(map) == null);
+                    GenSpawn.Spawn(p, cell.IsValid ? cell : at, map);
+                    group.Add(p);
+                }
+                LordMaker.MakeNewLord(faction, new LordJob_AssaultColony(faction, canKidnap: false, canTimeoutOrFlee: false, sappers: false,
+                    useAvoidGridSmart: false, canSteal: false), map, group);
+                run.enemies.AddRange(group);
             }
-            LordMaker.MakeNewLord(faction, new LordJob_AssaultColony(faction, canKidnap: false, canTimeoutOrFlee: false, sappers: false,
-                useAvoidGridSmart: false, canSteal: false), map, run.enemies);
+            finally { Rand.PopState(); }
         }
 
-        void SpawnManhunters(int n, int dist)
+        void SpawnManhunters(int n, int dist, Vector2 dir, int seed)
         {
-            var at = FindSpawnCell(dist);
-            if (!at.IsValid) return;
-            var kind = new[] { "Wolf_Timber", "WildBoar", "Warg", "Wolf_Arctic" }.Select(k => DefDatabase<PawnKindDef>.GetNamedSilentFail(k)).FirstOrDefault(k => k != null)
-                       ?? PawnKindDefOf.Muffalo;
-            for (int i = 0; i < n; i++)
+            Rand.PushState(seed);
+            try
             {
-                var p = PawnGenerator.GeneratePawn(kind, null);
-                var cell = CellFinder.StandableCellNear(at, map, 4f, x => !x.Fogged(map) && x.GetFirstPawn(map) == null);
-                GenSpawn.Spawn(p, cell.IsValid ? cell : at, map);
-                p.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Manhunter, forced: true, forceWake: true);
-                run.enemies.Add(p);
+                var at = FindSpawnCell(dist, dir);
+                if (!at.IsValid) return;
+                var kind = new[] { "Wolf_Timber", "WildBoar", "Warg", "Wolf_Arctic" }.Select(k => DefDatabase<PawnKindDef>.GetNamedSilentFail(k)).FirstOrDefault(k => k != null)
+                           ?? PawnKindDefOf.Muffalo;
+                for (int i = 0; i < n; i++)
+                {
+                    var p = PawnGenerator.GeneratePawn(kind, null);
+                    var cell = CellFinder.StandableCellNear(at, map, 4f, x => !x.Fogged(map) && x.GetFirstPawn(map) == null);
+                    GenSpawn.Spawn(p, cell.IsValid ? cell : at, map);
+                    p.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Manhunter, forced: true, forceWake: true);
+                    run.enemies.Add(p);
+                }
             }
+            finally { Rand.PopState(); }
         }
 
         int KillEnemies()
@@ -480,7 +646,8 @@ namespace RimMcpGovTest
             return n;
         }
 
-        // Between scenarios: remove the enemies and prisoners, heal and undraft colonists, put them back.
+        // Between scenarios: remove enemies, prisoners and fires; heal, feed, rest and undraft the
+        // colonists; same rifle again; back to the start cells; governor bookkeeping cleared.
         void Restore()
         {
             if (run != null)
@@ -490,16 +657,23 @@ namespace RimMcpGovTest
                     else if (!e.Destroyed) e.Destroy();
                 }
             foreach (var p in map.mapPawns.PrisonersOfColonySpawned.ToList()) p.Destroy();
+            foreach (var f in map.listerThings.ThingsOfDef(ThingDefOf.Fire).ToList()) if (!f.Destroyed) f.Destroy();
             gov.Drafted.Clear(); // the harness undrafts below; do not let the governor read that as a player override
             gov.Manual.Clear();
             int k = 0;
             foreach (var p in map.mapPawns.FreeColonistsSpawned.ToList())
             {
                 foreach (var h in p.health.hediffSet.hediffs.ToList())
-                    if (h is Hediff_Injury || h is Hediff_MissingPart || h.def == HediffDefOf.BloodLoss) p.health.RemoveHediff(h);
+                    if (h is Hediff_Injury || h is Hediff_MissingPart || h.def == HediffDefOf.BloodLoss ||
+                        h.def == HediffDefOf.Hypothermia || h.def == HediffDefOf.Heatstroke) p.health.RemoveHediff(h);
+                if (p.InMentalState) p.MentalState.RecoverFromState();
+                if (p.needs?.food != null) p.needs.food.CurLevelPercentage = 1f;
+                if (p.needs?.rest != null) p.needs.rest.CurLevelPercentage = 1f;
+                if (p.needs?.joy != null) p.needs.joy.CurLevelPercentage = 1f;
                 if (p.Drafted) p.drafter.Drafted = false;
-                Kit.Teleport(p, standCells[k++ % standCells.Count]);
-                Arm(p);
+                Kit.Teleport(p, standCells[k % standCells.Count]);
+                Arm(p, 500 + k);
+                k++;
             }
         }
     }
