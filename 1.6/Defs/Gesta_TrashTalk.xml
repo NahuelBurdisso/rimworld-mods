@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Trash Talk: shouted across the field by Gesta.TrashTalk, never chosen in social time (the base
+       InteractionWorker has weight 0). Log entries: INITIATOR/RECIPIENT. The outcome of a taunt is an
+       extra sentence pack on its entry (Gesta_TrashTalk_Hit / _Backfire / _Break). -->
+  <InteractionDef>
+    <defName>Gesta_TrashTalk</defName>
+    <label>trash talk</label>
+    <symbol>Things/Mote/SpeechSymbols/Insult</symbol>
+    <logRulesInitiator>
+      <rulesStrings>
+        <li>r_logentry->[INITIATOR_nameDef] shouted across the field at [RECIPIENT_nameDef] of [RECIPIENT_factionName], calling [RECIPIENT_objective] [insultcomparison].</li>
+        <li>r_logentry->[INITIATOR_nameDef] [yelled] insults about [RECIPIENT_nameDef]'s [PersonalCharacteristic] across the battlefield.</li>
+        <li>r_logentry->From behind the lines, [INITIATOR_nameDef] [yelled] that [RECIPIENT_nameDef] fights like [insultcomparison].</li>
+        <li>r_logentry->[INITIATOR_nameDef] mocked [RECIPIENT_nameDef], the [RECIPIENT_kind] of [RECIPIENT_factionName], from across the field.</li>
+        <li>r_logentry(RECIPIENT_factionLeader==True,p=3)->[INITIATOR_nameDef] shouted for the whole field to hear that [RECIPIENT_nameDef], leader of [RECIPIENT_factionName], was [insultcomparison].</li>
+        <li>yelled->yelled</li>
+        <li>yelled->bellowed</li>
+        <li>yelled->hollered</li>
+        <li>yelled->roared</li>
+        <li>insultcomparison->a [Animal]</li>
+        <li>insultcomparison->a [Enemy]</li>
+        <li>insultcomparison->something the cat dragged in</li>
+      </rulesStrings>
+    </logRulesInitiator>
+  </InteractionDef>
+
+  <InteractionDef>
+    <defName>Gesta_TrashTalkReply</defName>
+    <label>trash talk</label>
+    <symbol>Things/Mote/SpeechSymbols/Insult</symbol>
+    <logRulesInitiator>
+      <rulesStrings>
+        <li>r_logentry->[INITIATOR_nameDef] of [INITIATOR_factionName] shouted back at [RECIPIENT_nameDef], calling [RECIPIENT_objective] [insultcomparison].</li>
+        <li>r_logentry->[INITIATOR_nameDef] answered [RECIPIENT_nameDef]'s taunts with a string of curses about [RECIPIENT_possessive] [PersonalCharacteristic].</li>
+        <li>r_logentry->[INITIATOR_nameDef] roared back across the field that [RECIPIENT_nameDef] would be the first to die.</li>
+        <li>r_logentry->Stung, [INITIATOR_nameDef] screamed threats back at [RECIPIENT_nameDef].</li>
+        <li>insultcomparison->a [Animal]</li>
+        <li>insultcomparison->a [Enemy]</li>
+        <li>insultcomparison->a coward behind a wall</li>
+      </rulesStrings>
+    </logRulesInitiator>
+  </InteractionDef>
+
+  <InteractionDef>
+    <defName>Gesta_TrashTalkMock</defName>
+    <label>trash talk</label>
+    <symbol>Things/Mote/SpeechSymbols/Insult</symbol>
+    <logRulesInitiator>
+      <rulesStrings>
+        <li>r_logentry->[INITIATOR_nameDef] laughed at [RECIPIENT_nameDef]'s attempt at an insult and shouted it back, louder.</li>
+        <li>r_logentry->[INITIATOR_nameDef] mocked [RECIPIENT_nameDef] across the field, and the rest of [INITIATOR_factionName] joined in.</li>
+        <li>r_logentry->[INITIATOR_nameDef] jeered at [RECIPIENT_nameDef] until the whole raid was laughing.</li>
+      </rulesStrings>
+    </logRulesInitiator>
+  </InteractionDef>
+
+  <!-- Outcome sentences appended to the taunt's log entry (INITIATOR = colonist, RECIPIENT = raider). -->
+  <RulePackDef>
+    <defName>Gesta_TrashTalk_Hit</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>sent->The raiders of [RECIPIENT_factionName] looked less sure of themselves.</li>
+        <li>sent->It landed. Somewhere behind [RECIPIENT_nameDef], someone stopped laughing.</li>
+        <li>sent->[RECIPIENT_nameDef]'s comrades shifted uneasily.</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+  <RulePackDef>
+    <defName>Gesta_TrashTalk_Backfire</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>sent->It came out wrong, and the raiders roared with laughter.</li>
+        <li>sent->[INITIATOR_nameDef] fumbled the punchline, and the raiders jeered.</li>
+        <li>sent->Nobody on either side was impressed.</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+  <RulePackDef>
+    <defName>Gesta_TrashTalk_Break</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>sent->It was too much for one of the raiders, who broke and ran.</li>
+        <li>sent->The raiders of [RECIPIENT_factionName] wavered, and one of them threw down the fight and fled.</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+  <!-- The words in the speech box (root r_shout). SPEAKER and TARGET are pawn symbols without tags;
+       constants: raiderTribal (the raid is neolithic), TARGET_factionLeader. Keep them short. -->
+  <RulePackDef>
+    <defName>Gesta_TrashTalk_Shouts</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>r_shout->Go home, [TARGET_label]! Your mother misses you!</li>
+        <li>r_shout->Is that the best [TARGET_factionName] could send?</li>
+        <li>r_shout->I've seen a scarier [Animal], [TARGET_label]!</li>
+        <li>r_shout->Hey, [TARGET_label]! Nice [PersonalCharacteristic]!</li>
+        <li>r_shout->Come a little closer, [TARGET_label]. I dare you!</li>
+        <li>r_shout->You fight like a [Animal], [TARGET_label]!</li>
+        <li>r_shout->We've buried better than you, [TARGET_label]!</li>
+        <li>r_shout->Run back to your camp, [TARGET_kind]!</li>
+        <li>r_shout(raiderTribal==True)->Go back to your huts, [TARGET_label]!</li>
+        <li>r_shout(raiderTribal==False)->Did you steal that gun, [TARGET_label]?</li>
+        <li>r_shout(TARGET_factionLeader==True,p=4)->So THIS is the great leader of [TARGET_factionName]?</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+  <RulePackDef>
+    <defName>Gesta_TrashTalk_Retorts</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>r_shout->I'll make you eat those words, [TARGET_label]!</li>
+        <li>r_shout->Big words for a dead [TARGET_kind]!</li>
+        <li>r_shout->We'll burn your fields, [TARGET_label]!</li>
+        <li>r_shout->Keep talking, [TARGET_label]. I'm aiming.</li>
+        <li>r_shout->Your walls won't save you!</li>
+        <li>r_shout->Shut up and fight!</li>
+        <li>r_shout(raiderTribal==True)->The spirits will feast on you, [TARGET_label]!</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+  <RulePackDef>
+    <defName>Gesta_TrashTalk_Mockery</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>r_shout->Hah! Was that supposed to hurt?</li>
+        <li>r_shout->Did you all hear that? HAHAHA!</li>
+        <li>r_shout->Speak up, [TARGET_label], we can't hear you shaking!</li>
+        <li>r_shout->My grandmother insults better than you!</li>
+        <li>r_shout->Is that all? Pathetic!</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+  <ThoughtDef>
+    <defName>Gesta_TauntBackfired</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>1</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>my taunt backfired</label>
+        <description>I shouted something clever at the raiders and they laughed at me. Everyone heard it.</description>
+        <baseMoodEffect>-3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+</Defs>

@@ -358,3 +358,86 @@ for 180 ticks of real play (holders do not move, the champion walks toward the b
 the grace (the truce restarted for the check) is ignored, then a colonist shooting a holder → dishonor for the whole colony, raid
 resumes. If vanilla switches raid 8 to kidnapping or stealing on its own, stage B checks the clean
 abort instead.
+
+## Feature 12 — Trash Talk (`trash-talk`)
+
+**Pitch:** before the shooting starts, someone on the wall shouts across the field at the raiders,
+and the raiders shout back. A good insult rattles them; one too many and the weakest of them
+breaks and runs. A bad one gets the whole raid laughing.
+
+**Scan** (GameComponent `TrashTalk`, every 250 ticks at offset 131; at most one exchange per map
+per scan and none within 600 ticks of the last one on that map), for each lord on a player home map:
+- the lord's faction is not the player's, is hostile to the player and `humanlikeFaction` (so
+  mechanoid, insect, entity and manhunter lords never qualify);
+- its current toil is `LordToil_Stage`, `LordToil_Siege`, `LordToil_AssaultColony`,
+  `LordToil_AssaultColonyBreaching` or `LordToil_AssaultColonySappers` (a raid that is coming, not
+  one that is fleeing, kidnapping or leaving);
+- no Champion's Challenge is active for that lord (the truce has its own drama);
+- its trash talk is not over (fewer than 3 exchanges, nobody broke yet) and its last exchange was
+  ≥ 1200 ticks ago;
+- then `Rand.Chance(0.4)`.
+A lord that passes picks the pair: candidate taunters sorted by taunt power (highest first); the
+first one with a valid target speaks. The target is the nearest valid raider of that lord.
+
+**Taunter** (colonist): free non-slave colonist, not a quest lodger, humanlike adult, spawned on
+that map, not downed, not in a mental state, awake, can talk (`Talking`), not a mutant, Social not
+disabled, and **qualifies**: Social ≥ 8, or the trait Abrasive, Bloodlust or Brawler. Drafted or
+not does not matter. Each colonist speaks at most once every 2500 ticks (1 in-game hour).
+**Target** (raider): an owned pawn of the lord, humanlike adult, spawned on the map, not fogged,
+not downed, not in a mental state, awake, can hear (`Hearing`), not a mutant, not a prisoner, not
+threat-disabled. It replies only if it can talk.
+**Pair:** distance 8..40 cells (vanilla's insult needs ≤ 6: this one is shouted across the field),
+`GenSight.LineOfSight` between them, and neither is in melee: no standing hostile pawn on an
+adjacent cell and not running an `AttackMelee` job.
+
+**Taunt power** P = Social level + 4 (Abrasive) + 2 (Bloodlust or Brawler; at most once).
+**Outcome** (rolled at the shout):
+- backfire chance = clamp(0.45 − 0.035·P, 0.05, 0.45) (P 0 → 45 %, 4 → 31 %, 8 → 17 %, 12+ → 5 %);
+- **hit:** the lord's morale (starts at 100) drops by 15 + 2.5·P (P 8 → 35, 12 → 45, 20 → 65);
+- **backfire:** morale +15 (max 100), the taunter gets `Gesta_TauntBackfired` (−3 mood, 1 day,
+  "they laughed at me"), and the raider's reply mocks them;
+- **break:** a hit that takes morale to 0 or below makes a raider flee: the target if he is "weak"
+  (his kind's combatPower ≤ the median of the lord's able raiders), else the weakest able raider;
+  never the faction leader or a boss kind. It is vanilla's `PanicFlee` mental state (not forced: a
+  hediff that blocks mental breaks protects him), so he runs for the map edge and stops counting as a
+  threat. Message (positive) "X breaks under Y's taunts and runs." The lord's trash talk ends there.
+  If nobody can be made to flee, it counts as a plain hit and the talk ends anyway.
+With 3 exchanges per raid, a Social 20 abrasive colonist breaks someone on the 2nd taunt, Social 12
+on the 3rd, an ordinary Social 8 colonist almost never alone.
+The taunter gains 10 Social XP per exchange.
+
+**What the player sees:**
+- the vanilla interaction bubble (insult icon, arrow pointing at the target) over the speaker;
+- the words themselves in a readable speech box above the speaker's head (dark box, Small font,
+  gold border for colonists, red for raiders; 5 real seconds, frozen while paused; current map
+  only; setting "show the shouted words"). Lines come from RulePackDefs
+  `Gesta_TrashTalk_Shouts` / `_Retorts` / `_Mockery` (root `r_shout`, SPEAKER and TARGET pawn
+  symbols, constants `tribal`, `targetLeader`);
+- 120 ticks later the raider's reply (bubble + words), unless he broke, went down or can't talk;
+- play log entries (`PlayLogEntry_Interaction`, shown in both pawns' log tabs): the taunt
+  (`Gesta_TrashTalk`, colonist → raider, with the outcome as an extra sentence pack
+  `Gesta_TrashTalk_Hit` / `_Backfire` / `_Break`) and the reply (`Gesta_TrashTalkReply` or
+  `Gesta_TrashTalkMock`, raider → colonist). They use the real names, kind and faction.
+The InteractionDefs use the base `InteractionWorker` (weight 0), so they never happen in normal
+social time.
+
+**Saved:** per lord (`Lord.loadID`): morale, exchanges, last exchange tick, broke; per colonist
+(`thingIDNumber`): last taunt tick. States of lords that no longer exist are pruned every 2500 ticks.
+Not saved: pending replies and the speech boxes (a reply due at save time is simply skipped).
+**Turning it off** stops the scan and drops pending replies and boxes.
+
+**Not done (cut):** no raider-initiated taunts (they only answer); no effect on mood of the raid
+beyond the one fleeing raider; no taunts on caravan/non-home maps; Combat Extended irrelevant.
+
+**Tests (GestaTest TrashTalkHarness, ticks 3000–3700):** a real raid lord (ImmediateAttack) with its
+raiders teleported 20 cells from a Social 20 abrasive colonist in the open: the feature off gives
+no exchange; the real scan makes one: play log entry with both real names, a speech box and a
+vanilla bubble on the speaker, morale 100 → 25; a second scan right away does nothing (lord
+cooldown); 120 ticks later the reply entry and box exist; the second taunt breaks the weakest raider
+(PanicFlee, not the leader), message, talk over, a further attempt refused. Pair rules: too close
+(5), too far (50), a wall in between (no LOS), an adjacent hostile (melee) are all refused; the
+same colonist again is refused (cooldown); a pawn with neither Social 8 nor a trait does not qualify.
+Backfire: a Social 0 brawler with a forced low roll → memory, morale back up, a mocking reply. Max 3
+exchanges per lord. Negative: a mechanoid raid lord, a manhunter animal, and a prisoner are never
+part of an exchange. Live: a StageThenAttack raid staging with a colonist in sight gets an exchange
+from the normal ticking scan.

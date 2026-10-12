@@ -59,4 +59,8 @@ Everyone saw it. The colony will not feel good about this for a while.</Gesta_Ch
   <Gesta_Champion_DuelTooLong>The duel drags on without an end. The attack resumes.</Gesta_Champion_DuelTooLong>
   <Gesta_Champion_Inspect>Champion: {0}. Draft a colonist and step inside the circle to accept ({1} left).</Gesta_Champion_Inspect>
   <Gesta_Champion_InspectDuel>Duel: {0} against {1}.</Gesta_Champion_InspectDuel>
+  <Gesta_Settings_TrashTalk>Trash Talk (colonists and raiders shout insults across the field)</Gesta_Settings_TrashTalk>
+  <Gesta_Settings_TrashTalkBubbles>Show the shouted words above their heads</Gesta_Settings_TrashTalkBubbles>
+  <Gesta_TrashTalk_Broke>{0} breaks under {1}'s taunts and runs.</Gesta_TrashTalk_Broke>
+  <Gesta_TrashTalk_FleeReason>{0}'s taunts were too much.</Gesta_TrashTalk_FleeReason>
 </LanguageData>

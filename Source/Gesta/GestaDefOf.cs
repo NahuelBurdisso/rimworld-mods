@@ -54,6 +54,17 @@ namespace Gesta
         public static TaleDef Gesta_ChampionDuelTale;
         public static FeatDef Gesta_Feat_Champion;
 
+        public static InteractionDef Gesta_TrashTalk;
+        public static InteractionDef Gesta_TrashTalkReply;
+        public static InteractionDef Gesta_TrashTalkMock;
+        public static ThoughtDef Gesta_TauntBackfired;
+        public static RulePackDef Gesta_TrashTalk_Shouts;
+        public static RulePackDef Gesta_TrashTalk_Retorts;
+        public static RulePackDef Gesta_TrashTalk_Mockery;
+        public static RulePackDef Gesta_TrashTalk_Hit;
+        public static RulePackDef Gesta_TrashTalk_Backfire;
+        public static RulePackDef Gesta_TrashTalk_Break;
+
         static GestaDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(GestaDefOf)); }
     }
 }
