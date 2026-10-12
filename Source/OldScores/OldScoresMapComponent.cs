@@ -15,7 +15,8 @@ namespace OldScores
         public override void MapComponentTick()
         {
             int now = Find.TickManager.TicksGame;
-            EchoTick(now);
+            try { EchoTick(now); }
+            catch (System.Exception ex) { Log.ErrorOnce("[Old Scores] raid echo tick failed: " + ex, 0x0D5C16); }
             OldScoresTracker tracker = OldScoresTracker.Instance;
             if (tracker == null) return;
             if (now % OldScoresTuning.SparedCheckInterval == 0 && tracker.AnyReturnedSpared) tracker.SparedCheck(map);

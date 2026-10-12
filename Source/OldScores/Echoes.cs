@@ -92,22 +92,30 @@ namespace OldScores
             if (raid.tracks.Count > 0) activeRaids.Add(raid);
         }
 
-        void TryOldRoad(Faction f, IntVec3 arrival, List<Pawn> pawns)
+        /// <summary>
+        /// True when the faction already has a walk-in echo whose arrival or any lane start is within
+        /// EchoOldRoadDist of this arrival (pod echoes never count).
+        /// </summary>
+        public static bool MatchesOldRoad(IReadOnlyList<RaidEcho> echoes, int factionId, IntVec3 arrival)
         {
             float maxSq = OldScoresTuning.EchoOldRoadDist * OldScoresTuning.EchoOldRoadDist;
-            bool match = false;
-            for (int i = 0; i < echoes.Count && !match; i++)
+            for (int i = 0; i < echoes.Count; i++)
             {
                 RaidEcho e = echoes[i];
-                if (e.factionId != f.loadID || !e.walkIn) continue;
-                if (e.arrival.IsValid && (e.arrival - arrival).LengthHorizontalSquared <= maxSq) match = true;
-                for (int l = 0; l < e.laneStarts.Count && !match; l++)
+                if (e.factionId != factionId || !e.walkIn) continue;
+                if (e.arrival.IsValid && (e.arrival - arrival).LengthHorizontalSquared <= maxSq) return true;
+                for (int l = 0; l < e.laneStarts.Count; l++)
                 {
                     int s = e.laneStarts[l];
-                    if (s >= 0 && s < e.points.Count && (e.points[s] - arrival).LengthHorizontalSquared <= maxSq) match = true;
+                    if (s >= 0 && s < e.points.Count && (e.points[s] - arrival).LengthHorizontalSquared <= maxSq) return true;
                 }
             }
-            if (!match) return;
+            return false;
+        }
+
+        void TryOldRoad(Faction f, IntVec3 arrival, List<Pawn> pawns)
+        {
+            if (!MatchesOldRoad(echoes, f.loadID, arrival)) return;
             string text = "OldScores_Echo_OldRoad".Translate(f.Name, DirectionLabel(arrival)).Resolve();
             Pawn first = null;
             for (int i = 0; i < pawns.Count && first == null; i++)
@@ -156,6 +164,13 @@ namespace OldScores
                 if (p.Dead || p.Destroyed) { t.Stop(); continue; }
                 if (!p.Spawned)
                 {
+                    if (t.seen && p.MapHeld == map)
+                    {
+                        // still here but not standing on the map: mid-jump (PawnFlyer, longjump) or carried while
+                        // downed. Keep the track (a later death is still his); no point while he is held.
+                        if (!p.Downed && p.HostileTo(Faction.OfPlayer)) ongoing = true;
+                        continue;
+                    }
                     if (!t.seen && young) ongoing = true;   // still in a drop pod
                     else t.Stop();                           // left the map, carried off, or never landed
                     continue;
@@ -366,6 +381,9 @@ namespace OldScores
 
         /// <summary>Test support: runs the 2500-tick forgetting pass now.</summary>
         public void ForgetOldEchoesNow() => ForgetOldEchoes(Find.TickManager.TicksGame);
+
+        /// <summary>Test support: runs the 60-tick sampling pass now.</summary>
+        public void SampleRaidsNow() => SampleRaids(Find.TickManager.TicksGame);
     }
 
     /// <summary>One raider's road while the raid is on.</summary>

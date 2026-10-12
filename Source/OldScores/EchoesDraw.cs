@@ -33,6 +33,8 @@ namespace OldScores
         }
 
         const int RingSides = 12;
+        /// <summary>The dark under-stroke sits a hair below the line so the two never z-fight.</summary>
+        static readonly Vector3 UnderOffset = new Vector3(0f, -0.01f, 0f);
         const float BaseLineWidth = 0.4f, BaseUnderWidth = 0.75f, ChevronSpacing = 12f, ChevronSize = 0.75f,
                     CrossSize = 0.38f, RingRadius = 1.4f;
 
@@ -54,25 +56,26 @@ namespace OldScores
             // zoomed out the lines would shrink to a pixel: widen them with the camera (no change at normal zoom)
             float zoom = Mathf.Max(1f, Find.CameraDriver.RootSize / 18f);
             float LineWidth = BaseLineWidth * zoom, UnderWidth = BaseUnderWidth * zoom;
-            for (int v = 0; v < visuals.Count; v++)
+            // newest first: when the cap is reached it is the oldest, faintest echoes that are left out
+            for (int v = visuals.Count - 1; v >= 0 && budget > 0; v--)
             {
                 EchoVisual vis = visuals[v];
                 RaidEcho e = vis.echo;
                 Material mat = EchoMaterials.Line(vis.color, vis.alphaStep);
                 Material under = EchoMaterials.Under(vis.alphaStep);
-                for (int lane = 0; lane < e.laneStarts.Count; lane++)
+                for (int lane = 0; lane < e.laneStarts.Count && budget >= 2; lane++)
                 {
                     int end = e.LaneEnd(lane);
-                    for (int j = e.laneStarts[lane] + 1; j < end; j++)
+                    for (int j = e.laneStarts[lane] + 1; j < end && budget >= 2; j++)
                     {
                         IntVec3 a = e.points[j - 1], b = e.points[j];
                         if (!SegmentInView(a, b, view) || (fog.IsFogged(a) && fog.IsFogged(b))) continue;
-                        GenDraw.DrawLineBetween(vis.pts[j - 1], vis.pts[j], under, UnderWidth);
+                        GenDraw.DrawLineBetween(vis.pts[j - 1] + UnderOffset, vis.pts[j] + UnderOffset, under, UnderWidth);
                         GenDraw.DrawLineBetween(vis.pts[j - 1], vis.pts[j], mat, LineWidth);
-                        if ((budget -= 2) <= 0) { EchoStats.Lines += OldScoresTuning.EchoMaxDrawsPerFrame; return; }
+                        budget -= 2;
                     }
                 }
-                for (int c = 0; c < vis.chevronCells.Length; c++)
+                for (int c = 0; c < vis.chevronCells.Length && budget >= 2; c++)
                 {
                     IntVec3 cell = vis.chevronCells[c];
                     if (!view.Contains(cell) || fog.IsFogged(cell)) continue;
@@ -80,7 +83,7 @@ namespace OldScores
                     GenDraw.DrawLineBetween(vis.chevrons[3 * c], vis.chevrons[3 * c + 2], mat, LineWidth);
                     budget -= 2;
                 }
-                for (int d = 0; d < e.deaths.Count; d++)
+                for (int d = 0; d < e.deaths.Count && budget >= 2; d++)
                 {
                     IntVec3 cell = e.deaths[d];
                     if (!view.Contains(cell) || fog.IsFogged(cell)) continue;
@@ -88,7 +91,7 @@ namespace OldScores
                     GenDraw.DrawLineBetween(vis.crosses[4 * d + 2], vis.crosses[4 * d + 3], mat, LineWidth);
                     budget -= 2;
                 }
-                for (int r = 0; r < e.breaches.Count; r++)
+                for (int r = 0; r < e.breaches.Count && budget >= RingSides; r++)
                 {
                     IntVec3 cell = e.breaches[r];
                     if (!view.Contains(cell) || fog.IsFogged(cell)) continue;
@@ -96,7 +99,6 @@ namespace OldScores
                     for (int s = 0; s < RingSides; s++) GenDraw.DrawLineBetween(vis.rings[o + s], vis.rings[o + s + 1], mat, LineWidth);
                     budget -= RingSides;
                 }
-                if (budget <= 0) break;
             }
             EchoStats.Lines += OldScoresTuning.EchoMaxDrawsPerFrame - budget;
         }
@@ -353,8 +355,12 @@ namespace OldScores
             if (worldView || row == null || !OldScoresMod.Settings.echoes) return;
             OldScoresTracker tracker = OldScoresTracker.Instance;
             if (tracker == null || Find.CurrentMap == null) return;
-            tooltip ??= "OldScores_Echo_ToggleTip".Translate().Resolve();
-            row.ToggleableIcon(ref tracker.showEchoes, EchoTextures.Toggle, tooltip, SoundDefOf.Mouseover_ButtonToggle);
+            try
+            {
+                tooltip ??= "OldScores_Echo_ToggleTip".Translate().Resolve();
+                row.ToggleableIcon(ref tracker.showEchoes, EchoTextures.Toggle, tooltip, SoundDefOf.Mouseover_ButtonToggle);
+            }
+            catch (System.Exception ex) { Log.ErrorOnce("[Old Scores] echo toggle failed: " + ex, 0x0D5C15); }
         }
     }
 

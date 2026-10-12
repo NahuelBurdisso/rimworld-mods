@@ -342,3 +342,20 @@ Visual fixes after looking at the captures: lines 0.24 → 0.4 cells with a stro
 when zoomed out (at full zoom-out they were a pixel wide); labels lifted towards white (pale red on the grey
 label background was hard to read); the no-breach label moved above the road's end (it sat on the corpses);
 the toggle icon redrawn in the vanilla style (grey glyph, dark outline).
+
+### Raid Echoes — review fixes (docs/forge/reviews/oldscores-raid-echoes.md)
+
+1. A raider who is not spawned but still held on the map (`MapHeld == map`: mid-jump in a `PawnFlyer`, or
+   carried while downed) keeps his track: it counts as still fighting if he is not downed and hostile, gets
+   no point while held, and his death is still recorded (where he was held). Before, the track was stopped,
+   the raid could end early and the death was lost.
+2. Drawing goes newest echo first and checks the budget before every line/chevron/cross/ring, so the cap is
+   hard and the oldest, faintest echoes are the ones left out.
+3. `EchoTick` and the toggle postfix are wrapped in try/catch (`Log.ErrorOnce`); the under-stroke is drawn
+   0.01 below the line. The old-road test is a public static predicate (`MatchesOldRoad`).
+4. Harness: friendly raid asserted whenever it fires (visible `SKIP` otherwise); the real
+   `DoPlaySettingsGlobalControls` is called from `GameComponentOnGUI` with fresh `WidgetRow`s (one more icon
+   on the map view with the feature on, none in the world view); the whole map component is Scribe'd mid-raid
+   (live pawn references resolved) and an empty component node loads with empty lists; old-road radius,
+   other faction and old pod echo cases; a downed raider carried off keeps his track and his death; the test
+   echoes are cleared when the harness finishes.
