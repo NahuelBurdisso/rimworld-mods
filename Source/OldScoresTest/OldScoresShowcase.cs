@@ -21,6 +21,9 @@ namespace OldScoresTest
         const int StartTick = 3000, StartAnywayTick = 20000;
 
         bool active, started, finished;
+
+        /// <summary>True once this showcase is not going to move the camera any more (or never will).</summary>
+        public bool Finished => !active || finished;
         int ticks;
         int frame = -1;
         Map map;

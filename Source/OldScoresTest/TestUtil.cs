@@ -12,8 +12,9 @@ namespace OldScoresTest
         /// <summary>The Gesta harness owns ticks 60-2200 of the same game; ours start here.</summary>
         // Gesta's harnesses own ticks 60-~2900 of the same game (ChampionHarness runs real raids up to
         // ~2900). Each of ours first clears the map of hostiles at its start tick and begins work
-        // ClearTicks later. Worst-case ends: nicknames ~3380, spared ~3670, beasts ~3760 (all < 4400).
-        public const int NicknamesStart = 3000, SparedStart = 3400, BeastsStart = 3750, ClearTicks = 5;
+        // ClearTicks later. Worst-case ends: nicknames ~3380, spared ~3670, beasts ~3760 (all < 4400);
+        // echoes (three real raids) 3900 to ~6100, worst case ~7400: run with --ticks 8000.
+        public const int NicknamesStart = 3000, SparedStart = 3400, BeastsStart = 3750, EchoesStart = 3900, ClearTicks = 5;
 
         /// <summary>
         /// Start-of-harness prelude: at the start tick removes every hostile pawn and hostile building
@@ -174,7 +175,7 @@ namespace OldScoresTest
         // --- keep the game running while a harness waits -------------------------------------------
 
         static readonly HashSet<string> finished = new HashSet<string>();
-        public const int HarnessCount = 3;
+        public const int HarnessCount = 4;
         public static void MarkFinished(string name) => finished.Add(name);
         public static bool AllFinished => finished.Count >= HarnessCount;
 
