@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Omens</name>
+  <packageId>nahuel.omens</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+  </loadAfter>
+  <description>The world warns you before the battle, and remembers after it.
+
+Omens adds small signs to the map that you can ignore in daily play and read when it matters. Nothing here changes how any pawn thinks or fights.
+
+[b]The Crows Know[/b]
+While a raid waits at its staging point, two or three black crows circle slowly over the place. When the assault begins, a flock of six to eight takes off toward your colony, and the sky over the camp is empty. Raids that attack at once bring no crows: if you see crows, you still have time. After a battle that left at least three dead, crows circle over the unburied bodies until they are buried or two days pass.
+
+[b]The Cold Camp[/b]
+Where raiders waited, they leave a dead campfire and cold ash. Select it to read its story: "The Red Fangs waited here 5 hours, 12th of Aprimay 5501. 9 came; 4 went home." The count of those who went home updates as the raid ends. If another raid camps within five cells, a new line is added - the map learns the hill where they always wait, and so do you. Deconstruct it whenever you like; it gives nothing back.
+
+[b]Rain Reveals the Unseen[/b] (matters with Anomaly)
+In the rain, splashes flicker in a ring around something that is not there: a revenant, a sightstealer, any hostile creature hidden from you, as long as it stands under open sky. In snow, white dust does the same. It is a warning, not a reveal: the creature stays untargetable and unselectable. Nothing shows under a roof or in fog, and nothing shows for friendly invisible pawns.
+
+Each feature has its own toggle in the mod settings. No Harmony patches (Harmony is listed for future features of the pack), safe to add to an existing save. Crows are visual effects and are never saved; the camps and the raid records are saved with the map.</description>
+</ModMetaData>
