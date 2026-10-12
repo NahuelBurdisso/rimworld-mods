@@ -30,7 +30,8 @@ namespace GestaTest
         public override void FinalizeInit()
         {
             ModContentPack me = LoadedModManager.RunningModsListForReading.FirstOrDefault(m => m.PackageId == "nahuel.gestatest");
-            active = me != null && File.Exists(Path.Combine(me.RootDir, "showcase.flag")) && !Kit.HarnessArmed;
+            active = me != null && File.Exists(Path.Combine(me.RootDir, "showcase.flag")) && !Kit.HarnessArmed
+                     && !File.Exists(Path.Combine(me.RootDir, TrashTalkShowcase.Flag));   // one showcase at a time
             if (!active) return;
             shotDir = "D:/rimworld/logs/showcase/gesta";   // test-only; RootDir resolves through the Mods junction
             Directory.CreateDirectory(shotDir);

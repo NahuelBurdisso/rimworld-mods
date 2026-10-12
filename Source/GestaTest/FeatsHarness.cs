@@ -138,11 +138,16 @@ namespace GestaTest
                     Kit.Teleport(d, e.Position + IntVec3.East);
                     d.carryTracker.TryStartCarry(e);
                 }
-                if (carryStartTick >= 0 && ticks - carryStartTick >= 300)
+                // the lone, lordless hostile does what it likes (wanders off, sleeps, falls into another
+                // mod's dread or panic, walks up to punch the carrier): keep it a threat in sight 7-10
+                // cells away, so the check is about the feat and not about the hostile's mood
+                if (carryStartTick >= 0) KeepThreatInSight();
+                bool earned = feats.Has(d, GestaDefOf.Gesta_Feat_Lifeline);
+                if (carryStartTick >= 0 && (earned || ticks - carryStartTick >= 600))
                 {
                     bool los = carryHostile.Spawned && GenSight.LineOfSight(carryHostile.Position, d.Position, map);
-                    Kit.Check(feats.Has(d, GestaDefOf.Gesta_Feat_Lifeline),
-                        $"carrying a downed friend near the enemy is Lifeline (carrying {d.carryTracker.CarriedThing?.LabelShort ?? "nothing"}, hostile {(carryHostile.Dead ? "dead" : carryHostile.Downed ? "downed" : "up")} at {carryHostile.Position.DistanceTo(d.Position):0} cells, sight {los})");
+                    Kit.Check(earned && ticks - carryStartTick >= 180,
+                        $"carrying a downed friend near the enemy is Lifeline after {ticks - carryStartTick} ticks (carrying {d.carryTracker.CarriedThing?.LabelShort ?? "nothing"}, hostile {(carryHostile.Dead ? "dead" : carryHostile.Downed ? "downed" : "up")} at {carryHostile.Position.DistanceTo(d.Position):0} cells, sight {los}; hostile fixed {threatFixes}x, last: {lastThreatProblem ?? "none"})");
                     Finish();
                 }
                 else if (ticks > 1450)
@@ -151,6 +156,34 @@ namespace GestaTest
                     Finish();
                 }
             }
+        }
+
+        int threatFixes;
+        string lastThreatProblem;
+
+        void KeepThreatInSight()
+        {
+            string why = null;
+            if (carryHostile == null || carryHostile.Dead || carryHostile.Downed || !carryHostile.Spawned) why = "gone";
+            else if (!GenHostility.IsActiveThreatToPlayer(carryHostile))
+                why = $"not an active threat (mental state {carryHostile.MentalStateDef?.defName ?? "none"}, awake {carryHostile.Awake()}, hostile {carryHostile.HostileTo(Faction.OfPlayer)})";
+            else if (carryHostile.Position.DistanceTo(d.Position) > 11f) why = "too far";
+            else if (carryHostile.Position.DistanceTo(d.Position) < 5f) why = "too close";
+            else if (!GenSight.LineOfSight(carryHostile.Position, d.Position, map)) why = "out of sight";
+            if (why == null) return;
+            threatFixes++;
+            lastThreatProblem = why + " at tick " + ticks;
+            if (why == "gone" || carryHostile.MentalStateDef != null || !carryHostile.HostileTo(Faction.OfPlayer))
+            {
+                if (carryHostile != null && !carryHostile.Dead && !carryHostile.Destroyed) carryHostile.Destroy();
+                carryHostile = Kit.SpawnHostile(map, d.Position + new IntVec3(7, 0, 0));
+                carryHostile.equipment?.DestroyAllEquipment();
+                spawned.Add(carryHostile);
+            }
+            if (!carryHostile.Awake()) RestUtility.WakeUp(carryHostile);
+            IntVec3 c = CellFinder.StandableCellNear(d.Position + new IntVec3(8, 0, 0), map, 6f,
+                x => x.DistanceTo(d.Position) >= 6f && x.DistanceTo(d.Position) <= 10f && x.GetFirstPawn(map) == null && GenSight.LineOfSight(x, d.Position, map));
+            if (c.IsValid) Kit.Teleport(carryHostile, c);
         }
 
         void Finish()
