@@ -62,6 +62,8 @@ namespace AftermathTest
                     if (InPhase < 100) break;
                     quitter.jobs.EndCurrentJob(JobCondition.InterruptForced);
                     visits.Clear();
+                    // drafted, he cannot go straight back to the bedside for joy and hold the patient
+                    if (quitter.drafter != null) { quitter.drafter.Drafted = true; blockers.Add(quitter); }
                     Kit.Check(OfferingUtility.FindGift(p1, quitter.thingIDNumber, map) == null,
                         $"a visit cut short within {AftermathTuning.MinVisitTicks} ticks leaves nothing (negative)");
                     Next();
@@ -70,17 +72,32 @@ namespace AftermathTest
                 case 4:
                     {
                         // interrupted, but only after sitting with him for 200+ ticks: that counts
+                        if (p1.needs?.rest != null) p1.needs.rest.CurLevel = 1f;   // an asleep patient ends the visit (FailOn !Awake)
                         JobDriver drv = stayer.jobs.curDriver;
                         bool sat = drv is JobDriver_VisitSickPawn && drv.OnLastToil && VisitTicks - drv.ticksLeftThisToil >= 200;
-                        if (!sat && InPhase < 700) break;
+                        if (!sat && InPhase < 1000)
+                        {
+                            // a visit that ended early (patient asleep, someone else's visit) is ordered again
+                            Visit v = visits.FirstOrDefault();
+                            if (v != null && (v.ended || (!v.started && v.tries >= MaxTries)) && restarts < 3)
+                            {
+                                restarts++;
+                                visits.Clear();
+                                Start(stayer, p1);
+                            }
+                            break;
+                        }
                         int opinion = stayer.relations.OpinionOf(p1);
+                        string facts = Facts();
                         stayer.jobs.EndCurrentJob(JobCondition.InterruptForced);
                         visits.Clear();
                         bool want = opinion >= AftermathTuning.MinOpinionForGift;
                         Offering got = OfferingUtility.FindGift(p1, stayer.thingIDNumber, map);
                         Kit.Check(sat && (got != null) == want,
-                            $"a visit interrupted after 200 ticks at the bedside counts (sat {sat}, opinion {opinion}, gift {got?.def?.label ?? "none"})");
+                            $"a visit interrupted after 200 ticks at the bedside counts (sat {sat}, opinion {opinion}, gift {got?.def?.label ?? "none"}, restarts {restarts}, drafted blockers {blockers.Count})"
+                            + (sat ? "" : $" [{facts}]"));
                         Next();
+                        ReleaseBlockers();
                         Recover();
                         break;
                     }
@@ -194,11 +211,23 @@ namespace AftermathTest
             bool visiting = cur != null && cur.def == JobDefOf.VisitSickPawn && cur.targetA.Thing == v.patient;
             if (visiting) { v.started = true; return; }
             if (v.started) { v.ended = true; return; }
-            if (v.tries >= 15 || ticks - v.lastTry < 30) return;
+            if (v.tries >= MaxTries || ticks - v.lastTry < 30) return;
             v.tries++;
             v.lastTry = ticks;
             if (v.patient.needs?.rest != null) v.patient.needs.rest.CurLevel = 1f;
-            if (!v.visitor.CanReserve(v.patient)) return;   // someone else (a doctor, a visitor) holds him: retry later
+            if (!v.visitor.CanReserve(v.patient))
+            {
+                // someone else holds him - usually a colonist who chose to visit him for joy (the earlier test
+                // visitors do, once their ordered visit ends). Draft that colonist so the reservation is
+                // released, and retry; blockers are undrafted when the phase ends.
+                Pawn holder = map.reservationManager.FirstRespectedReserver(v.patient, v.visitor);
+                if (holder != null && holder != v.visitor && holder.drafter != null && holder.IsColonistPlayerControlled && !holder.Drafted)
+                {
+                    holder.drafter.Drafted = true;
+                    blockers.Add(holder);
+                }
+                return;
+            }
             Job job = JobMaker.MakeJob(JobDefOf.VisitSickPawn, v.patient);
             job.ignoreJoyTimeAssignment = true;   // JoyUtility.JoyTickCheckEnd would end it outside joy hours
             v.visitor.jobs.TryTakeOrderedJob(job, JobTag.Misc);
@@ -206,7 +235,17 @@ namespace AftermathTest
             if (cur != null && cur.def == JobDefOf.VisitSickPawn) v.started = true;
         }
 
-        bool AllEnded() => visits.All(v => v.ended || (!v.started && v.tries >= 15));
+        bool AllEnded() => visits.All(v => v.ended || (!v.started && v.tries >= MaxTries));
+
+        const int MaxTries = 20;
+        int restarts;
+        readonly List<Pawn> blockers = new List<Pawn>();
+
+        void ReleaseBlockers()
+        {
+            foreach (Pawn b in blockers) if (b.drafter != null && b.Spawned && !b.Dead) b.drafter.Drafted = false;
+            blockers.Clear();
+        }
 
         void CheckVisitEnded(string what)
         {
@@ -248,13 +287,15 @@ namespace AftermathTest
 
         protected override string Facts() =>
             "visits: " + string.Join(", ", visits.Select(v => $"{v.visitor?.LabelShort}->{v.patient?.LabelShort} job {v.visitor?.CurJobDef?.defName} started {v.started} ended {v.ended} tries {v.tries}"))
-            + $"; p1 in bed {p1?.CurrentBed() != null}, p2 in bed {p2?.CurrentBed() != null}";
+            + $"; p1 in bed {p1?.CurrentBed() != null} awake {p1?.Awake()}, p2 in bed {p2?.CurrentBed() != null}"
+            + $"; p1 held by {(p1 != null && p1.Spawned ? map.reservationManager.FirstRespectedReserver(p1, stayer)?.LabelShort ?? "nobody" : "-")}";
 
         protected override void Cleanup()
         {
             if (oldJoyDuration >= 0) JobDefOf.VisitSickPawn.joyDuration = oldJoyDuration;
             if (oldMinVisit >= 0) AftermathTuning.MinVisitTicks = oldMinVisit;
             if (p1?.drafter != null && p1.Spawned) p1.drafter.Drafted = false;
+            ReleaseBlockers();
             foreach (Pawn p in colonists) TestUtil.Heal(p);
         }
     }

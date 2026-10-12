@@ -73,7 +73,7 @@ namespace AftermathTest
             if (f == 0) Log.Message($"[Test] DONE Aftermath/{Name}: {p} passed");
             else Log.Error($"[Test] DONE Aftermath/{Name}: {p} passed, {f} FAILED");
             TestUtil.MarkFinished(Name);
-            if (TestUtil.AllFinished) Kit.Summary("Aftermath (all five harnesses)");
+            if (TestUtil.AllFinished) Kit.Summary("Aftermath (all six harnesses)");
         }
     }
 }

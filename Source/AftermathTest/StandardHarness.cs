@@ -4,6 +4,7 @@ using System.Reflection;
 using Aftermath;
 using HarmonyLib;
 using RimWorld;
+using UnityEngine;
 using Verse;
 using Verse.AI.Group;
 
@@ -87,7 +88,7 @@ namespace AftermathTest
             }
             else Log.Message("[Test] (raid has a single member left; skipped the non-leader check)");
 
-            string leaderName = leader.LabelShort;
+            string leaderName = AftermathUtil.FoeName(leader);
             TestUtil.DownBy(leader, hero);
             Kit.Check(leader.Downed || leader.Dead, $"setup: the leader went down to {hero.LabelShort}'s blows");
             List<MinifiedThing> now = Standards();
@@ -118,6 +119,14 @@ namespace AftermathTest
             string inspect = s.GetInspectString();
             Kit.Check(inspect.Contains(enemy.Name) && inspect.Contains(s.leaderName) && inspect.Contains(hero.LabelShort),
                 $"its inspect pane tells the story: \"{inspect.Replace("\n", " | ")}\"");
+
+            // the emblem: the faction icon is chosen and printed clearly above the cloth (PrintPlane lifts the
+            // top vertices of every plane by 0.01; the icon must clear that, or the cloth hides it)
+            Texture2D icon = s.EmblemTexture;
+            bool hasIcon = !enemy.def.factionIconPath.NullOrEmpty() || !enemy.def.settlementTexturePath.NullOrEmpty();
+            float lift = (StandardGraphics.IconLift - StandardGraphics.ClothLift) * Altitudes.AltInc;
+            Kit.Check((!hasIcon || (icon != null && icon != BaseContent.BadTex)) && lift > 0.012f,
+                $"the standard carries {enemy.Name}'s emblem ({icon?.name ?? "none"}; icon path {enemy.def.factionIconPath}), printed {lift:0.000} above the cloth (> 0.01 vertex tilt)");
 
             onlooker = TestUtil.NewColonist(map, at + new IntVec3(-2, 0, 0), p => p.needs?.mood != null && !PawnUtility.IsBiologicallyOrArtificiallyBlind(p));
             TestUtil.Teleport(onlooker, at + new IntVec3(-2, 0, 0));

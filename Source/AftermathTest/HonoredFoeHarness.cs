@@ -97,6 +97,21 @@ namespace AftermathTest
             Kit.Check(!g2.GetComp<CompHonoredFoe>().Marker(out _, out _) && !g2.GetInspectString().Contains("worthy foe"),
                 "an ordinary raider's grave has no marker and no story (negative)");
 
+            // a worthy foe with no name: the inscription falls back to "an unnamed <kind>", never the race ("Human")
+            Pawn nameless = Foe(root + new IntVec3(7, 0, 3));
+            nameless.Name = null;
+            Pawn victim3 = Colonist(root + new IntVec3(6, 0, 3));
+            Kit.KillBy(victim3, nameless);
+            Kit.KillBy(nameless, finisher);
+            FoeRecord rn = T.RecordOf(nameless.thingIDNumber);
+            Building_Grave g3 = Grave(root + new IntVec3(4, 0, 1));
+            Bury(g3, nameless.Corpse);
+            string inscription = g3.GetInspectString();
+            Kit.Check(rn != null && rn.name.StartsWith("an unnamed ") && rn.name != "an unnamed " && !rn.name.Contains("Human")
+                && inscription.Contains("Here lies " + rn.name + " of " + enemy.Name),
+                $"a nameless worthy foe is remembered as \"{rn?.name}\" (kind {nameless.KindLabel}): \"{inscription.Replace("\n", " | ")}\"");
+            Kit.Check(AftermathUtil.FoeName(finisher) == finisher.Name.ToStringShort, "a named pawn keeps his own name on the stone");
+
             // feature off
             AftermathMod.Settings.honoredFoes = false;
             Kit.Check(!comp1.Marker(out _, out _) && !g1.GetInspectString().Contains("worthy foe"), "with the feature off the marker and story are hidden");

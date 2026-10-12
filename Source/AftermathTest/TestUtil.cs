@@ -11,11 +11,30 @@ namespace AftermathTest
     /// <summary>Helpers shared by the Aftermath harnesses. All calls checked against decomp/1.6.4871.</summary>
     public static class TestUtil
     {
-        /// <summary>Gesta's harness owns ticks 60-2650, Old Scores' 2700-~4000 of the same game; ours start at 4600.</summary>
-        public const int OfferingsStart = 4600, DoorsStart = 4650, StandardsStart = 4700, FoesStart = 5200, VigilStart = 5400;
+        /// <summary>
+        /// In the shared run (Gesta's or Old Scores' harness loaded too: they own ticks 60-~4000 of the same game,
+        /// `rw launch --ticks 7000`) ours start at 4600. Alone (`--ticks 3000`) they start at 300.
+        /// </summary>
+        public static int Offset
+        {
+            get
+            {
+                if (offset < 0)
+                    offset = ModsConfig.IsActive("nahuel.gestatest") || ModsConfig.IsActive("nahuel.oldscorestest") ? 4600 : 300;
+                return offset;
+            }
+        }
+        static int offset = -1;
 
-        /// <summary>Hard stop: whatever is still waiting fails here (the run is `rw launch --ticks 7000`).</summary>
-        public const int Deadline = 6900;
+        public static int OfferingsStart => Offset;
+        public static int DoorsStart => Offset + 50;
+        public static int StandardsStart => Offset + 100;
+        public static int FoesStart => Offset + 600;
+        public static int SentinelStart => Offset + 700;
+        public static int VigilStart => Offset + 800;
+
+        /// <summary>Hard stop: whatever is still waiting fails here (6900 in the shared 7000-tick run, 2600 alone).</summary>
+        public static int Deadline => Offset + 2300;
 
         public static int Now => Find.TickManager.TicksGame;
 
@@ -229,7 +248,7 @@ namespace AftermathTest
         // ------------------------------------------------------------------ keep the game running while a harness waits
 
         static readonly HashSet<string> finished = new HashSet<string>();
-        public const int HarnessCount = 5;
+        public const int HarnessCount = 6;
         public static void MarkFinished(string name) => finished.Add(name);
         public static bool AllFinished => finished.Count >= HarnessCount;
     }

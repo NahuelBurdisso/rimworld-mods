@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Aftermath;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace AftermathTest
@@ -42,8 +43,9 @@ namespace AftermathTest
                     int step = T.FadeStepAt(bedRecover);
                     Thing g = T.GlowerAt(bedRecover);
                     int red = g?.TryGetComp<CompGlower>()?.GlowColor.r ?? -1;
-                    Kit.Check(step >= 1 && g != null && red < AftermathTuning.VigilColor.r,
-                        $"when the danger passes the light starts to fade (step {step}, red {red} < {AftermathTuning.VigilColor.r})");
+                    float inten = (g as VigilGlow)?.intensity ?? -1f;
+                    Kit.Check(step >= 1 && g != null && red < AftermathTuning.VigilColor.r && inten < 1f && inten > 0f,
+                        $"when the danger passes the light and its halo start to fade (step {step}, red {red} < {AftermathTuning.VigilColor.r}, halo {inten:0.00})");
                     break;
                 case 3:
                     if (T.GlowerAt(bedRecover) != null && InPhase < Poll * (AftermathTuning.VigilFadeSteps + 3)) break;
@@ -64,8 +66,9 @@ namespace AftermathTest
         {
             AftermathTuning.VigilPollInterval = Poll;
             ThingDef def = AftermathDefOf.Aftermath_VigilGlow;
-            Kit.Check(def != null && def.graphicData == null && !def.isSaveable && def.drawerType == DrawerType.None && def.HasComp(typeof(CompGlower)),
-                "the vigil light def has no graphic, is never saved, draws nothing and carries a CompGlower (and loaded)");
+            Kit.Check(def != null && def.graphicData == null && !def.isSaveable && def.drawerType == DrawerType.RealtimeOnly
+                && def.thingClass == typeof(VigilGlow) && def.HasComp(typeof(CompGlower)),
+                "the vigil light def has no graphic, is never saved, draws its halo in real time (VigilGlow) and carries a CompGlower (and loaded)");
             root = TestUtil.PrepareStrip(map, TestUtil.Anchor(map, 14, -12), 9, 5, Name);
             Kit.Check(root.IsValid, "setup: a clear strip for the beds");
             if (!root.IsValid) { Finish(); return; }
@@ -87,6 +90,13 @@ namespace AftermathTest
             Kit.Check(g != null && g.Spawned && g.Position == bedDying.Position && glow != null && glow.Glows,
                 $"within one poll the dying patient's bed has a lit amber light ({g?.Position}, lit {glow?.Glows})");
             Kit.Check(T.GlowerAt(bedMild) == null, "a lightly hurt patient's bed stays dark (negative)");
+            var halo = g as VigilGlow;
+            Material hm = halo?.HaloMaterial;
+            Kit.Check(halo != null && hm != null && hm.mainTexture != null && hm.mainTexture != BaseContent.BadTex
+                && hm.shader == ShaderDatabase.MoteGlow && halo.intensity >= 0.999f
+                && Mathf.Abs(halo.haloSize - VigilGlow.HaloSizeFor(bedDying)) < 0.01f
+                && (halo.haloCenter - bedDying.TrueCenter()).sqrMagnitude < 0.01f,
+                $"...and it draws a full-strength amber halo centred on the bed ({hm?.mainTexture?.name}, size {halo?.haloSize}, intensity {halo?.intensity})");
 
             // death: the light goes out in the same tick
             Kit.KillBy(dying, null);

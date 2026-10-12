@@ -84,7 +84,11 @@ namespace AftermathTest
                 case 330: Shot("4-vigil-lamp"); break;
                 case 340: Stage("offerings", StageOfferings); break;
                 case 410: Shot("5-bedside-offerings"); break;
-                case 420: Done(); break;
+                case 420: Stage("sentinel", StageSentinel); break;
+                case 500: Shot("6-old-sentinel"); break;
+                case 510: Stage("remains", StageRemains); break;
+                case 640: Shot("7-sentinel-remains"); break;
+                case 650: Done(); break;
             }
         }
 
@@ -271,6 +275,47 @@ namespace AftermathTest
                 first ??= o;
             }
             Look(first, bed.TrueCenter(), 4f);
+        }
+
+        Building_TurretGun sentinel;
+
+        // 6. a turret that held the line through three battles: named, with its tally on the map
+        void StageSentinel()
+        {
+            if (finished) return;
+            if (!HaveEnemy("sentinel")) return;
+            IntVec3 r = Strip(0, -24, 7, 5, "sentinel");
+            if (!r.IsValid) { skipped = true; return; }
+            ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail("Turret_MiniTurret");
+            sentinel = TestUtil.SpawnBuilding<Building_TurretGun>(def, null, r + new IntVec3(3, 0, 2), map, Rot4.North);
+            CompOldSentinel c = sentinel.GetComp<CompOldSentinel>();
+            Pawn hand = AnyColonist;
+            for (int i = 0; i < 9; i++)
+            {
+                if (i == 3 || i == 6) c.rec.lastEngagedTick -= AftermathTuning.BattleGapTicks + 1;   // three raids
+                Pawn foe = TestUtil.SpawnAt(map, r + new IntVec3(i % 7, 0, 0), enemy, EnemyKind);
+                foe.equipment?.DestroyAllEquipment();
+                foe.Kill(new DamageInfo(DamageDefOf.Bullet, 40f, 0f, -1f, sentinel, null, sentinel.gun?.def));
+                foe.Corpse?.Destroy();
+            }
+            if (hand != null) c.AddComrade(hand);
+            foreach (Thing t in map.thingGrid.ThingsListAt(r).Concat(GenRadial.RadialCellsAround(r + new IntVec3(3, 0, 2), 4f, true).SelectMany(x => map.thingGrid.ThingsListAt(x)))
+                .Where(t => t.def.category == ThingCategory.Item || t.def.IsFilth).Distinct().ToList()) t.Destroy();
+            Look(sentinel, sentinel.TrueCenter(), 4f);
+            Log.Message($"[Showcase] sentinel: \"{c.SentinelName}\", {c.Takedowns} takedowns in {c.Battles} battles; label {sentinel.LabelCap}");
+        }
+
+        // 7. it falls: its named remains on the spot
+        void StageRemains()
+        {
+            if (finished || sentinel == null || !sentinel.Spawned) { skipped = true; return; }
+            IntVec3 cell = sentinel.Position;
+            Pawn wrecker = TestUtil.SpawnAt(map, cell + new IntVec3(3, 0, -2), enemy, EnemyKind);
+            sentinel.Kill(new DamageInfo(DamageDefOf.Bomb, 9999f, 0f, -1f, wrecker));
+            wrecker.Destroy();
+            SentinelRemains rem = map.listerThings.ThingsOfDef(AftermathDefOf.Aftermath_SentinelRemains).OfType<SentinelRemains>().LastOrDefault();
+            Look(rem, cell.ToVector3Shifted(), 4f);
+            Log.Message($"[Showcase] remains: {rem?.LabelCap} at {rem?.Position}");
         }
 
         void Done()
