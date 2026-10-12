@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- The light that leaves a dead colonist and flies to the one who loved them most.
+       Movement, fading and lifetime are driven by Duelo.Mote_LastLight, not by <mote> timings. -->
+  <ThingDef ParentName="MoteBase">
+    <defName>Duelo_Mote_LastLight</defName>
+    <thingClass>Duelo.Mote_LastLight</thingClass>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <drawOffscreen>true</drawOffscreen>
+    <mote>
+      <fadeInTime>0</fadeInTime>
+      <solidTime>999</solidTime>
+      <fadeOutTime>0</fadeOutTime>
+    </mote>
+    <graphicData>
+      <graphicClass>Graphic_Mote</graphicClass>
+      <texPath>Things/Duelo/SoulGlow</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <drawSize>(1.6, 1.6)</drawSize>
+      <color>(255, 222, 165)</color>
+    </graphicData>
+  </ThingDef>
+
+  <!-- Sparks the light leaves behind while it moves: they drift up a little and shrink away. -->
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Duelo_Fleck_LastLightTrail</defName>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.05</fadeInTime>
+    <solidTime>0.1</solidTime>
+    <fadeOutTime>0.75</fadeOutTime>
+    <growthRate>-0.5</growthRate>
+    <graphicData>
+      <texPath>Things/Duelo/SoulGlow</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <drawSize>(0.7, 0.7)</drawSize>
+      <color>(255, 210, 140)</color>
+    </graphicData>
+  </FleckDef>
+
+  <!-- Soft bloom when the light leaves the body and when it reaches the one it was looking for. -->
+  <FleckDef ParentName="FleckBase">
+    <defName>Duelo_Fleck_LastLightBloom</defName>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.12</fadeInTime>
+    <solidTime>0.15</solidTime>
+    <fadeOutTime>1.1</fadeOutTime>
+    <growthRate>1.4</growthRate>
+    <graphicData>
+      <texPath>Things/Duelo/SoulGlow</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <drawSize>(1, 1)</drawSize>
+      <color>(255, 228, 180)</color>
+    </graphicData>
+  </FleckDef>
+
+  <ThoughtDef ParentName="DeathMemory">
+    <defName>Duelo_LastLightFarewell</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>3</durationDays>
+    <stackLimit>3</stackLimit>
+    <stackLimitForSameOtherPawn>1</stackLimitForSameOtherPawn>
+    <nullifyingTraits>
+      <li>Psychopath</li>
+    </nullifyingTraits>
+    <stages>
+      <li>
+        <label>{0} said goodbye</label>
+        <description>A little light rose from where they fell, found me, and circled me once before it faded. I think it was a goodbye.</description>
+        <baseMoodEffect>3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+</Defs>
