@@ -205,8 +205,8 @@ namespace Aftermath
             var rec = new FoeRecord
             {
                 foeId = p.thingIDNumber,
-                name = p.Name?.ToStringShort ?? p.LabelShort,
-                factionName = p.Faction?.Name ?? "?",
+                name = AftermathUtil.FoeName(p),
+                factionName = p.Faction?.Name,
                 deathTick = Find.TickManager.TicksGame,
                 longLat = AftermathUtil.LongLat(p.MapHeld),
                 // the blow that downed him counts as the one that stopped him; else the killing blow

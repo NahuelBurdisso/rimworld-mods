@@ -106,6 +106,7 @@ namespace Aftermath
         void Light(Building_Bed bed, Pawn p)
         {
             Thing glower = GenSpawn.Spawn(AftermathDefOf.Aftermath_VigilGlow, bed.Position, map);
+            (glower as VigilGlow)?.SetBed(bed);
             var v = new Vigil { glower = glower, patient = p };
             vigils[bed] = v;
             SetColor(v);
@@ -113,10 +114,11 @@ namespace Aftermath
 
         static void SetColor(Vigil v)
         {
+            float f = 1f - (float)v.fadeStep / AftermathTuning.VigilFadeSteps;
+            if (v.glower is VigilGlow halo) halo.intensity = f;
             CompGlower g = v.glower.TryGetComp<CompGlower>();
             if (g == null) return;
             ColorInt c = AftermathTuning.VigilColor;
-            float f = 1f - (float)v.fadeStep / AftermathTuning.VigilFadeSteps;
             // the setter deregisters and re-registers the light (Verse/CompGlower.cs:357)
             g.GlowColor = new ColorInt((int)(c.r * f), (int)(c.g * f), (int)(c.b * f), 0);
         }

@@ -13,6 +13,9 @@
   <Aftermath_Settings_BedsideOfferings>Bedside Offerings</Aftermath_Settings_BedsideOfferings>
   <Aftermath_Settings_BedsideOfferingsDesc>Each visit to a wounded colonist leaves a small gift by the bed: flowers from a lover, a letter from family, a carved figure from a friend, a candle from anyone else. Those who dislike the patient leave nothing. Back on their feet, the patient is cheered by how many came.</Aftermath_Settings_BedsideOfferingsDesc>
 
+  <Aftermath_Settings_OldSentinels>The Old Sentinel</Aftermath_Settings_OldSentinels>
+  <Aftermath_Settings_OldSentinelsDesc>A turret that brings down 5 foes over at least 3 separate battles is given a name by the colonists, and keeps a tally of the foes it brings down. Colonists who man it or fight beside it become its old hands. When a named turret is destroyed it leaves its named remains, and the colony mourns it (its old hands most of all). Uninstalled and reinstalled turrets keep their name.</Aftermath_Settings_OldSentinelsDesc>
+
   <!-- Shared -->
   <Aftermath_UnknownHands>unknown hands</Aftermath_UnknownHands>
   <Aftermath_Raiders>raiders</Aftermath_Raiders>
@@ -33,6 +36,8 @@
 
   <!-- Honored foe -->
   <Aftermath_FoeHereLies>Here lies {0} of {1}, a worthy foe.</Aftermath_FoeHereLies>
+  <Aftermath_FoeHereLiesNoFaction>Here lies {0}, a worthy foe.</Aftermath_FoeHereLiesNoFaction>
+  <Aftermath_UnnamedFoe>an unnamed {0}</Aftermath_UnnamedFoe>
   <Aftermath_FoeDeedsBoth>Brought down {0}, and killed {1}.</Aftermath_FoeDeedsBoth>
   <Aftermath_FoeDeedsKilled>Killed {0}.</Aftermath_FoeDeedsKilled>
   <Aftermath_FoeDeedsDowned>Brought down {0}.</Aftermath_FoeDeedsDowned>
@@ -46,4 +51,20 @@
   <Aftermath_OfferingVisits>Visits: {0}.</Aftermath_OfferingVisits>
   <Aftermath_Lover>lover</Aftermath_Lover>
   <Aftermath_Friend>friend</Aftermath_Friend>
+
+  <!-- The old sentinel -->
+  <Aftermath_SentinelLabel>{0} ({1})</Aftermath_SentinelLabel>
+  <Aftermath_SentinelOverlay>{0} · {1}</Aftermath_SentinelOverlay>
+  <Aftermath_SentinelNamed>The colonists have started calling the {1} "{0}": {2} foes brought down in {3} battles.</Aftermath_SentinelNamed>
+  <Aftermath_SentinelTallyUnnamed>Foes brought down: {0}. Battles fought: {1}.</Aftermath_SentinelTallyUnnamed>
+  <Aftermath_SentinelTally>"{0}" since {1}: {2} foes brought down in {3} battles.</Aftermath_SentinelTally>
+  <Aftermath_SentinelOldHands>Old hands: {0}.</Aftermath_SentinelOldHands>
+  <Aftermath_SentinelFellLabel>{0} has fallen</Aftermath_SentinelFellLabel>
+  <Aftermath_SentinelFellText>{0}, the {1} that held the line through {2} battles and brought down {3} foes, has been destroyed.\n\nThe colonists will miss it. Its remains lie where it stood.</Aftermath_SentinelFellText>
+  <Aftermath_SentinelFellTextBy>{0}, the {1} that held the line through {2} battles and brought down {3} foes, has been destroyed by {4}.\n\nThe colonists will miss it. Its remains lie where it stood.</Aftermath_SentinelFellTextBy>
+  <Aftermath_RemainsLabel>remains of {0}</Aftermath_RemainsLabel>
+  <Aftermath_RemainsWhat>{0}, a {1}.</Aftermath_RemainsWhat>
+  <Aftermath_RemainsTally>Brought down {0} foes in {1} battles.</Aftermath_RemainsTally>
+  <Aftermath_RemainsFell>Fell on {0}.</Aftermath_RemainsFell>
+  <Aftermath_RemainsFellTo>Fell on {0} to {1}.</Aftermath_RemainsFellTo>
 </LanguageData>

@@ -123,7 +123,10 @@ namespace Aftermath
             FoeRecord rec = Record();
             if (rec == null) return null;
             var sb = new StringBuilder();
-            sb.Append("Aftermath_FoeHereLies".Translate(rec.name, rec.factionName));
+            if (rec.factionName.NullOrEmpty() || rec.factionName == "?")
+                sb.Append("Aftermath_FoeHereLiesNoFaction".Translate(rec.name));
+            else
+                sb.Append("Aftermath_FoeHereLies".Translate(rec.name, rec.factionName));
             var downed = new List<string>();
             var killed = new List<string>();
             foreach (FoeVictim v in rec.victims) (v.killed ? killed : downed).Add(v.name);

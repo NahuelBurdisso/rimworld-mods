@@ -31,7 +31,8 @@ namespace Aftermath
             Section(list, "Aftermath_Settings_TrophyStandards", ref Settings.trophyStandards);
             Section(list, "Aftermath_Settings_HonoredFoes", ref Settings.honoredFoes);
             Section(list, "Aftermath_Settings_VigilLamps", ref Settings.vigilLamps);
-            Section(list, "Aftermath_Settings_BedsideOfferings", ref Settings.bedsideOfferings, last: true);
+            Section(list, "Aftermath_Settings_BedsideOfferings", ref Settings.bedsideOfferings);
+            Section(list, "Aftermath_Settings_OldSentinels", ref Settings.oldSentinels, last: true);
             contentHeight = list.CurHeight + 20f;
             list.End();
             Widgets.EndScrollView();
@@ -60,6 +61,7 @@ namespace Aftermath
         public bool honoredFoes = true;
         public bool vigilLamps = true;
         public bool bedsideOfferings = true;
+        public bool oldSentinels = true;
 
         public override void ExposeData()
         {
@@ -68,6 +70,7 @@ namespace Aftermath
             Scribe_Values.Look(ref honoredFoes, "honoredFoes", true);
             Scribe_Values.Look(ref vigilLamps, "vigilLamps", true);
             Scribe_Values.Look(ref bedsideOfferings, "bedsideOfferings", true);
+            Scribe_Values.Look(ref oldSentinels, "oldSentinels", true);
         }
     }
 
@@ -104,5 +107,14 @@ namespace Aftermath
         public static int FriendOpinion = 20;
         public static int DoneOfferingVanishTicks = GenDate.TicksPerHour * 6;
         public static int ShrineVanishTicks = 3 * GenDate.TicksPerDay;
+
+        // Old sentinel
+        public static int SentinelMinBattles = 3;
+        public static int SentinelMinTakedowns = 5;
+        public static int BattleGapTicks = GenDate.TicksPerHour * 12;
+        public static int SentinelRecentVictimsKept = 40;
+        public static int SentinelMaxComrades = 12;
+        public static float SentinelComradeRadius = 10f;
+        public static int SentinelComradeWindowTicks = GenDate.TicksPerHour;
     }
 }

@@ -21,6 +21,8 @@ namespace Aftermath
             catch (System.Exception ex) { Log.ErrorOnce("[Aftermath] standard kill handling failed: " + ex, 0x0AF7E02); }
             try { FoeTracker.Instance?.Notify_PawnDying(__instance, dinfo); }
             catch (System.Exception ex) { Log.ErrorOnce("[Aftermath] foe kill handling failed: " + ex, 0x0AF7E03); }
+            try { SentinelUtility.Notify_Takedown(__instance, dinfo); }
+            catch (System.Exception ex) { Log.ErrorOnce("[Aftermath] sentinel kill handling failed: " + ex, 0x0AF7E08); }
         }
     }
 
@@ -38,18 +40,28 @@ namespace Aftermath
             catch (System.Exception ex) { Log.ErrorOnce("[Aftermath] standard downed handling failed: " + ex, 0x0AF7E04); }
             try { FoeTracker.Instance?.Notify_Downed(___pawn, dinfo); }
             catch (System.Exception ex) { Log.ErrorOnce("[Aftermath] foe downed handling failed: " + ex, 0x0AF7E05); }
+            try { SentinelUtility.Notify_Takedown(___pawn, dinfo); }
+            catch (System.Exception ex) { Log.ErrorOnce("[Aftermath] sentinel downed handling failed: " + ex, 0x0AF7E09); }
         }
     }
 
-    /// <summary>Pawn.PostApplyDamage(DamageInfo dinfo, float totalDamageDealt) - Verse/Pawn.cs:1935: standard veterans.</summary>
+    /// <summary>
+    /// Pawn.PostApplyDamage(DamageInfo dinfo, float totalDamageDealt) - Verse/Pawn.cs:1935: standard veterans,
+    /// sentinel engagements and old hands.
+    /// </summary>
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.PostApplyDamage))]
     public static class Patch_PawnPostApplyDamage
     {
         public static void Postfix(Pawn __instance, DamageInfo dinfo)
         {
-            if (!(dinfo.Instigator is Pawn attacker)) return;
-            try { StandardTracker.Notify_Damage(__instance, attacker); }
-            catch (System.Exception ex) { Log.ErrorOnce("[Aftermath] veteran tracking failed: " + ex, 0x0AF7E06); }
+            if (dinfo.Instigator == null) return;
+            if (dinfo.Instigator is Pawn attacker)
+            {
+                try { StandardTracker.Notify_Damage(__instance, attacker); }
+                catch (System.Exception ex) { Log.ErrorOnce("[Aftermath] veteran tracking failed: " + ex, 0x0AF7E06); }
+            }
+            try { SentinelUtility.Notify_Damage(__instance, dinfo); }
+            catch (System.Exception ex) { Log.ErrorOnce("[Aftermath] sentinel damage tracking failed: " + ex, 0x0AF7E0A); }
         }
     }
 

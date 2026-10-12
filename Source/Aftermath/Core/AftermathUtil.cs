@@ -28,6 +28,20 @@ namespace Aftermath
             return t.LabelShort;
         }
 
+        /// <summary>
+        /// A foe's name for inscriptions: his real short name, else "an unnamed tribal warrior" (kind label).
+        /// LabelShort of an unnamed pawn is the kind label, which for many kinds is just the race ("Human").
+        /// </summary>
+        public static string FoeName(Pawn p)
+        {
+            if (p == null) return "Aftermath_UnknownHands".Translate();
+            Name n = p.Name;
+            if (n != null && !n.Numerical && !n.ToStringShort.NullOrEmpty()) return n.ToStringShort;
+            string kind = p.KindLabel;
+            if (kind.NullOrEmpty()) kind = p.def.label;
+            return "Aftermath_UnnamedFoe".Translate(kind);
+        }
+
         /// <summary>A hostile humanlike that is not the player's: raider, enemy faction member.</summary>
         public static bool IsHostileHumanlike(Pawn p)
         {

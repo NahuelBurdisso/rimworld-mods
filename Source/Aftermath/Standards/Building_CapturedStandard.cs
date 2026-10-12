@@ -13,16 +13,31 @@ namespace Aftermath
 
         // centre of the cloth relative to the texture centre, in texture fractions (x right, z up); see make_textures.py
         public static readonly Vector2 ClothCenter = new Vector2(11f / 128f, 10f / 128f);
-        public const float IconSizeFraction = 0.28f;   // of drawSize.x
+        public const float IconSizeFraction = 0.40f;   // of drawSize.x
+
+        // Printer_Plane lifts the top vertices of every plane by 0.01 (~0.27 AltInc): the icon must sit
+        // clearly above the cloth's tilted plane or the depth test hides it (the 2026-10-11 bug).
+        public const float ClothLift = 0.2f, IconLift = 0.7f;   // in Altitudes.AltInc
 
         public static Material ClothMat(Color c) => MaterialPool.MatFrom(ClothTex, ShaderDatabase.Cutout, c);
+
+        /// <summary>The faction's icon, else its settlement texture, else null (never BadTex).</summary>
+        public static Texture2D Emblem(FactionDef def)
+        {
+            if (def == null) return null;
+            Texture2D t = def.FactionIcon;
+            if (t != null && t != BaseContent.BadTex) return t;
+            if (def.settlementTexturePath.NullOrEmpty()) return null;
+            t = def.SettlementTexture;
+            return t != null && t != BaseContent.BadTex ? t : null;
+        }
 
         public static Material IconMat(Texture2D icon, Color clothColor)
         {
             // dark icon on a light cloth, light icon on a dark one
             float lum = 0.299f * clothColor.r + 0.587f * clothColor.g + 0.114f * clothColor.b;
             Color tint = lum > 0.55f ? new Color(0.12f, 0.10f, 0.08f) : new Color(0.96f, 0.93f, 0.86f);
-            return MaterialPool.MatFrom(icon, ShaderDatabase.Transparent, tint);
+            return MaterialPool.MatFrom(icon, ShaderDatabase.Cutout, tint);
         }
     }
 
@@ -49,7 +64,7 @@ namespace Aftermath
             factionDef = sourceFaction?.def;
             factionName = sourceFaction?.Name ?? "?";
             clothColor = sourceFaction != null ? sourceFaction.Color : Color.white;
-            leaderName = leader.LabelShort;
+            leaderName = AftermathUtil.FoeName(leader);
             killerName = AftermathUtil.NameOf(by);
             tick = Find.TickManager.TicksGame;
             longLat = AftermathUtil.LongLat(map);
@@ -74,16 +89,20 @@ namespace Aftermath
         public override string LabelNoCount =>
             factionName.NullOrEmpty() ? base.LabelNoCount : "Aftermath_StandardLabel".Translate(base.LabelNoCount, factionName).ToString();
 
+        /// <summary>What is printed on the cloth: the faction icon (or settlement texture); null = plain cloth.</summary>
+        public Texture2D EmblemTexture => StandardGraphics.Emblem(factionDef);
+
         public override void Print(SectionLayer layer)
         {
             base.Print(layer);
             Vector2 size = def.graphicData.drawSize;
             Vector3 center = DrawPos + def.graphicData.drawOffset;
-            center.y += Altitudes.AltInc * 0.2f;
+            center.y += Altitudes.AltInc * StandardGraphics.ClothLift;
             Printer_Plane.PrintPlane(layer, center, size, StandardGraphics.ClothMat(clothColor));
-            Texture2D icon = factionDef?.FactionIcon;
-            if (icon == null || icon == BaseContent.BadTex) return;
-            Vector3 at = center + new Vector3(StandardGraphics.ClothCenter.x * size.x, Altitudes.AltInc * 0.1f, StandardGraphics.ClothCenter.y * size.y);
+            Texture2D icon = EmblemTexture;
+            if (icon == null) return;
+            Vector3 at = center + new Vector3(StandardGraphics.ClothCenter.x * size.x,
+                Altitudes.AltInc * (StandardGraphics.IconLift - StandardGraphics.ClothLift), StandardGraphics.ClothCenter.y * size.y);
             float s = StandardGraphics.IconSizeFraction * size.x;
             Printer_Plane.PrintPlane(layer, at, new Vector2(s, s), StandardGraphics.IconMat(icon, clothColor));
         }
