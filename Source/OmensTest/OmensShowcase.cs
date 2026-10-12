@@ -26,6 +26,7 @@ namespace OmensTest
         IntVec3 revCell = IntVec3.Invalid;
         Lord lord;
         StageRecord rec;
+        string poseWeather;
 
         public OmensShowcase(Game game) { }
 
@@ -48,6 +49,8 @@ namespace OmensTest
             if (!active || finished) return;
             // the revenant would walk away: keep it on its cell while it poses
             if (revenant != null && revenant.Spawned && revCell.IsValid && revenant.Position != revCell) TestUtil.Teleport(revenant, revCell);
+            // the weather decider would end our rain: hold it while posing
+            if (poseWeather != null && map != null && map.weatherManager.curWeather.defName != poseWeather) Weather(poseWeather);
         }
 
         public override void GameComponentUpdate()
@@ -95,6 +98,7 @@ namespace OmensTest
             map.weatherManager.curWeather = w;
             map.weatherManager.lastWeather = w;
             map.weatherManager.curWeatherAge = 5000;
+            poseWeather = defName == "Clear" ? null : defName;
         }
 
         void Run()
@@ -110,8 +114,10 @@ namespace OmensTest
                     if (ModsConfig.AnomalyActive)
                     {
                         IntVec3 anchor = map.mapPawns.FreeColonistsSpawned.FirstOrDefault()?.Position ?? map.Center;
-                        revCell = CellFinder.RandomClosewalkCellNear(anchor + new IntVec3(8, 0, 4), map, 8,
-                            c => c.Standable(map) && !c.Roofed(map) && !c.Fogged(map) && c.GetFirstPawn(map) == null && !c.GetTerrain(map).IsWater);
+                        // a revenant seen by a colonist within 9 cells becomes visible (CompRevenant): pose it far from them
+                        revCell = CellFinder.RandomClosewalkCellNear(anchor + new IntVec3(20, 0, 6), map, 10,
+                            c => c.Standable(map) && !c.Roofed(map) && !c.Fogged(map) && c.GetFirstPawn(map) == null && !c.GetTerrain(map).IsWater
+                                && map.mapPawns.FreeColonistsSpawned.All(p => !p.Position.InHorDistOf(c, 15f)));
                         revenant = PawnGenerator.GeneratePawn(PawnKindDefOf.Revenant, Faction.OfEntities);
                         GenSpawn.Spawn(revenant, revCell, map);
                         Weather("Rain");
@@ -184,7 +190,7 @@ namespace OmensTest
                     Go(10);
                     break;
                 case 10:
-                    if (InStep < 20) return;
+                    if (InStep < 420) return;     // let the raiders walk off the camp
                     if (rec.camp == null) { Log.Error("[Showcase] no camp"); finished = true; return; }
                     Look(rec.camp, rec.camp.TrueCenter(), 6f);
                     Log.Message("[Showcase] camp text: " + rec.camp.GetInspectString().Replace("\n", " | "));
