@@ -70,20 +70,20 @@ under open sky. In snow, puffs of white dust do the same. The pawn stays unselec
   the player, so the watcher sleeps), `map == Find.CurrentMap` (flecks on other maps are never seen), and
   `RainRate ≥ 0.1` or `SnowRate ≥ 0.1` (`WeatherManager.cs:45,47`, the lerped values, so it fades in and out
   with the weather transition).
-- Every 30 ticks it pulses; every 240 ticks (only while it is raining/snowing) it rescans
+- Every 20 ticks it pulses; every 240 ticks (only while it is raining/snowing) it rescans
   `map.mapPawns.AllPawnsSpawned` for **qualifying pawns**: `IsHiddenFromPlayer()` (`InvisibilityUtility.cs:22`;
   false for the player's own faction and for psychologically visible pawns) **and** `HostileTo(Faction.OfPlayer)`.
   A friendly or neutral hidden pawn never splashes.
 - A qualifying pawn splashes in a pulse only if its cell is **not roofed** and **not fogged**.
-- Rain pulse: 5 splashes (each kept with probability `min(1, RainRate)`) on an ellipse around `DrawPos`
-  (radii 0.42 × 0.55 cells scaled by √bodySize, clamped 0.7–1.5), fleck `Omens_RainSplash` (the vanilla
-  ground-splash textures, brighter and less transparent than `GroundWaterSplash`), scale 0.35–0.5.
-  Lifetime 0.65 s, so a 30-tick pulse keeps an outline flickering.
-- Snow pulse: 3 white puffs (`DustPuffThick`, `instanceColor` white α 0.85, slow drift), same ellipse,
+- Rain pulse (every 20 ticks): 10 splashes, spread evenly round (each kept with probability `min(1, RainRate)`) an ellipse around `DrawPos`
+  (+0.1 z; radii 0.40 × 0.60 cells scaled by √bodySize clamped 0.7–1.5, ±10 % jitter), fleck `Omens_RainSplash`
+  (own texture `Things/Omens/Splash`: a pale droplet ring with flung drops, widening as it fades, 0.5 s), scale 0.22–0.30.
+  Each pulse draws a whole ring; the next one comes before it fades, so the outline flickers but stays.
+- Snow pulse: 7 soft white puffs (`Omens_SnowDust`, own texture `Things/Omens/Dust`, slow drift, 1 s), same ellipse,
   probability `min(1, SnowRate)`. Snow wins over rain: vanilla snow weathers also carry `rainRate 1` (they put out fires).
 - Nothing is revealed to targeting: flecks are not things; no hediff, no visibility flag is touched.
 - Cost: nothing at all unless it is raining/snowing on the current map; then one 240-tick scan and, per
-  hidden hostile on screen, ≤ 5 flecks every 30 ticks.
+  hidden hostile, ≤ 10 flecks every 20 ticks.
 
 ## 2. The Crows Know
 
@@ -93,7 +93,7 @@ fly off toward the colony, and the sky over the camp is empty. If you see crows,
 After a battle that left at least three dead, crows circle over the unburied bodies for up to two days.
 
 **Crow**: `Omens.CrowMote : MoteThrown` (ThingDef `Omens_Crow`, a Mote: never saved). Texture
-`Things/Omens/Crow` (64×64, drawn by `Source/Art/make_crow.py`), drawn 1.2 cells wide at `MoteOverhead`.
+`Things/Omens/Crow` (64×64, drawn by `Source/Art/make_textures.py`), drawn 1.4 cells wide at `MoteOverhead`.
 Two modes:
 - *orbit*: centre, radius 2.5–5 cells, angular speed 0.25–0.45 rad/s (random sign), moves toward its point
   on the circle at a bounded speed (so a moved centre or the first frame never jumps), faces its heading
@@ -132,7 +132,8 @@ stages within 5 cells, a new line is appended: the map learns the hill where the
   - an existing `Omens_ColdCamp` within 5 cells of the stage point gets a new entry; otherwise
   - a new one is spawned at the stage point or the nearest cell within 4 (`CellFinder.TryFindRandomCellNear`,
     in bounds, standable, no edifice, no building, not water), with 4 `Filth_Ash` around it. No cell → no camp.
-- `Building_ColdCamp : Building` (ThingDef `Omens_ColdCamp`): Campfire texture tinted grey-brown, no fire,
+- `Building_ColdCamp : Building` (ThingDef `Omens_ColdCamp`): own texture `Things/Omens/ColdCamp` (a ring of
+  fire stones around grey ash and two charred sticks, drawn by `Source/Art/make_textures.py`, drawn 1.8 cells wide on its 1×1 cell), no fire,
   no light, no heat, passable (`Standable`), not claimable, `alwaysDeconstructible`, no `costList` (so
   deconstruction gives nothing), WorkToBuild 120, Flammability 0, MaxHitPoints 60. Owned by no faction.
 - **Entry** (`CampEntry`, saved inside the building): `id`, `factionName`, `startTick`, `waitTicks`, `came`,
@@ -150,6 +151,8 @@ stages within 5 cells, a new line is appended: the map learns the hill where the
 - **Lord without faction / non-hostile lord** (traders, visitors, allies staging to help): ignored.
 - **Faction removed** later: the camp keeps the stored name.
 - **Several raids at once**: one record each; camps merge only within 5 cells.
+- **Revenant seen up close**: vanilla makes a revenant visible for a while when a colonist within 8.9 cells has line
+  of sight (`CompRevenant`, ~line 165-183); it is then not hidden and gets no splashes. The rain matters beyond that range.
 - **Psycast invisibility (Royalty)** is visible to the player → not "hidden" → no splashes.
 - **Settings off**: tracking continues (cheap), nothing is shown or spawned; turning crows back on during a
   staging brings the crows back on the next poll.

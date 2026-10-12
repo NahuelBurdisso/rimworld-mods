@@ -189,6 +189,38 @@ def camp():
     png(os.path.join(ROOT, "Textures", "Things", "Omens", "ColdCamp.png"), SIZE, SIZE, rows)
 
 
+def splash_and_dust():
+    """Rain: a bright droplet ring with a few flung drops (Splash.png). Snow: a soft white puff (Dust.png). 32x32."""
+    n = 32
+    c = n / 2
+    ring, puff = [], []
+    for y in range(n):
+        rr, pr = [], []
+        for x in range(n):
+            # 4x4 supersampled ring: radius 8.5, half-width 1.4, plus six drops at radius 13
+            hits = 0
+            for sy in range(4):
+                for sx in range(4):
+                    px, py = x + (sx + 0.5) / 4, y + (sy + 0.5) / 4
+                    d = math.hypot(px - c, py - c)
+                    on = abs(d - 8.5) <= 1.4
+                    for k in range(6):
+                        a = k / 6 * 2 * math.pi + 0.4
+                        if math.hypot(px - (c + math.cos(a) * 13), py - (c + math.sin(a) * 13)) <= 1.5:
+                            on = True
+                    hits += on
+            al = hits / 16
+            rr += [215, 232, 255, int(255 * al)]
+            d = math.hypot(x + 0.5 - c, y + 0.5 - c) / (n / 2)
+            pa = max(0.0, 1 - d) ** 1.6
+            pr += [255, 255, 255, int(255 * min(1.0, pa * 1.3))]
+        ring.append(rr)
+        puff.append(pr)
+    png(os.path.join(ROOT, "Textures", "Things", "Omens", "Splash.png"), n, n, ring)
+    png(os.path.join(ROOT, "Textures", "Things", "Omens", "Dust.png"), n, n, puff)
+
+
 if __name__ == "__main__":
     main()
     camp()
+    splash_and_dust()

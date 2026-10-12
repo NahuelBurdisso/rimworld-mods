@@ -86,9 +86,10 @@ namespace Omens
             return new Vector2(0.40f * s, 0.60f * s);
         }
 
-        static Vector3 OnRing(Pawn p, Vector2 r)
+        /// <summary>Point <paramref name="i"/> of <paramref name="n"/> spread evenly round the ellipse (random phase per pulse).</summary>
+        static Vector3 OnRing(Pawn p, Vector2 r, int i, int n, float phase)
         {
-            float a = Rand.Range(0f, Mathf.PI * 2f);
+            float a = phase + (i + Rand.Range(-0.25f, 0.25f)) * Mathf.PI * 2f / n;
             float k = Rand.Range(0.85f, 1.1f);
             return p.DrawPos + new Vector3(Mathf.Cos(a) * r.x * k, 0f, 0.1f + Mathf.Sin(a) * r.y * k);
         }
@@ -96,11 +97,12 @@ namespace Omens
         int Splash(Pawn p, float rate)
         {
             Vector2 r = Radii(p);
-            int made = 0;
-            for (int i = 0; i < OmensTuning.SplashesPerPulse; i++)
+            int made = 0, n = OmensTuning.SplashesPerPulse;
+            float phase = Rand.Range(0f, Mathf.PI * 2f);
+            for (int i = 0; i < n; i++)
             {
                 if (!Rand.Chance(rate)) continue;
-                FleckCreationData d = FleckMaker.GetDataStatic(OnRing(p, r), map, OmensDefOf.Omens_RainSplash, Rand.Range(0.3f, 0.42f));
+                FleckCreationData d = FleckMaker.GetDataStatic(OnRing(p, r, i, n, phase), map, OmensDefOf.Omens_RainSplash, Rand.Range(0.22f, 0.3f));
                 d.rotation = Rand.Range(0f, 360f);
                 map.flecks.CreateFleck(d);
                 made++;
@@ -112,15 +114,15 @@ namespace Omens
         int Dust(Pawn p, float rate)
         {
             Vector2 r = Radii(p);
-            int made = 0;
-            for (int i = 0; i < OmensTuning.PuffsPerPulse; i++)
+            int made = 0, n = OmensTuning.PuffsPerPulse;
+            float phase = Rand.Range(0f, Mathf.PI * 2f);
+            for (int i = 0; i < n; i++)
             {
                 if (!Rand.Chance(rate)) continue;
-                FleckCreationData d = FleckMaker.GetDataStatic(OnRing(p, r), map, OmensDefOf.Omens_SnowDust, Rand.Range(0.55f, 0.8f));
+                FleckCreationData d = FleckMaker.GetDataStatic(OnRing(p, r, i, n, phase), map, OmensDefOf.Omens_SnowDust, Rand.Range(0.45f, 0.6f));
                 d.rotationRate = Rand.Range(-40f, 40f);
                 d.velocityAngle = Rand.Range(0f, 360f);
                 d.velocitySpeed = Rand.Range(0.05f, 0.2f);
-                d.instanceColor = new Color(1f, 1f, 1f, 0.9f);
                 map.flecks.CreateFleck(d);
                 made++;
             }

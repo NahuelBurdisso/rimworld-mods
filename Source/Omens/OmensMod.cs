@@ -58,11 +58,11 @@ namespace Omens
         public static int FollowTimeoutTicks = 3 * GenDate.TicksPerDay;
 
         // Rain reveals the unseen
-        public static int RainPulseInterval = 30;
+        public static int RainPulseInterval = 20;
         public static int RainScanInterval = 240;
         public static float MinFallRate = 0.1f;
-        public static int SplashesPerPulse = 8;
-        public static int PuffsPerPulse = 5;
+        public static int SplashesPerPulse = 10;
+        public static int PuffsPerPulse = 7;
 
         // Crows
         public static int CrowPollInterval = 60;
