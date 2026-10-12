@@ -7,6 +7,8 @@
   <OldScores_Settings_SparedDesc>A hostile captured by a colonist and later released may come back with a raid of his faction, and join the colony when he sees the one who captured him.</OldScores_Settings_SparedDesc>
   <OldScores_Settings_Beasts>The Beast That Came Back</OldScores_Settings_Beasts>
   <OldScores_Settings_BeastsDesc>A wild animal that badly hurts a colonist and gets away is named, scarred, and comes back one or two quadrums later, tougher and furious. Killing it leaves a trophy.</OldScores_Settings_BeastsDesc>
+  <OldScores_Settings_Echoes>Raid Echoes</OldScores_Settings_Echoes>
+  <OldScores_Settings_EchoesDesc>Each map remembers how past raids came at the colony: the roads they walked, where they broke in, where they fell. An overlay toggle in the bottom-right icon row shows the faint echoes, and a message tells you when a faction comes by the same road again.</OldScores_Settings_EchoesDesc>
 
   <!-- Enemy Nickname -->
   <OldScores_Nickname_LetterLabel>Nicknamed: {0}</OldScores_Nickname_LetterLabel>
@@ -35,4 +37,17 @@
   <OldScores_Beast_NameFallback>Old Scar</OldScores_Beast_NameFallback>
   <OldScores_Trophy_History>{0}, a {1}. It hurt {2} on {3} and got away. It came back scarred, and {4} killed it on {5}.</OldScores_Trophy_History>
   <OldScores_Trophy_HistoryNoKiller>{0}, a {1}. It hurt {2} on {3} and got away. It came back scarred, and died on {4}.</OldScores_Trophy_HistoryNoKiller>
+
+  <!-- Raid Echoes -->
+  <OldScores_Echo_ToggleTip>Raid echoes: show the roads past raids took to the colony, where they broke in (rings) and where they fell (crosses). Older raids fade.</OldScores_Echo_ToggleTip>
+  <OldScores_Echo_OldRoad>They come by the old road again: {0}, from the {1}.</OldScores_Echo_OldRoad>
+  <OldScores_Echo_North>north</OldScores_Echo_North>
+  <OldScores_Echo_South>south</OldScores_Echo_South>
+  <OldScores_Echo_East>east</OldScores_Echo_East>
+  <OldScores_Echo_West>west</OldScores_Echo_West>
+  <OldScores_Echo_OneRaid>1 raid</OldScores_Echo_OneRaid>
+  <OldScores_Echo_Raids>{0} raids</OldScores_Echo_Raids>
+  <OldScores_Echo_LabelBreach>{0} - {1}, broke in here</OldScores_Echo_LabelBreach>
+  <OldScores_Echo_LabelBreachOther>{0} - broke in here</OldScores_Echo_LabelBreachOther>
+  <OldScores_Echo_Label>{0} - {1}</OldScores_Echo_Label>
 </LanguageData>

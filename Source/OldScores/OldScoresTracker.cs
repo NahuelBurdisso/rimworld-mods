@@ -25,6 +25,9 @@ namespace OldScores
         public IReadOnlyList<SparedRecord> Spared => spared;
         public IReadOnlyList<BeastRecord> Beasts => beasts;
 
+        /// <summary>Raid Echoes overlay toggle (play-settings icon row), saved per game like vanilla's overlays.</summary>
+        public bool showEchoes;
+
         public override void GameComponentTick()
         {
             if (Find.TickManager.TicksGame % OldScoresTuning.CleanupInterval != 0) return;
@@ -38,6 +41,7 @@ namespace OldScores
             Notify_Kill(victim, ctx);
             Notify_SparedDied(victim);
             Notify_BeastDied(victim, ctx);
+            if (ctx.map != null) OldScoresMapComponent.For(ctx.map)?.Notify_PawnDied(victim, ctx.position);
         }
 
         public void Notify_PawnExitedMap(Pawn p, Map fromMap)
@@ -92,6 +96,7 @@ namespace OldScores
             Scribe_Collections.Look(ref nicknames, "nicknames", LookMode.Deep);
             Scribe_Collections.Look(ref spared, "spared", LookMode.Deep);
             Scribe_Collections.Look(ref beasts, "beasts", LookMode.Deep);
+            Scribe_Values.Look(ref showEchoes, "showEchoes");
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 nicknames ??= new List<NicknameRecord>();

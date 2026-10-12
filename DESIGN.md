@@ -1,19 +1,19 @@
 # Old Scores — enemies (and beasts) remember the colony
 
-Three features about memory between the colony and the ones it fought. Each has its own
+Four features about memory between the colony and the ones it fought. Each has its own
 toggle in the mod settings. Player-facing text in English. packageId `nahuel.oldscores`,
 prefix `OldScores_`, C# namespace `OldScores`.
 
 ## Shared
 
-- **`OldScoresTracker`** (`GameComponent`, saved): holds the records of all three features
+- **`OldScoresTracker`** (`GameComponent`, saved): holds the records of the first three features (and the overlay toggle of the fourth)
   (`NicknameRecord`, `SparedRecord`, `BeastRecord`, each an `IExposable` saved with
   `Scribe_Collections ... LookMode.Deep`). Pawns and factions are saved with `Scribe_References`
   inside the records (never as dictionary keys); the colonist of a nickname is saved by
   `thingIDNumber`. Destroyed/discarded pawns save as null and records with a null pawn are
   dropped on load. Every 2500 ticks a cleanup pass drops records that can no longer happen
   (see each feature) and unpins their pawns from `WorldPawns.ForcefullyKeptPawns`.
-- **`OldScoresMapComponent`** (`MapComponent`, not saved): every 30 ticks the spared-pawn check,
+- **`OldScoresMapComponent`** (`MapComponent`; saves only the Raid Echoes data of its map, see Feature 4): every 30 ticks the spared-pawn check,
   every 250 ticks the dread check, `MapComponentOnGUI` draws the beast labels.
 - **Tuning** (`OldScoresTuning`, static fields, not settings): the numbers below. The test
   harness overrides the chances to 1 / 0 to make rolls deterministic and restores them.
@@ -174,7 +174,7 @@ map, killer has the memory, record gone, unpinned; feature off → no mark.
 
 `GameComponent`s armed by `GenCommandLine.TryGetCommandLineArg("rwtools-ticks", out _)`; they start
 at harness tick 2700 (the Gesta harness uses 60-2200 in the same game) and must finish before
-4500: nicknames 3000-~3380, spared 3400-~3670 (two real raids), beasts 3750-3757; each first clears all hostile pawns and buildings and waits 5 ticks (Gesta harnesses run raids up to ~2900). Every test spawns its own colonists
+4500: nicknames 3000-~3380, spared 3400-~3670 (two real raids), beasts 3750-3757, echoes 3900-~6100 (three real raids; worst case ~7400, so the run uses `--ticks 8000`); each first clears all hostile pawns and buildings and waits 5 ticks (Gesta harnesses run raids up to ~2900). Every test spawns its own colonists
 and cleans up the hostiles it spawned. `Kit.Check` PASS/FAIL lines, `Kit.Summary("OldScores/...")`.
 
 Harness robustness (after the first in-game run):
@@ -207,3 +207,138 @@ Harness robustness (after the first in-game run):
    (`notHostileSinceTick`, saved), or 2 in-game years since the capture -> record dropped, unpinned.
 5. **Friendly raids** (military aid, reinforcements) never bring him: `parms.faction.HostileTo(player)`.
 6. **Load**: a spared record dropped on load because its captor is gone unpins the pawn first.
+
+## Feature 4 — Raid Echoes (`echoes`)
+
+**Pitch:** the map remembers how past raids came at you. Toggle the overlay and you see faint lines
+of the roads each faction walked, where they broke in and where they fell; when they come by the same
+road again, the colony notices.
+
+**What counts as a raid.** Postfix on the public, non-virtual
+`IncidentWorker_Raid.TryGenerateRaidInfo(IncidentParms parms, out List<Pawn> pawns, bool debugTest)`
+(`RimWorld/IncidentWorker_Raid.cs:66`): the single path every raid worker takes (RaidEnemy, quest raids,
+sieges, mechanoid raids, shambler assaults and psychic-ritual sieges — `IncidentWorker_ShamblerAssault`
+overrides `PostProcessSpawnedPawns` without calling base, so that hook would miss it). Recorded when
+`__result` is true, `debugTest` is false, `parms.target` is a `Map` with `IsPlayerHome`, `parms.faction`
+is not null and `HostileTo(Faction.OfPlayer)`, and `pawns` is not empty. Never recorded: friendly raids
+(military aid — the faction is not hostile), visitors, traders, manhunter packs, infestations, mech
+clusters (none of them go through `IncidentWorker_Raid`), hostiles spawned any other way, raids on
+non-home maps (quest sites, caravan ambushes), and anything while the feature is off.
+Arrival kind: `parms.raidArrivalMode.walkIn` → walk-in (edge walk-in, groups, sieges), else **pods**
+(edge/center drops: the pawns are still in drop pods when the hook runs; they are tracked once they
+land).
+
+**Recording (active raid, per map, in `OldScoresMapComponent`).** An `ActiveRaid` keeps the faction (by
+`loadID` + name), start tick, arrival cell (`parms.spawnCenter` if valid), walk-in flag, one
+`RaidTrack` per raider (pawn reference, sampled points, breach cell, recording and seen flags,
+farthest reach and stall count) and
+the death cells. Every **60** ticks (`MapComponentTick`, only while a raid is active on that map) each
+track that is still recording samples its pawn:
+- pawn dead/destroyed → stops recording, reference cleared.
+- not spawned: seen before (left the map, carried, kidnapped) → stops, reference cleared; never seen
+  (still in a drop pod) → waits.
+- on another map, downed, no longer hostile (captured, recruited), in a mental state (panic flee,
+  dread...) or with a leaving duty (`ExitMapBest`, `ExitMapRandom`, `ExitMapBestAndDefendSelf`,
+  `Steal`, `Kidnap`) → stops recording (the echo is the approach, not the retreat).
+- **Loitering:** a raider who has not got farther from the first point of his road (by more than half a
+  cell) for **8** samples in a row is milling around (siege camp, staging point, firing line outside the
+  base): no points are added until he gets farther than his farthest reach again (an assault after a
+  siege resumes the road). Without this, a siege camp would scribble a knot of lines.
+- else the cell is appended if it is ≥ **3** cells from the last point. A track holds at most **64**
+  points; when full, every second point is dropped (the first and last are kept), so a path never
+  grows unbounded.
+- **Breach:** the first sampled cell inside the player's Home area (`map.areaManager.Home`) is the
+  pawn's breach cell; it is appended and the track stops recording (inside the base it is a fight,
+  not a road).
+- Deaths: the existing `Pawn.Kill` prefix/postfix passes the death cell and map; a raider of an active
+  raid on that map adds it (cap **30** per raid).
+
+**When a raid ends.** At each sample, a raid is still on while any of its pawns is alive, spawned on
+the map, not downed and hostile, or is a never-seen pawn and the raid is younger than **5,000** ticks
+(pods). Else (or when the raid is **3 days** old: sieges, stragglers) it is finalized:
+- lanes: tracks with ≥ 2 points, simplified with Ramer–Douglas–Peucker (ε = **1** cell), longest
+  first; a track whose start *and* end are both within **15** cells of a kept lane's is the same road
+  and is skipped; at most **3** lanes per raid (one per arrival group in practice).
+- breaches: the tracks' breach cells, merged within **6** cells, at most **6**.
+- an echo with no lane and no death is discarded. Otherwise `RaidEcho` {factionId, factionName,
+  endTick, arrival, walkIn, raiders, lanes (flat `List<IntVec3>` + `List<int>` lane starts), breaches,
+  deaths} is added; at most **16** echoes per map (the oldest goes).
+- Old echoes are forgotten after **2 years** (cleanup every 2,500 ticks); their drawing fades from
+  alpha **0.9** (new) to **0.3** at **1 year**.
+
+**Story payoff ("the old road").** In the same raid postfix, before the new raid is registered: a
+walk-in raid with a valid `spawnCenter` whose faction already has a walk-in echo on this map with its
+arrival or any lane start within **20** cells → `Messages.Message("They come by the old road again:
+{faction}, from the {north/east/south/west}.", first raider, MessageTypeDefOf.NegativeEvent)`. Pod
+raids never get it. At most one per raid.
+
+**Overlay toggle.** Postfix `PlaySettings.DoPlaySettingsGlobalControls(WidgetRow row, bool worldView)`
+(`RimWorld/PlaySettings.cs:108`): on the map view only, and only while the feature is on, one more
+`row.ToggleableIcon(ref tracker.showEchoes, icon, tooltip, SoundDefOf.Mouseover_ButtonToggle)`. The
+state is saved per game in `OldScoresTracker` (`showEchoes`, default **off**), like vanilla's
+overlay toggles in `PlaySettings`. Icon: `Textures/UI/OldScores/EchoesToggle.png` (64×64).
+
+**Drawing** (only the current map, only while the feature and the toggle are on and the map has
+echoes; nothing is computed otherwise):
+- A per-map cache (not saved) is rebuilt when echoes change and every 2,500 ticks: world positions of
+  every lane point, chevrons every ~12 cells and at each lane's end (direction of travel), the colour of
+  each echo (a 5-colour pale palette, assigned to factions in order of first appearance on that map),
+  and the labels.
+- `MapComponentDraw` (called from `MapInterface.MapInterfaceUpdate` for the current map only): each lane
+  segment whose bounding box touches `CameraDriver.CurrentViewRect` (+3) and whose ends are not both
+  fogged is drawn with `GenDraw.DrawLineBetween(A, B, mat, width)` (0.4 cells) over a darker under-stroke
+  (0.75), both widened by `CameraDriver.RootSize / 18` when zoomed out so they never shrink to a pixel, at
+  `AltitudeLayer.MetaOverlays`; chevrons are two short lines; a death is a small X; a breach is a
+  12-sided ring of radius 1.4. Materials: `MaterialPool.MatFrom(GenDraw.LineTexPath,
+  ShaderDatabase.Transparent, colour)`, alpha quantised to 10 steps and cached (at most 5×11+11).
+  Hard cap **800** line draws per frame.
+- Labels (`MapComponentOnGUI`, Repaint only, same conditions, in view and unfogged):
+  `GenMapUI.DrawThingLabel(GenMapUI.LabelDrawPosFor(cell), text, colour)`. Per faction on the map,
+  breach clusters (merged within 6 cells across all its echoes): the biggest one (ties: most recent)
+  gets "Pirates of X - 3 raids, broke in here"; the others "Pirates of X - broke in here". A faction that
+  never broke in gets "Pirates of X - 3 raids" just above the end of the first lane of its newest
+  echo (where it stopped; above, so it does not sit on the corpses and their labels). The faction's current name, or the saved name if the faction is gone.
+
+**Save/load.** `OldScoresMapComponent.ExposeData` (the component is already in every map's
+`components` list, which `Map` saves with `LookMode.Deep`): `echoes` and `activeRaids`
+(`Scribe_Collections ... LookMode.Deep`). Echoes hold only values (faction by `loadID`, never a
+reference), so a removed faction never breaks a load. Raid tracks reference their pawn with
+`Scribe_References` (destroyed pawns save as null; a null pawn is a finished track). Null lists are
+replaced on load; malformed echoes (no lane and no death, lane starts out of range) are dropped. An old
+save without the data loads with nothing recorded.
+
+**Map removal.** All of it lives in the map's own component, so it goes with the map. No world state.
+
+**Cost.** Per tick: one modulo and one list-count check per map. Every 60 ticks with a raid on: one pass
+over its raiders (a few field reads each). Per frame with the overlay off: two bool checks. With it on:
+at most 800 `DrawMesh` calls (typically well under 200) and a handful of labels, no allocation.
+
+**Compatibility.** Only positions, factions and the Home area are read; nothing about combat, so Combat
+Extended and race mods change nothing (non-humanlike raiders such as mechanoids are tracked the same).
+Other mods' raid workers that derive from `IncidentWorker_Raid` are covered by the same hook.
+
+**Tests (OldScoresTest, `EchoHarness`, from harness tick 3900, after the other three):** clears
+hostiles, old echoes and active raids; a real walk-in raid (`IncidentDefOf.RaidEnemy`, ImmediateAttack,
+EdgeWalkIn, fixed spawnCenter at a map edge) → an active raid with one track per raider; after ~600 ticks
+of walking the tracks have points that start near the edge and move inward; Home area painted under the
+lead raider → its breach is recorded; all raiders killed by a colonist → within 120 ticks the raid is
+finalized: an echo of that faction with ≥ 1 lane of ≥ 2 points in bounds, a breach, as many death
+cells as kills, walkIn; a second raid of the same faction from the same spawnCenter → the old-road message
+(checked in `Messages`' live list) and, after it ends, the label "… - 2 raids, broke in here"; a drop-pod
+raid (EdgeDrop) → tracked once landed, echo with walkIn false, no old-road message; negatives: hostiles
+spawned without a raid incident, a visitor group, a trader caravan and a friendly raid create no active
+raid; feature off → a raid is not tracked; overlay off → zero lines and labels drawn (draw counters over
+several frames), overlay on with the camera on the echo → lines and labels drawn; the toggle postfix is
+on `DoPlaySettingsGlobalControls`; save/load: the map's echoes written with Scribe to a temp file and
+read back are equal (lanes, breaches, deaths, faction, flags); an echo older than 2 years is forgotten by
+the cleanup.
+
+**Showcase** (`EchoShowcase`, same `showcase.flag`, after the other showcase): two real walk-in raids of one
+faction from the same edge at ultrafast speed (the quicktest colony's Home area is tiny, so after 900 ticks it
+is painted under the lead raider, as if he had reached the walls), then the overlay is captured:
+`4-old-road-message`, `5-echoes-overview`, `6-echoes-normal-zoom`, `7-echoes-overlay-off`.
+
+Visual fixes after looking at the captures: lines 0.24 → 0.4 cells with a stronger under-stroke and widened
+when zoomed out (at full zoom-out they were a pixel wide); labels lifted towards white (pale red on the grey
+label background was hard to read); the no-breach label moved above the road's end (it sat on the corpses);
+the toggle icon redrawn in the vanilla style (grey glyph, dark outline).

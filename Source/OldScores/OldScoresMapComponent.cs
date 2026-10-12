@@ -4,23 +4,33 @@ using Verse;
 
 namespace OldScores
 {
-    /// <summary>Per-map timing and drawing; all state lives in <see cref="OldScoresTracker"/>.</summary>
-    public class OldScoresMapComponent : MapComponent
+    /// <summary>
+    /// Per-map timing and drawing. The state of the first three features lives in <see cref="OldScoresTracker"/>;
+    /// Raid Echoes (Echoes.cs, EchoesDraw.cs) keeps its per-map records here and saves them with the map.
+    /// </summary>
+    public partial class OldScoresMapComponent : MapComponent
     {
         public OldScoresMapComponent(Map map) : base(map) { }
 
         public override void MapComponentTick()
         {
+            int now = Find.TickManager.TicksGame;
+            EchoTick(now);
             OldScoresTracker tracker = OldScoresTracker.Instance;
             if (tracker == null) return;
-            int now = Find.TickManager.TicksGame;
             if (now % OldScoresTuning.SparedCheckInterval == 0 && tracker.AnyReturnedSpared) tracker.SparedCheck(map);
             if (now % OldScoresTuning.DreadInterval == 0 && tracker.AnyNickname) tracker.DreadCheck(map);
         }
 
         public override void MapComponentOnGUI()
         {
-            if (Event.current.type != EventType.Repaint || !OldScoresMod.Settings.beasts) return;
+            if (Event.current.type != EventType.Repaint) return;
+            if (OldScoresMod.Settings.beasts) DrawBeastLabels();
+            DrawEchoLabels();
+        }
+
+        void DrawBeastLabels()
+        {
             OldScoresTracker tracker = OldScoresTracker.Instance;
             if (tracker == null) return;
             IReadOnlyList<BeastRecord> beasts = tracker.Beasts;

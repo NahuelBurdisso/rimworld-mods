@@ -18,7 +18,7 @@
   </loadAfter>
   <description>Your enemies remember you. So do the beasts.
 
-Old Scores gives the people and animals your colony fights a memory. Every feature can be switched off in the mod settings.
+Old Scores gives the people and animals your colony fights a memory - and the ground they walked on. Every feature can be switched off in the mod settings.
 
 &lt;b&gt;Enemy Nickname&lt;/b&gt;
 Kill five of a faction's people, or bring down their real leader, and they give your colonist a name: "the Unkillable Toaster", "the Revolver Ghost", "the Smiling Dentist" - drawn from her weapon and her traits. A letter tells you what they call her, and her inspect pane remembers it. From then on, their raiders who see her up close may lose their nerve and run from her.
@@ -28,6 +28,9 @@ Capture a raider, then let him go. Days later he may walk back in with his facti
 
 &lt;b&gt;The Beast That Came Back&lt;/b&gt;
 A wild animal that mauls one of your colonists and gets away does not forget the way. It gets a name - Old Scar, Three-Toes, Kerr's Bane - its wounds become scars, and one or two quadrums later it comes back: tougher, angrier, with a red line under its name listing who it hurt. Kill it to settle the old score; it leaves a trophy that tells the whole story.
+
+&lt;b&gt;Raid Echoes&lt;/b&gt;
+The map remembers how past raids came at you. A new toggle in the bottom-right icon row shows faint lines of the roads each faction walked in on, rings where they broke into your base and crosses where they fell, with labels like "Pirates of Ruin - 3 raids, broke in here". Older raids fade and are forgotten after two years. When a faction comes at you by the same road again, you hear about it: "They come by the old road again."
 
 Safe to add to an existing save. Requires Harmony.</description>
 </ModMetaData>
