@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Over the Body</name>
+  <packageId>nahuel.overthebody</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <description>When a colonist goes down in a fight, their bonded animal does not wander off.
+
+In vanilla, a downed master drops out of the "follow and defend" behaviour, so even a fully trained war dog leaves its person lying in the dirt. With this mod, any animal bonded to the fallen colonist runs to their side and stands over them.
+
+- The animal sprints to a cell next to the body, on the side of the nearest enemy, and stays there facing the threat.
+- It bites any hostile that steps up to the body (within about two cells), but does not chase: if the enemy backs off, it returns to its post.
+- If a colonist carries the fallen one to safety, the animal stays close all the way to the bed. If a raider tries to carry them off, the animal goes for the kidnapper.
+- No training needed: the bond is enough. Several bonded animals all stand guard.
+- When the colonist gets back on their feet, they remember it ("Rex stood over me", +6 mood, 20 days), and the colony gains a tale for its art.
+- If the animal dies standing over them, the loss cuts deeper ("Rex died standing over me", -8 mood, 30 days, on top of the usual grief) and that becomes a tale too.
+- If raiders carry the colonist off the map, there is nothing to remember: the watch failed.
+
+Only acts while enemies are within 25 cells (or the colonist is being kidnapped); otherwise vanilla behaviour (rescue, wandering) is untouched. Works with any animal using the vanilla Animal think tree. No Harmony patches. Safe to add to an existing save.</description>
+</ModMetaData>
