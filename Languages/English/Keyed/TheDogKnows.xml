@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <TDK_SettingsCategory>The Dog Knows</TDK_SettingsCategory>
+  <TDK_MessageStaring>{ANIMAL_labelShort} is staring at something you can't see.</TDK_MessageStaring>
+  <TDK_Setting_Message>Message when an animal starts staring</TDK_Setting_Message>
+  <TDK_Setting_Message_Desc>Show a short message pointing at the animal (at most one every in-game hour per map). The animal still stares and growls without it.</TDK_Setting_Message_Desc>
+  <TDK_Setting_Growl>Low growl</TDK_Setting_Growl>
+  <TDK_Setting_Growl_Desc>The animal growls, low, at the start of the stare and halfway through.</TDK_Setting_Growl_Desc>
+</LanguageData>

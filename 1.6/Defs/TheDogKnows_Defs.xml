@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Which animals sense hidden hostiles (revenants, sightstealers, anything with an active invisibility
+       hediff). Add your own TheDogKnows.UnseenSenseDef, or PatchOperationAdd to a races list.
+       A race listed in two defs uses the one with the larger radius. -->
+  <TheDogKnows.UnseenSenseDef>
+    <defName>TDK_Canines</defName>
+    <label>canines</label>
+    <races>
+      <li>Husky</li>
+      <li>LabradorRetriever</li>
+      <li>YorkshireTerrier</li>
+      <li MayRequire="sarg.alphaanimals">AA_Skiphound</li>
+      <li MayRequire="sarg.alphaanimals">AA_RayHound</li>
+    </races>
+    <radius>11</radius>
+    <requireLineOfSight>true</requireLineOfSight>
+    <stareTicks>300~420</stareTicks>
+    <cooldownTicks>2500</cooldownTicks>
+    <growlPitch>0.72</growlPitch>
+    <growlVolume>1</growlVolume>
+  </TheDogKnows.UnseenSenseDef>
+
+  <TheDogKnows.UnseenSenseDef>
+    <defName>TDK_Felines</defName>
+    <label>felines</label>
+    <races>
+      <li>Cat</li>
+      <li MayRequire="sarg.alphaanimals">AA_PhoenixOwlcat</li>
+    </races>
+    <radius>9</radius>
+    <requireLineOfSight>true</requireLineOfSight>
+    <stareTicks>300~420</stareTicks>
+    <cooldownTicks>2500</cooldownTicks>
+    <growlPitch>0.85</growlPitch>
+    <growlVolume>1</growlVolume>
+  </TheDogKnows.UnseenSenseDef>
+
+  <JobDef>
+    <defName>TDK_StareAtUnseen</defName>
+    <driverClass>TheDogKnows.JobDriver_StareAtUnseen</driverClass>
+    <reportString>staring at something you can't see.</reportString>
+    <casualInterruptible>true</casualInterruptible>
+    <suspendable>false</suspendable>
+  </JobDef>
+
+  <ThingDef ParentName="MoteBase">
+    <defName>TDK_Mote_Hackles</defName>
+    <thingClass>MoteAttached</thingClass>
+    <altitudeLayer>MetaOverlays</altitudeLayer>
+    <graphicData>
+      <texPath>Things/Mote/TDK_Hackles</texPath>
+    </graphicData>
+    <mote>
+      <fadeInTime>0.15</fadeInTime>
+      <solidTime>2.6</solidTime>
+      <fadeOutTime>0.8</fadeOutTime>
+    </mote>
+  </ThingDef>
+
+</Defs>
