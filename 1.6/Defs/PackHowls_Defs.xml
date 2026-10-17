@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Who howls. A race counts if it is listed in races, or if any of its life stages uses one of
+       callSounds as its call (catches modded canines that reuse the vanilla dog/warg voices). -->
+  <PackHowls.HowlerListDef>
+    <defName>PackHowls_Howlers</defName>
+    <races>
+      <li>Husky</li>
+      <li>LabradorRetriever</li>
+      <li>YorkshireTerrier</li>
+      <li>Wolf_Timber</li>
+      <li>Wolf_Arctic</li>
+      <li>Warg</li>
+      <li MayRequire="Ludeon.RimWorld.Odyssey">BogHound</li>
+      <li MayRequire="Ludeon.RimWorld.Odyssey">Wolf_Great</li>
+    </races>
+    <callSounds>
+      <li>Pawn_Dog_Call</li>
+      <li>Pawn_DogSmall_Call</li>
+      <li>Pawn_Warg_Call</li>
+    </callSounds>
+    <excludedRaces />
+  </PackHowls.HowlerListDef>
+
+  <JobDef>
+    <defName>PackHowls_Howl</defName>
+    <driverClass>PackHowls.JobDriver_Howl</driverClass>
+    <reportString>howling for the fallen.</reportString>
+    <casualInterruptible>false</casualInterruptible>
+    <suspendable>false</suspendable>
+  </JobDef>
+
+  <SoundDef>
+    <defName>PackHowls_HowlSound</defName>
+    <context>MapOnly</context>
+    <maxSimultaneous>4</maxSimultaneous>
+    <subSounds>
+      <li>
+        <grains>
+          <li Class="AudioGrain_Folder">
+            <clipFolderPath>Pawn/Animal/Dog/Dog_Call</clipFolderPath>
+          </li>
+        </grains>
+        <volumeRange>20~26</volumeRange>
+        <pitchRange>0.62~0.72</pitchRange>
+        <distRange>0~80</distRange>
+      </li>
+    </subSounds>
+  </SoundDef>
+
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>PackHowls_HowlRing</defName>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <graphicData>
+      <texPath>Things/PackHowls/HowlRing</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <color>(0.85, 0.9, 1.0, 0.35)</color>
+    </graphicData>
+    <fadeInTime>0.15</fadeInTime>
+    <solidTime>0.3</solidTime>
+    <fadeOutTime>1.6</fadeOutTime>
+    <growthRate>0.9</growthRate>
+  </FleckDef>
+
+  <ThoughtDef>
+    <defName>PackHowls_PackHowled</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>1</durationDays>
+    <stackLimit>1</stackLimit>
+    <nullifyingTraits>
+      <li>Psychopath</li>
+    </nullifyingTraits>
+    <stages>
+      <li>
+        <label>the pack howled for {0}</label>
+        <description>Last night the animals sat in the dark and howled for the fallen. It was hard to hear. It helped.</description>
+        <baseMoodEffect>3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <ThoughtDef>
+    <defName>PackHowls_PackHowledForMine</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>2</durationDays>
+    <stackLimit>1</stackLimit>
+    <showBubble>true</showBubble>
+    <nullifyingTraits>
+      <li>Psychopath</li>
+    </nullifyingTraits>
+    <stages>
+      <li>
+        <label>the pack howled for {0}</label>
+        <description>They knew. Last night the animals turned to where {OTHERPAWN_labelShort} fell and howled, and I was not the only one grieving.</description>
+        <baseMoodEffect>5</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+</Defs>

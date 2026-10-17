@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>The Pack Howls</name>
+  <packageId>nahuel.packhowls</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+  </loadAfter>
+  <description>When a colonist or a bonded animal falls in battle at your home, the first quiet night after the fight your dogs and wolves stop what they are doing, sit facing the place where the fallen died, and howl. Faint rings rise into the dark. A few seconds later, any wild wolves on the map answer from afar.
+
+Colonists who hear it get a small bittersweet memory: "the pack howled for ...". Family, lovers and the bonded master of the fallen get a stronger one. One howl per fight, not per death: everyone who fell is named together.
+
+- Counts deaths by enemy hands, friendly fire during a fight, and bleeding out from recent wounds. Executions, old age and disease do not count.
+- Howlers: huskies, labradors, yorkshire terriers, wolves, wargs, and (with Odyssey) bog hounds and greatwolves. Modded canines that reuse the vanilla dog or warg voice join automatically; the list is a def you can patch.
+- Sleeping animals wake up to howl. Downed, roped, starving, drafted, caravan or berserk animals do not.
+- Settings: wild answer, mood memories, message.
+
+Requires Harmony. Safe to add to an existing save.</description>
+</ModMetaData>
