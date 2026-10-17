@@ -50,4 +50,9 @@
   <OldScores_Echo_LabelBreach>{0} - {1}, broke in here</OldScores_Echo_LabelBreach>
   <OldScores_Echo_LabelBreachOther>{0} - broke in here</OldScores_Echo_LabelBreachOther>
   <OldScores_Echo_Label>{0} - {1}</OldScores_Echo_Label>
+
+  <!-- The Beast Remembers -->
+  <OldScores_Settings_BeastMemory>The Beast Remembers</OldScores_Settings_BeastMemory>
+  <OldScores_Settings_BeastMemoryDesc>A colony animal remembers the person who hurt it and growls at them whenever they are close again - as a prisoner, a recruit, a visitor or a raider. A raider brought down by one of your animals is afraid of it once he is your prisoner: seeing it near his cell upsets him and wears his resistance down.</OldScores_Settings_BeastMemoryDesc>
+  <OldScores_Grudge_Inspect>Remembers who hurt it: {0}</OldScores_Grudge_Inspect>
 </LanguageData>

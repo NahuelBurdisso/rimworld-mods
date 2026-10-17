@@ -47,7 +47,13 @@ namespace OldScores
         public static void Postfix(Pawn __instance, DamageInfo dinfo, float totalDamageDealt)
         {
             if (!(dinfo.Instigator is Pawn)) return;
-            OldScoresTracker.Instance?.Notify_ColonistDamaged(__instance, dinfo, totalDamageDealt);
+            OldScoresTracker tracker = OldScoresTracker.Instance;
+            if (tracker == null) return;
+            // never let an error here escape into vanilla's damage code (verbs, projectiles)
+            try { tracker.Notify_ColonistDamaged(__instance, dinfo, totalDamageDealt); }
+            catch (System.Exception ex) { Log.ErrorOnce("[Old Scores] damage handling failed: " + ex, 0x0D5C17); }
+            try { tracker.Notify_AnimalHurt(__instance, dinfo, totalDamageDealt); }
+            catch (System.Exception ex) { Log.ErrorOnce("[Old Scores] beast memory damage handling failed: " + ex, 0x0D5C18); }
         }
     }
 

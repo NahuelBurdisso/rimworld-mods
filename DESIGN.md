@@ -343,6 +343,106 @@ when zoomed out (at full zoom-out they were a pixel wide); labels lifted towards
 label background was hard to read); the no-breach label moved above the road's end (it sat on the corpses);
 the toggle icon redrawn in the vanilla style (grey glyph, dark outline).
 
+## Feature 5 — The Beast Remembers (`beastMemory`)
+
+**Pitch:** your dog does not forget who hurt it. When that man is near again — as a prisoner, a recruit,
+a visitor or a raider back for more — it growls and glares at him. And the raider your warg dragged down,
+now in your cells, goes pale every time that beast walks past.
+
+**Who remembers whom (a).** Postfix on `Pawn.PostApplyDamage(DamageInfo dinfo, float totalDamageDealt)`
+(already patched): the victim is an animal (`RaceProps.Animal`) of the player faction, alive after the
+hit; `totalDamageDealt > 0`; `dinfo.Def.ExternalViolenceFor(victim)`; `dinfo.Instigator` is a living humanlike
+pawn whose faction is not the player's (raiders, visitors, prisoners breaking out, wild men), not a mutant
+(Anomaly shamblers). Never:
+colonists and colony slaves (friendly fire, slaughter, training accidents), animals and mechanoids as
+attackers (an animal remembers a face and a smell; the reverse direction is Feature 3), non-animal victims
+(mechs, colonists), animals of other factions, dead animals. Bonded or not makes no difference: every
+tame animal of the colony remembers, from a husky to a hen.
+- `GrudgeRecord` {animalId, animalName, humanId, humanName, createdTick, lastGrowlTick, colonistSinceTick}
+  by `thingIDNumber` (values only, no references: pawns that are discarded later never break a save).
+  Hurt again by the same man → `createdTick` refreshed. At most **3** per animal (the oldest goes), **300**
+  in all (the smallest `createdTick` goes).
+
+**The growl.** Every **60** ticks per map (`OldScoresMapComponent`), only while any grudge exists: each
+spawned animal of the player faction that holds grudges, not downed, awake, not in a mental state; each
+remembered man spawned on the same map, alive, within **6** cells and in the same indoor room (not
+`PsychologicallyOutdoors`: outdoors is one big room) or in line of sight (`GenSight.LineOfSight`); per pair at most once per **2,500** ticks → `animal.caller?.DoCall(forceAggressive:
+true)` (the angry lifestage sound; at most one growl per animal per pass, the rest wait for the next pass) and `MoteMaker.MakeInteractionBubble(animal, man, ThingDefOf.Mote_Speech,
+"Things/Mote/SpeechSymbols/Insult", red)` — a red bubble on the animal pointing at him. No message, no
+letter: the player notices it on the map. The animal's inspect pane says "Remembers who hurt it: Tom, Ana".
+Raiders in battle are growled at too (cooldown applies) — it is the same man.
+
+**Fear of the beast (b).** Postfix on private `Pawn_HealthTracker.MakeDowned(DamageInfo? dinfo, Hediff
+hediff)` (`Verse/Pawn_HealthTracker.cs:837`, `___pawn`): the downed pawn is humanlike, not of the player
+faction and hostile to it, and `dinfo?.Instigator` is a living animal of the player faction → `FearRecord`
+{prisonerId, prisonerName, animalId, animalName, lastFearDay}. A later downing by another animal replaces
+it (one per man); at most **100** (the oldest goes). Downed by bleeding later (no `dinfo`) does not count.
+A prefix records whether the pawn was standing: the postfix counts only a pawn that was up before and is
+down after (another mod's skipping prefix, or vanilla's "already downed" error path, must not record).
+In the same 60-tick pass: the man is spawned, `IsPrisonerOfColony`, alive, awake, has a mood; the animal is
+spawned on that map, not downed; within **6** cells and same room or line of sight; not yet today
+(`TicksGame / 60000`) → memory `OldScores_FearOfBeast` (−4 mood, 1 day, `stackLimit` 1, `showBubble`,
+icon the mod's dread icon; label "Afraid of {0}", `otherPawn` = the animal) and
+`guest.resistance = Max(0, resistance − 0.5)` (direct: lowering mood would *slow* recruitment, because of
+the mood curve in `InteractionWorker_RecruitAttempt`). Once per in-game day per prisoner.
+
+**Forgetting / cleanup.**
+- `Pawn.Kill` (existing patch): the dead animal's grudges and fear records go; a dead man's grudges and
+  fear record go.
+- Every 2,500 ticks (tracker cleanup), over the pawns spawned on any map: a remembered man who is a free
+  colonist (`IsFreeColonist`; a slave is not "one of us") for **30** days in a row (`colonistSinceTick`, saved) is forgiven; an animal found spawned
+  with another faction (sold, released to the wild) loses its grudges and fear records; a man found as a
+  colonist or no longer a prisoner and not hostile loses his fear record. Pawns not found (caravans, world
+  pawns) are left alone.
+- Feature off (`OldScoresSettings.beastMemory`): nothing is recorded, nothing fires and the inspect line is
+  hidden; records are kept.
+
+**Save/load.** In `OldScoresTracker`: `grudges` and `fears` (`Scribe_Collections`, `LookMode.Deep`, values
+only). Null lists replaced on load.
+
+**Cost.** Per tick: a modulo and a count check per map. Every 60 ticks with records: a per-pass id→pawn
+lookup of the map's spawned humanlikes and animals (a few hundred dictionary inserts, reused dictionary),
+then each grudge and fear record is one lookup. No allocation in the per-tick path beyond the pass's small
+dictionary (only when records exist).
+
+**Compatibility.** Reads only factions, positions, rooms, sight; no combat code. Combat Extended damage goes
+through `PostApplyDamage` and `MakeDowned` the same way. Animals from mods count if `RaceProps.Animal`.
+Every hook is wrapped in try/catch with `Log.ErrorOnce` (the damage postfix, the downed postfix, the 60-tick
+pass); a pair's growl tick / a record's fear day is set before the side effects, so a failing modded pawn
+never retries every pass. The growl texture is loaded at startup on the main thread.
+
+**Tests (`BeastMemoryHarness`, from tick 6400, run with `--ticks 9000`):** a husky (player animal) hurt by a
+raider's blow (real `TakeDamage`, instigator the raider) → grudge recorded; hurt by a colonist → none; by
+a wild animal → none; a non-player animal hurt by a raider → none; a fourth attacker → still 3 (oldest
+gone); feature off → none. The raider captured (prisoner) and teleported 4 cells from the husky in the open
+→ within 120 ticks the husky's red bubble targets him (a `MoteBubble` attached to the husky with the
+raider as the arrow target and red icon colour) and the pair's growl tick is set; 10 cells away → nothing;
+behind a wall → nothing; cooldown → no second growl within 2,500 ticks. Downed by the husky (real
+`TakeDamage` with the husky as instigator until downed) → fear record; captured; husky 3 cells away in the
+same room → the fear memory with the husky as `otherPawn` and resistance −0.5; a second pass the same day →
+nothing more; next day → again. Kill the husky → its records are gone. Scribe roundtrip of both lists.
+Inspect line on the husky. (It starts once the Echoes harness has finished, at the latest tick 7600.)
+
+Added after review (2026-10-16): a colony slave's blow → none (Ideology); a remembered man dies → the
+grudges against him go; inspect line hidden with the feature off; a downed raider not yet our prisoner with
+the husky 3 cells away → no fear; two remembered men next to one animal → one growl per pass. Review
+findings and what was done with each: `docs/forge/reviews/oldscores-beast-memory.md`.
+
+**Showcase** (`BeastMemoryShowcase`, after the Raid Echoes showcase): `logs/showcase/oldscores/8-growl-bubble.png`
+(the husky Grimm, red bubble with the insult glyph pointing at the prisoner who hurt it; readable at normal
+zoom) and `9-fear-of-the-beast.png` (the downed prisoner's thought bubble with the dread icon, husky 3 cells away).
+
+**Compat probada con** (gametest `--ticks 9000`, 2026-10-16): Vanilla Expanded Framework + Alpha Animals +
+Grudges! + Vanilla Social Interactions Expanded (VSIE also patches `MakeDowned`; Grudges! is the colonist-side
+grudge system) → `logs/run-20261016-223240.log`: The Beast Remembers 35/35 PASS, 0 errors. One FAIL in the
+Beasts harness, "...and unpinned": Grudges! itself keeps the wolf in `ForcefullyKeptPawns` (its DLL uses
+`get_ForcefullyKeptPawns`); without Grudges! (VEF + Alpha Animals + VSIE, `logs/run-20261016-225007.log`) every
+PASS of the 5 features holds (173), and the only error is vanilla's `ScatterRoadDebris` map-gen message. Old
+Scores' own record is cleared in both runs ("record cleared" PASS); a pawn kept by another mod is that mod's
+business. A first compat run (`run-20261016-221146.log`) had a one-off Spared "he came armed (nothing)" (vanilla
+weapon roll; not seen again in 3 runs, now with a diagnostic message) and stalled after the harnesses finished;
+the harness watchdog now runs until the probe quits and names force-pausing windows.
+
 ### Raid Echoes — review fixes (docs/forge/reviews/oldscores-raid-echoes.md)
 
 1. A raider who is not spawned but still held on the map (`MapHeld == map`: mid-jump in a `PawnFlyer`, or

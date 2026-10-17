@@ -21,6 +21,11 @@ namespace OldScores
             if (tracker == null) return;
             if (now % OldScoresTuning.SparedCheckInterval == 0 && tracker.AnyReturnedSpared) tracker.SparedCheck(map);
             if (now % OldScoresTuning.DreadInterval == 0 && tracker.AnyNickname) tracker.DreadCheck(map);
+            if (now % OldScoresTuning.BeastMemoryInterval == 0 && tracker.AnyBeastMemory)
+            {
+                try { tracker.BeastMemoryCheck(map); }
+                catch (System.Exception ex) { Log.ErrorOnce("[Old Scores] beast memory pass failed: " + ex, 0x0D5C19); }
+            }
         }
 
         public override void MapComponentOnGUI()

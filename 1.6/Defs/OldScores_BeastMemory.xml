@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- The Beast Remembers: a prisoner who was dragged down by a colony animal, seeing it again. -->
+  <ThoughtDef>
+    <defName>OldScores_FearOfBeast</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>1</durationDays>
+    <stackLimit>1</stackLimit>
+    <showBubble>true</showBubble>
+    <icon>Things/OldScores/DreadIcon</icon>
+    <stages>
+      <li>
+        <label>afraid of {0}</label>
+        <description>That animal is the one that dragged me down. It walked right past my cell and looked at me.</description>
+        <baseMoodEffect>-4</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+</Defs>

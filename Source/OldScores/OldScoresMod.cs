@@ -33,6 +33,9 @@ namespace OldScores
             list.Gap();
             list.CheckboxLabeled("OldScores_Settings_Echoes".Translate(), ref Settings.echoes,
                 "OldScores_Settings_EchoesDesc".Translate());
+            list.Gap();
+            list.CheckboxLabeled("OldScores_Settings_BeastMemory".Translate(), ref Settings.beastMemory,
+                "OldScores_Settings_BeastMemoryDesc".Translate());
             list.End();
         }
     }
@@ -43,6 +46,7 @@ namespace OldScores
         public bool spared = true;
         public bool beasts = true;
         public bool echoes = true;
+        public bool beastMemory = true;
 
         public override void ExposeData()
         {
@@ -50,6 +54,7 @@ namespace OldScores
             Scribe_Values.Look(ref spared, "spared", true);
             Scribe_Values.Look(ref beasts, "beasts", true);
             Scribe_Values.Look(ref echoes, "echoes", true);
+            Scribe_Values.Look(ref beastMemory, "beastMemory", true);
         }
     }
 
@@ -97,6 +102,16 @@ namespace OldScores
         public static float EchoMinAlpha = 0.3f;
         public static float EchoOldRoadDist = 20f;
         public static int EchoMaxDrawsPerFrame = 800;
+
+        // The Beast Remembers
+        public static int BeastMemoryInterval = 60;
+        public static float GrowlRadius = 6f;
+        public static int GrowlCooldown = 2500;
+        public static int GrudgesPerAnimal = 3;
+        public static int MaxGrudges = 300;
+        public static int MaxFears = 100;
+        public static float FearResistanceLoss = 0.5f;
+        public static int GrudgeForgiveTicks = 30 * GenDate.TicksPerDay;
 
         public const int CleanupInterval = 2500;
     }

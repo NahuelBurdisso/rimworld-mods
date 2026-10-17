@@ -32,5 +32,8 @@ A wild animal that mauls one of your colonists and gets away does not forget the
 &lt;b&gt;Raid Echoes&lt;/b&gt;
 The map remembers how past raids came at you. A new toggle in the bottom-right icon row shows faint lines of the roads each faction walked in on, rings where they broke into your base and crosses where they fell, with labels like "Pirates of Ruin - 3 raids, broke in here". Older raids fade and are forgotten after two years. When a faction comes at you by the same road again, you hear about it: "They come by the old road again."
 
+&lt;b&gt;The Beast Remembers&lt;/b&gt;
+Your dog does not forget who hurt it. When that man is close again - as a prisoner, a recruit, a visitor or a raider back for more - it growls at him, with a red bubble pointing his way, and its inspect pane says whom it remembers. And a raider dragged down by one of your animals is afraid of it once he is in your cells: seeing that beast near him sours his mood and wears his resistance down, once a day. A man who lives with you as a free colonist for 30 days is forgiven.
+
 Safe to add to an existing save. Requires Harmony.</description>
 </ModMetaData>

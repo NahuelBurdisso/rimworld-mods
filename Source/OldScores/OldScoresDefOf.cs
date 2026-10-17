@@ -14,6 +14,7 @@ namespace OldScores
         public static HediffDef OldScores_Veteran;
         public static ThingDef OldScores_BeastTrophy;
         public static ThoughtDef OldScores_SettledOldScore;
+        public static ThoughtDef OldScores_FearOfBeast;
 
         static OldScoresDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(OldScoresDefOf)); }
     }

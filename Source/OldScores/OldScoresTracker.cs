@@ -19,7 +19,7 @@ namespace OldScores
         static OldScoresTracker instance;
         public static OldScoresTracker Instance => instance;
 
-        public OldScoresTracker(Game game) { instance = this; }
+        public OldScoresTracker(Game game) { instance = this; LastGrowlBubble = null; }
 
         public IReadOnlyList<NicknameRecord> Nicknames => nicknames;
         public IReadOnlyList<SparedRecord> Spared => spared;
@@ -34,10 +34,12 @@ namespace OldScores
             CleanupNicknames();
             CleanupSpared();
             CleanupBeasts();
+            CleanupBeastMemory();
         }
 
         public void Notify_PawnKilled(Pawn victim, KillContext ctx)
         {
+            Notify_BeastMemoryDied(victim);   // first: plain list removals, never skipped by a throw below
             Notify_Kill(victim, ctx);
             Notify_SparedDied(victim);
             Notify_BeastDied(victim, ctx);
@@ -68,7 +70,7 @@ namespace OldScores
             }
             BeastRecord b = beasts.Count > 0 ? GetBeast(p) : null;
             if (b != null && b.stage == BeastStage.Returned) return BeastLabel(b);
-            return null;
+            return GrudgeLine(p);
         }
 
         /// <summary>True for pawns the mod keeps alive off-map: never redress them into a new pawn.</summary>
@@ -97,11 +99,17 @@ namespace OldScores
             Scribe_Collections.Look(ref spared, "spared", LookMode.Deep);
             Scribe_Collections.Look(ref beasts, "beasts", LookMode.Deep);
             Scribe_Values.Look(ref showEchoes, "showEchoes");
+            Scribe_Collections.Look(ref grudges, "grudges", LookMode.Deep);
+            Scribe_Collections.Look(ref fears, "fears", LookMode.Deep);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
                 nicknames ??= new List<NicknameRecord>();
                 spared ??= new List<SparedRecord>();
                 beasts ??= new List<BeastRecord>();
+                grudges ??= new List<GrudgeRecord>();
+                fears ??= new List<FearRecord>();
+                grudges.RemoveAll(g => g == null);
+                fears.RemoveAll(f => f == null);
                 // references to pawns/factions that no longer exist load as null
                 nicknames.RemoveAll(r => r == null || r.faction == null);
                 // a spared pawn whose captor did not survive the load stays pinned unless unpinned here
