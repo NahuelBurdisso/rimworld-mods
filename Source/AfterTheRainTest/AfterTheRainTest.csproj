@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>AfterTheRainTest</RootNamespace>
+    <AssemblyName>AfterTheRainTest</AssemblyName>
+    <Nullable>disable</Nullable>
+    <!-- output straight into the mod's version folder -->
+    <OutputPath>../../1.6/Assemblies/</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <DebugType>none</DebugType>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <!-- override on the command line on another machine: -p:RimWorldManaged=... -->
+    <RimWorldManaged Condition="'$(RimWorldManaged)' == ''">D:/SteamLibrary/steamapps/common/RimWorld/RimWorldWin64_Data/Managed</RimWorldManaged>
+    <HarmonyAssemblies Condition="'$(HarmonyAssemblies)' == ''">D:/SteamLibrary/steamapps/workshop/content/294100/2009463077/1.6/Assemblies</HarmonyAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- .NET Framework 4.7.2 reference assemblies (no targeting pack needed) -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- compile against the installed game; never copy its DLLs into the mod -->
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp"><HintPath>$(RimWorldManaged)/Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(RimWorldManaged)/UnityEngine.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(RimWorldManaged)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(RimWorldManaged)/UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(RimWorldManaged)/UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
+    <!-- Harmony comes from the Harmony mod (brrainz.harmony) at runtime -->
+    <Reference Include="AfterTheRain"><HintPath>../../../AfterTheRain/1.6/Assemblies/AfterTheRain.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.ScreenCaptureModule"><HintPath>$(RimWorldManaged)/UnityEngine.ScreenCaptureModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(HarmonyAssemblies)/0Harmony.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+</Project>
