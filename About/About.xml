@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Reactor Slag Test</name>
+  <packageId>nahuel.reactorslagtest</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>nahuel.reactorslag</packageId>
+      <displayName>Reactor Slag</displayName>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>nahuel.reactorslag</li>
+  </loadAfter>
+  <description>Test harness for Reactor Slag. Armed only by rw launch --ticks N. Not for normal play.</description>
+</ModMetaData>
