@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <LightForTheAbsent_SettingsCategory>A Light for the Absent</LightForTheAbsent_SettingsCategory>
+  <LightForTheAbsent_Setting_Moodlets>Moodlets</LightForTheAbsent_Setting_Moodlets>
+  <LightForTheAbsent_Setting_Moodlets_Desc>Returning colonists remember the light, partners sleep lightly while the other is away, and family grieves when the light of someone who died far away goes out.</LightForTheAbsent_Setting_Moodlets_Desc>
+  <LightForTheAbsent_Setting_Message>Message when a light goes out</LightForTheAbsent_Setting_Message>
+  <LightForTheAbsent_Setting_Message_Desc>Show a short message when the light of a colonist who died far from home goes out for good.</LightForTheAbsent_Setting_Message_Desc>
+  <LightForTheAbsent_Setting_Brightness>Brightness: {0}</LightForTheAbsent_Setting_Brightness>
+  <LightForTheAbsent_Setting_Brightness_Desc>How bright the light is. At 100% it is about as bright as a single candle: enough to see in an empty room, too dim to work by. Changes reach lights already burning within a few seconds.</LightForTheAbsent_Setting_Brightness_Desc>
+  <LightForTheAbsent_LightWentOutMessage>The light in {PAWN_nameDef}'s room has gone out.</LightForTheAbsent_LightWentOutMessage>
+</LanguageData>
