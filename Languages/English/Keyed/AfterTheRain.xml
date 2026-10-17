@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <AfterTheRain_Message>A rainbow over {0}.</AfterTheRain_Message>
+  <AfterTheRain_InspirationReason>[PAWN_nameDef] looked up at the rainbow after the rain, and something stirred.</AfterTheRain_InspirationReason>
+
+  <AfterTheRain_SettingsCategory>After the Rain</AfterTheRain_SettingsCategory>
+  <AfterTheRain_SettingEnabled>Rainbows after the rain</AfterTheRain_SettingEnabled>
+  <AfterTheRain_SettingEnabledTip>When off, no new rainbows appear. One already in the sky fades out on its own.</AfterTheRain_SettingEnabledTip>
+  <AfterTheRain_SettingMessage>Show a message when a rainbow appears</AfterTheRain_SettingMessage>
+  <AfterTheRain_SettingChance>Chance of a rainbow when the rain clears with the sun low: {0}</AfterTheRain_SettingChance>
+  <AfterTheRain_SettingChanceTip>Rolled once each time rain gives way to a clear sky, during the morning or afternoon window (not at midday, not at night).</AfterTheRain_SettingChanceTip>
+  <AfterTheRain_SettingInspiration>Inspiration chance for each colonist who sees it: {0}</AfterTheRain_SettingInspiration>
+  <AfterTheRain_SettingInspirationTip>At most one colonist is inspired per rainbow. A colonist who is already inspired, or has no inspiration available, is skipped.</AfterTheRain_SettingInspirationTip>
+  <AfterTheRain_SettingOpacity>Rainbow opacity: {0}</AfterTheRain_SettingOpacity>
+  <AfterTheRain_SettingReset>Reset to defaults</AfterTheRain_SettingReset>
+</LanguageData>

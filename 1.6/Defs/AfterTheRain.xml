@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <GameConditionDef>
+    <defName>AfterTheRain_Rainbow</defName>
+    <conditionClass>AfterTheRain.GameCondition_Rainbow</conditionClass>
+    <label>rainbow</label>
+    <description>A faint rainbow hangs over the land after the rain. Colonists who see it from under the open sky feel a little better, and one of them may even be inspired.</description>
+    <canBePermanent>false</canBePermanent>
+    <allowUnderground>false</allowUnderground>
+    <natural>true</natural>
+  </GameConditionDef>
+
+  <ThoughtDef>
+    <defName>AfterTheRain_SawRainbow</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>0.5</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>saw a rainbow</label>
+        <description>The rain stopped and there was a rainbow. Just for a moment, everything felt lighter.</description>
+        <baseMoodEffect>2</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <AfterTheRain.RainbowConfigDef>
+    <defName>AfterTheRain_Config</defName>
+    <excludedRain>
+      <li MayRequire="Ludeon.RimWorld.Anomaly">BloodRain</li>
+    </excludedRain>
+    <excludedClear>
+      <li>Underground</li>
+      <li MayRequire="Ludeon.RimWorld.Odyssey">Orbit</li>
+    </excludedClear>
+    <extraClear />
+    <suppressedBy>
+      <li>Eclipse</li>
+      <li>VolcanicWinter</li>
+      <li>ToxicFallout</li>
+      <li MayRequire="Ludeon.RimWorld.Biotech">NoxiousHaze</li>
+      <li MayRequire="Ludeon.RimWorld.Anomaly">UnnaturalDarkness</li>
+      <li MayRequire="Ludeon.RimWorld.Anomaly">BloodRain</li>
+      <li MayRequire="Ludeon.RimWorld.Anomaly">GrayPall</li>
+    </suppressedBy>
+  </AfterTheRain.RainbowConfigDef>
+
+</Defs>

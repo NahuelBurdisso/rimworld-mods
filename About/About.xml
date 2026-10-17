@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>After the Rain</name>
+  <packageId>nahuel.aftertherain</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <description>Sometimes, when the rain stops and the sun is low, a rainbow comes out.
+
+When rain gives way to a clear sky in the morning or the afternoon (roughly 6:00 to 10:00 and 14:00 to 18:30 - not at midday, not at night), there is a chance that a faint, pastel rainbow appears over the map for one or two hours. It fades in, hangs over the colony on the side away from the sun - left in the morning, right in the afternoon - and fades away on its own. If the rain or fog comes back, or the light goes, it leaves early.
+
+&lt;b&gt;What it does&lt;/b&gt;
+- Colonists who see it from under the open sky think "saw a rainbow" (+2 mood for half a day).
+- Each of them has a small chance (5%) to be inspired. At most one inspiration per rainbow, and only an inspiration the colonist could normally get.
+- While it is up, colonists with free time like to stop and look at the sky.
+- An optional message: "A rainbow over (your colony)."
+
+&lt;b&gt;When it does not happen&lt;/b&gt;
+Not after thunderstorms, foggy rain, snow or blood rain; not when the sky turns overcast or foggy instead of clear; not underground, in caves or pocket maps, in orbit or in a vacuum; not during an eclipse, volcanic winter, toxic fallout, noxious haze or the darkness of the void. Colonists under a roof, asleep or blind do not see it.
+
+The rainbow is very transparent on purpose: a quiet reward for sitting out the bad weather, not a light show. Chance, inspiration chance, opacity and the message are in the mod settings.
+
+No Harmony and no patches, almost no cost per tick (one check every 250 ticks). Safe to add to an existing save. To remove it, wait until "Rainbow" is not in the list of active conditions (top right); the next load then shows one harmless red error about the missing map component, gone after you save again. Works with weather mods: modded rain and clear weathers are recognised by their properties, and the lists can be patched. No DLC required.</description>
+</ModMetaData>
