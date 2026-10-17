@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- The spilled core of a dead heavy mech (ReactorSlag.ReactorSlagCore). Ethereal: explosions skip it, it blocks
+       nothing and is never selected. MapMeshAndRealTime: the slag pieces are printed once into the map mesh, the
+       halo is drawn every frame. The graphic is only the source of the piece materials (and of the draw rect used
+       for culling, hence the big drawSize). -->
+  <ThingDef Name="ReactorSlag_CoreBase" Abstract="True">
+    <thingClass>ReactorSlag.ReactorSlagCore</thingClass>
+    <category>Ethereal</category>
+    <altitudeLayer>Filth</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <drawerType>MapMeshAndRealTime</drawerType>
+    <tickerType>Rare</tickerType>
+    <selectable>false</selectable>
+    <rotatable>false</rotatable>
+    <graphicData>
+      <texPath>Things/Filth/Ash</texPath>
+      <graphicClass>Graphic_Cluster</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <color>(46,38,34,215)</color>
+    </graphicData>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>6</glowRadius>
+        <glowColor>(255,150,60,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
+
+  <ThingDef ParentName="ReactorSlag_CoreBase">
+    <defName>ReactorSlag_Core</defName>
+    <label>molten reactor slag</label>
+    <description>The core of a heavy mechanoid, spilled where it fell. It glows and smokes as it cools.</description>
+    <graphicData>
+      <drawSize>(7,7)</drawSize>
+    </graphicData>
+    <modExtensions>
+      <li Class="ReactorSlag.ReactorSlagExtension">
+        <poolRadius>1.5</poolRadius>
+        <glowRadius>6</glowRadius>
+        <haloSize>6</haloSize>
+        <pieces>12</pieces>
+        <wideGroundScar>false</wideGroundScar>
+      </li>
+    </modExtensions>
+  </ThingDef>
+
+  <ThingDef ParentName="ReactorSlag_CoreBase">
+    <defName>ReactorSlag_CoreLarge</defName>
+    <label>molten reactor slag</label>
+    <description>The core of a mechanoid commander, spilled where it fell. It glows and smokes as it cools.</description>
+    <graphicData>
+      <drawSize>(11,11)</drawSize>
+    </graphicData>
+    <modExtensions>
+      <li Class="ReactorSlag.ReactorSlagExtension">
+        <poolRadius>2.5</poolRadius>
+        <glowRadius>9</glowRadius>
+        <haloSize>8.5</haloSize>
+        <pieces>26</pieces>
+        <wideGroundScar>true</wideGroundScar>
+      </li>
+    </modExtensions>
+  </ThingDef>
+
+  <!-- What a cooled pool leaves on every cell it can: permanent until cleaned, never washed off by rain. -->
+  <ThingDef ParentName="BaseFilth">
+    <defName>ReactorSlag_Scar</defName>
+    <label>reactor slag scar</label>
+    <description>A crust of cooled slag where a mechanoid's core spilled and burned out.</description>
+    <statBases>
+      <Beauty>-8</Beauty>
+      <Cleanliness>-4</Cleanliness>
+    </statBases>
+    <graphicData>
+      <texPath>Things/Filth/Ash</texPath>
+      <color>(46,38,34,215)</color>
+      <drawSize>1.7</drawSize>
+    </graphicData>
+    <filth>
+      <ignoreFilthMultiplierStat>true</ignoreFilthMultiplierStat>
+      <rainWashes>false</rainWashes>
+      <cleaningWorkToReduceThickness>120</cleaningWorkToReduceThickness>
+      <maxThickness>3</maxThickness>
+    </filth>
+  </ThingDef>
+
+</Defs>

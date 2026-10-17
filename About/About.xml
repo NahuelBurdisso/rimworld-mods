@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Reactor Slag</name>
+  <packageId>nahuel.reactorslag</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <loadAfter>
+    <li>Ludeon.RimWorld</li>
+    <li>Ludeon.RimWorld.Biotech</li>
+    <li>Ludeon.RimWorld.Odyssey</li>
+  </loadAfter>
+  <description>When a heavy mechanoid falls, its core spills.
+
+Kill a centipede, a tunneler or a centurion and a pool of white-hot slag opens under the wreck. It lights up the battlefield at night, smokes and spits sparks, and over three days cools from orange to red to a dull ember. When it goes cold it leaves a crust of slag on the ground: in the field it stays as a scar of the fight, in your base your colonists can clean it.
+
+Mechanoid commanders (war queen, diabolus, apocriton) leave a larger pool and a brighter light.
+
+- Any mechanoid race with a body size of 2.5 or more, or a boss: vanilla, DLC and modded mechs alike, of any faction.
+- Harmless: the pool does not burn, block or hurt anyone. The cold crust is ordinary filth (a little ugly, cleanable).
+- The light shrinks and reddens as the pool cools.
+- With Odyssey, the centre of a cooled pool turns into cooled lava, on natural ground only (never floors, water or growing zones).
+- Settings: cooling time, halo on/off, ground scar on/off.
+
+No Harmony, no dependencies. Safe to add to an existing save.</description>
+</ModMetaData>

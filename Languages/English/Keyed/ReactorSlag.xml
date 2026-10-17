@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <ReactorSlag_SettingsCategory>Reactor Slag</ReactorSlag_SettingsCategory>
+  <ReactorSlag_CoolingDays>Cooling time: {0} days</ReactorSlag_CoolingDays>
+  <ReactorSlag_CoolingDaysDesc>How long a spilled core glows before it goes cold. Light and halo shrink and redden over this time.</ReactorSlag_CoolingDaysDesc>
+  <ReactorSlag_DrawHalo>Draw the molten halo</ReactorSlag_DrawHalo>
+  <ReactorSlag_DrawHaloDesc>The soft glow drawn over a hot pool. The light it casts on the ground stays either way.</ReactorSlag_DrawHaloDesc>
+  <ReactorSlag_GroundScar>Scar the ground (Odyssey)</ReactorSlag_GroundScar>
+  <ReactorSlag_GroundScarDesc>With Odyssey, a cooled pool turns its centre into cooled lava. Only natural ground: never floors, water or growing zones.</ReactorSlag_GroundScarDesc>
+</LanguageData>
