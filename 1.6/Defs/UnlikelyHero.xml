@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Who counts as a non-combatant and what the rare bonus is. Patch this def to change the lists. -->
+  <UnlikelyHero.HeroConfigDef>
+    <defName>UnlikelyHero_Config</defName>
+    <violentTraits>
+      <li>Bloodlust</li>
+      <li>Brawler</li>
+      <li>ShootingAccuracy</li>
+      <li>Psychopath</li>
+    </violentTraits>
+    <gentleSkills>
+      <li>Cooking</li>
+      <li>Medicine</li>
+      <li>Artistic</li>
+      <li>Animals</li>
+    </gentleSkills>
+    <excludedDamage>
+      <li>Flame</li>
+      <li>Burn</li>
+      <li>AcidBurn</li>
+      <li MayRequire="Ludeon.RimWorld.Anomaly">ElectricalBurn</li>
+      <li MayRequire="Ludeon.RimWorld.Odyssey">VacuumBurn</li>
+    </excludedDamage>
+    <bonusTrait>Nerves</bonusTrait>
+    <bonusTraitDegree>1</bonusTraitDegree>
+  </UnlikelyHero.HeroConfigDef>
+
+  <!-- The hero's own thought. -->
+  <ThoughtDef>
+    <defName>UnlikelyHero_FoundOut</defName>
+    <durationDays>6</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>didn't know I had it in me</label>
+        <description>I'm not a fighter. I never was. But when it came to it, I stood my ground and I was the one still standing. I didn't know I had it in me.</description>
+        <baseMoodEffect>6</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <!-- Witnesses with line of sight: mood and opinion of the hero. -->
+  <ThoughtDef>
+    <defName>UnlikelyHero_SawStandUp</defName>
+    <thoughtClass>Thought_MemorySocial</thoughtClass>
+    <durationDays>6</durationDays>
+    <stackLimit>10</stackLimit>
+    <stackLimitForSameOtherPawn>1</stackLimitForSameOtherPawn>
+    <stages>
+      <li>
+        <label>saw {0} stand up</label>
+        <description>{OTHERPAWN_nameDef} never fought a day in {OTHERPAWN_possessive} life, and today I saw {OTHERPAWN_objective} stand up and win. I'll never look at {OTHERPAWN_objective} the same way.</description>
+        <baseMoodEffect>3</baseMoodEffect>
+        <baseOpinionOffset>10</baseOpinionOffset>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <!-- A tale for the colony's artists. -->
+  <TaleDef>
+    <defName>UnlikelyHero_Tale</defName>
+    <label>unlikely hero</label>
+    <taleClass>Tale_DoublePawn</taleClass>
+    <type>PermanentHistorical</type>
+    <firstPawnSymbol>HERO</firstPawnSymbol>
+    <secondPawnSymbol>FOE</secondPawnSymbol>
+    <baseInterest>4</baseInterest>
+    <rulePack>
+      <rulesStrings>
+        <li>tale_noun->the day [HERO_nameDef] stood up</li>
+        <li>tale_noun->[HERO_nameDef]'s first fight</li>
+        <li>tale_noun->[HERO_nameDef] facing [FOE_nameDef]</li>
+        <li>image->[HERO_nameFull], who never fought, bringing down [FOE_nameFull] [circumstance_group]</li>
+        <li>image->[HERO_nameFull] standing alone against [FOE_nameFull] [circumstance_group]</li>
+        <li>image->[HERO_nameFull] in a pool of warm light over the fallen [FOE_nameDef] [circumstance_group]</li>
+        <li>circumstance_phrase->with trembling hands</li>
+        <li>circumstance_phrase->still wearing [HERO_possessive] work apron</li>
+        <li>circumstance_phrase->as the others look on in disbelief</li>
+        <li>circumstance_phrase->with a look of quiet astonishment</li>
+        <li>desc_sentence->[HERO_nameDef] looks surprised at [HERO_objective]self.</li>
+        <li>desc_sentence->A shaft of golden light falls on [HERO_nameDef].</li>
+        <li>desc_sentence->Behind [HERO_objective], the colony's kitchen fire is still burning.</li>
+        <li>desc_sentence->[HERO_nameDef] is not holding the weapon like a soldier would.</li>
+      </rulesStrings>
+    </rulePack>
+  </TaleDef>
+
+  <!-- The warm column of light: the texture's centre is anchored, the code lifts it so its foot sits at the pawn. -->
+  <FleckDef ParentName="FleckBase">
+    <defName>UnlikelyHero_Fleck_Beam</defName>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.25</fadeInTime>
+    <solidTime>1.1</solidTime>
+    <fadeOutTime>1.3</fadeOutTime>
+    <graphicData>
+      <texPath>Things/UnlikelyHero/WarmBeam</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <drawSize>(1.3, 6.5)</drawSize>
+      <color>(255, 176, 92)</color>
+    </graphicData>
+  </FleckDef>
+
+  <FleckDef ParentName="FleckBase">
+    <defName>UnlikelyHero_Fleck_Glow</defName>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.1</fadeInTime>
+    <solidTime>0.5</solidTime>
+    <fadeOutTime>1.4</fadeOutTime>
+    <growthRate>0.8</growthRate>
+    <graphicData>
+      <texPath>Things/UnlikelyHero/WarmGlow</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <drawSize>(1, 1)</drawSize>
+      <color>(255, 190, 120)</color>
+    </graphicData>
+  </FleckDef>
+
+</Defs>

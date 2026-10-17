@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <UnlikelyHero_FloatText>An unlikely hero!</UnlikelyHero_FloatText>
+  <UnlikelyHero_Message>{HERO_nameDef} has never been a fighter, but {HERO_pronoun} just brought down {VICTIM_nameDef}. Nobody saw that coming, least of all {HERO_objective}.</UnlikelyHero_Message>
+  <UnlikelyHero_MessageBonus>Something changed in {HERO_nameDef} today: {1}.</UnlikelyHero_MessageBonus>
+  <UnlikelyHero_PassionBonus>a new passion for {0}</UnlikelyHero_PassionBonus>
+
+  <UnlikelyHero_SettingsCategory>Unlikely Hero</UnlikelyHero_SettingsCategory>
+  <UnlikelyHero_Setting_BonusChance>Chance of a permanent change: {0}</UnlikelyHero_Setting_BonusChance>
+  <UnlikelyHero_Setting_BonusChance_Desc>When the moment happens, the chance that the hero keeps something for good: the steadfast trait, or, if that conflicts with their traits, a minor passion in the skill they fought with.</UnlikelyHero_Setting_BonusChance_Desc>
+  <UnlikelyHero_Setting_MaxCombatSkill>Non-combatant: Shooting and Melee at most {0}</UnlikelyHero_Setting_MaxCombatSkill>
+  <UnlikelyHero_Setting_MaxCombatSkill_Desc>A colonist whose Shooting and Melee are both at or below this level counts as a non-combatant.</UnlikelyHero_Setting_MaxCombatSkill_Desc>
+  <UnlikelyHero_Setting_CrafterCombatCap>Cooks, doctors, artists and handlers: Shooting and Melee at most {0}</UnlikelyHero_Setting_CrafterCombatCap>
+  <UnlikelyHero_Setting_CrafterCombatCap_Desc>A colonist whose best skill is Cooking, Medicine, Artistic or Animals also counts as a non-combatant, as long as both combat skills are lower than that skill and at or below this level.</UnlikelyHero_Setting_CrafterCombatCap_Desc>
+  <UnlikelyHero_Setting_RequireFirstKill>Only their first kill of a person or mechanoid</UnlikelyHero_Setting_RequireFirstKill>
+  <UnlikelyHero_Setting_RequireFirstKill_Desc>When on, a colonist who has already killed a person or a mechanoid (by the game's own records) cannot have the moment. Hunting animals does not count.</UnlikelyHero_Setting_RequireFirstKill_Desc>
+  <UnlikelyHero_Setting_ShowMessage>Show a message when it happens</UnlikelyHero_Setting_ShowMessage>
+  <UnlikelyHero_Setting_QuietWithGesta>Quiet mode when Gesta is active</UnlikelyHero_Setting_QuietWithGesta>
+  <UnlikelyHero_Setting_QuietWithGesta_Desc>Gesta already marks its feats with a golden column of light and a tale. When Gesta is active and this is on, Unlikely Hero keeps the thoughts, the witnesses' memories, the message and the rare change, and leaves out its own light, floating text and tale.</UnlikelyHero_Setting_QuietWithGesta_Desc>
+</LanguageData>
