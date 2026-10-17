@@ -29,6 +29,9 @@ namespace OldScoresTest
 
         public EchoShowcase(Game game) { }
 
+        /// <summary>True once this showcase will not move the camera any more (or never will).</summary>
+        public bool Finished => !active || finished;
+
         public override void FinalizeInit()
         {
             ModContentPack me = LoadedModManager.RunningModsListForReading.FirstOrDefault(m => m.PackageId == "nahuel.oldscorestest");

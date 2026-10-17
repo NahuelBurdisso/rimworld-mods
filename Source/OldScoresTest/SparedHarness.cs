@@ -124,7 +124,8 @@ namespace OldScoresTest
             Lord lord = spared.GetLord();
             Kit.Check(lord != null && raiders.Any(r => r != spared && r.GetLord() == lord), "...in the raid's own lord");
             Kit.Check(rec.stage == SparedStage.Returned, "record is now Returned");
-            Kit.Check(spared.equipment?.Primary != null, $"he came armed ({spared.equipment?.Primary?.LabelShort ?? "nothing"})");
+            Kit.Check(spared.equipment?.Primary != null, $"he came armed ({spared.equipment?.Primary?.LabelShort ?? "nothing"}; kind {spared.kindDef.defName}, "
+                + $"violent disabled {spared.WorkTagIsDisabled(WorkTags.Violent)}, manipulation {spared.health.capacities.GetLevel(PawnCapacityDefOf.Manipulation):0.00})");
             Kit.Check(spared.GetInspectString().Contains(rescuer.LabelShort), "his inspect pane says who spared him");
             OldScoresTuning.SparedReturnChance = 0.35f;
             return true;
@@ -193,14 +194,22 @@ namespace OldScoresTest
         bool Raid()
         {
             List<Pawn> before = map.mapPawns.SpawnedPawnsInFaction(pirates).ToList();
-            IncidentParms parms = StorytellerUtility.DefaultParmsNow(IncidentCategoryDefOf.ThreatBig, map);
-            parms.faction = pirates;
-            parms.raidStrategy = RaidStrategyDefOf.ImmediateAttack;
-            parms.raidArrivalMode = PawnsArrivalModeDefOf.EdgeWalkIn;
-            parms.points = 200f;
-            parms.forced = true;
             TimeSpeed speed = Find.TickManager.CurTimeSpeed;
-            bool ok = IncidentDefOf.RaidEnemy.Worker.TryExecute(parms);
+            // Run 2026-10-12 10:43: vanilla refused one raid (TryExecute false; random parts such as a
+            // Biotech children-only raid or the entry cell). That is vanilla's raid generation, not the
+            // mod under test: try again with fresh parms, at most three times.
+            bool ok = false;
+            for (int attempt = 1; attempt <= 3 && !ok; attempt++)
+            {
+                IncidentParms parms = StorytellerUtility.DefaultParmsNow(IncidentCategoryDefOf.ThreatBig, map);
+                parms.faction = pirates;
+                parms.raidStrategy = RaidStrategyDefOf.ImmediateAttack;
+                parms.raidArrivalMode = PawnsArrivalModeDefOf.EdgeWalkIn;
+                parms.points = 200f;
+                parms.forced = true;
+                ok = IncidentDefOf.RaidEnemy.Worker.TryExecute(parms);
+                if (!ok) Log.Message($"[Test] (raid attempt {attempt} refused by vanilla: age restriction {parms.raidAgeRestriction?.defName ?? "none"}, spawn center {parms.spawnCenter})");
+            }
             // the raid letter (ThreatBig) pauses the game under the default auto-pause setting
             if (Find.TickManager.CurTimeSpeed == TimeSpeed.Paused && speed != TimeSpeed.Paused) Find.TickManager.CurTimeSpeed = speed;
             raiders.AddRange(map.mapPawns.SpawnedPawnsInFaction(pirates).Where(p => !before.Contains(p)));

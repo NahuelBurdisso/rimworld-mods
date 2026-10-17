@@ -168,7 +168,9 @@ namespace OldScoresTest
                 $"the trophy tells its story: {history}");
             Kit.Check(victim.needs?.mood?.thoughts?.memories?.GetFirstMemoryOfDef(OldScoresDefOf.OldScores_SettledOldScore) != null,
                 "the killer settled an old score (memory)");
-            Kit.Check(T.GetBeast(wolf) == null && !TestUtil.IsPinned(wolf), "record cleared and unpinned");
+            // two checks: another mod (Grudges!) may keep the same pawn in ForcefullyKeptPawns for its own reasons
+            Kit.Check(T.GetBeast(wolf) == null, "record cleared");
+            Kit.Check(!TestUtil.IsPinned(wolf), "...and unpinned (a FAIL with other mods loaded may be their own pin)");
         }
 
         void Negatives()

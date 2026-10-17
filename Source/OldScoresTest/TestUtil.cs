@@ -13,7 +13,8 @@ namespace OldScoresTest
         // Gesta's harnesses own ticks 60-~2900 of the same game (ChampionHarness runs real raids up to
         // ~2900). Each of ours first clears the map of hostiles at its start tick and begins work
         // ClearTicks later. Worst-case ends: nicknames ~3380, spared ~3670, beasts ~3760 (all < 4400);
-        // echoes (three real raids) 3900 to ~6100, worst case ~7400: run with --ticks 8000.
+        // echoes (three real raids) 3900 to ~6100, worst case ~7400; beast memory right after echoes
+        // (at most from 7600), ~1000 ticks: run with --ticks 9000 (9500 if echoes runs to its worst case).
         public const int NicknamesStart = 3000, SparedStart = 3400, BeastsStart = 3750, EchoesStart = 3900, ClearTicks = 5;
 
         /// <summary>
@@ -175,8 +176,11 @@ namespace OldScoresTest
         // --- keep the game running while a harness waits -------------------------------------------
 
         static readonly HashSet<string> finished = new HashSet<string>();
-        public const int HarnessCount = 4;
+        public const int HarnessCount = 5;
         public static void MarkFinished(string name) => finished.Add(name);
+        public static bool IsFinished(string name) => finished.Contains(name);
+        /// <summary>The beast-memory harness waits for the Echoes harness (real raids), but not past this tick.</summary>
+        public const int BeastMemoryLatestStart = 7600;
         public static bool AllFinished => finished.Count >= HarnessCount;
 
         public static void Teleport(Pawn p, IntVec3 cell)
@@ -230,9 +234,21 @@ namespace OldScoresTest
 
         public override void FinalizeInit() { active = Kit.HarnessArmed; }
 
+        int lastDialogLog = -1;
+
         public override void GameComponentUpdate()
         {
-            if (!active || TestUtil.AllFinished || Find.TickManager == null) return;
+            // Runs until the probe quits (not only while a harness is unfinished): run 2026-10-16 22:11, with
+            // Workshop mods in the profile, the game stopped short of --ticks after every harness was done.
+            if (!active || Find.TickManager == null) return;
+            if (Find.WindowStack != null && Find.WindowStack.WindowsForcePause && Find.TickManager.TicksGame != lastDialogLog)
+            {
+                // a window that force-pauses (another mod's dialog) cannot be resumed by speed: name it once per tick
+                lastDialogLog = Find.TickManager.TicksGame;
+                if (resumes++ < 20)
+                    Log.Message("[Test] (watchdog: force-paused at tick " + Find.TickManager.TicksGame + " by "
+                        + string.Join(", ", Find.WindowStack.Windows.Where(w => w.forcePause).Select(w => w.GetType().FullName)) + ")");
+            }
             if (Find.TickManager.CurTimeSpeed != TimeSpeed.Paused) return;
             TimeSpeed back = Find.TickManager.prePauseTimeSpeed;
             Find.TickManager.CurTimeSpeed = back == TimeSpeed.Paused ? TimeSpeed.Normal : back;
