@@ -267,6 +267,17 @@ namespace RimMcpGovTest
         {
             int now = Find.TickManager.TicksGame;
             var st = gov.StateFor(map);
+            // storyteller joiners (wanderers, refugees) arrive mid-scenario on quicktest: sprint 4 runs 2-3 had
+            // Goodwin/Adam drafted in F and C, failing "reached stations" / "undrafted everyone" for the fixture
+            if (now % 60 == 0 && roster.Count > 0)
+                foreach (var p in map.mapPawns.FreeColonistsSpawned.Where(p => !roster.Contains(p)).ToList())
+                {
+                    Kit.Info($"{p.LabelShort} joined during {run?.name}: removed from the fixture");
+                    gov.Drafted.Remove(p);
+                    st.assign.Remove(p);
+                    p.DeSpawn();
+                    Find.WorldPawns.PassToWorld(p, RimWorld.Planet.PawnDiscardDecideMode.Discard);
+                }
             switch (phase)
             {
                 case 0: Begin(now); break;
