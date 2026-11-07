@@ -33,13 +33,14 @@ namespace RimMcpGovTest
         Pawn prey, cougar;
         IntVec3 oldHome;
         int huntRestarts;
+        Thing generator;
         string originalPolicy;
 
         public StewardHarness(Game game) { }
 
         public override void FinalizeInit() { armed = Kit.HarnessArmed; }
 
-        static readonly string[] Cases = { "rescue+tend+feed", "forced rest", "disease alarm", "research", "letters", "area", "thermostat", "weapon", "window", "stop run", "name window", "skirmish" };
+        static readonly string[] Cases = { "rescue+tend+feed", "forced rest", "disease alarm", "research", "letters", "area", "thermostat", "weapon", "window", "stop run", "name window", "skirmish", "refuel" };
 
         float runEmitAt = -1f;
 
@@ -229,6 +230,21 @@ namespace RimMcpGovTest
                     cougar.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Manhunter, forceWake: true);
                     Kit.Info($"skirmish: {kind.defName} ({cougar.CurJob?.def.defName}) hunting {prey.LabelShort} at {prey.Position}, home set to {GovernorPolicy.Current.homeCenter} ({(prey.Position - GovernorPolicy.Current.homeCenter).LengthHorizontal:F0} cells)");
                     break;
+                case 12:
+                    {
+                        var gdef = DefDatabase<ThingDef>.GetNamedSilentFail("WoodFiredGenerator");
+                        if (gdef == null) break;
+                        var c = Free(at, 8, 2);
+                        generator = ThingMaker.MakeThing(gdef);
+                        generator.SetFaction(Faction.OfPlayer);
+                        GenSpawn.Spawn(generator, c, map, Rot4.North);
+                        var fc = generator.TryGetComp<CompRefuelable>();
+                        if (fc != null && fc.HasFuel) fc.ConsumeFuel(fc.Fuel);
+                        var wood = ThingMaker.MakeThing(ThingDefOf.WoodLog); wood.stackCount = 40;
+                        GenSpawn.Spawn(wood, Free(at, 3), map);
+                        foreach (var p in cols) if (p.workSettings != null) p.workSettings.SetPriority(WorkTypeDefOf.Hauling, 4);
+                        break;
+                    }
                 case 9:
                     runCase = true;
                     Tools.Run("run", new Dictionary<string, object> { ["hours"] = 6.0, ["speed"] = "superfast" });
@@ -317,6 +333,13 @@ namespace RimMcpGovTest
                     if (!cougar.Destroyed) cougar.Destroy();
                     GovernorPolicy.Current.homeCenter = oldHome;
                     prey.drafter.Drafted = false;
+                    Next();
+                    break;
+                case 12:
+                    if (generator == null) { Kit.Info("no WoodFiredGenerator def: refuel case skipped"); Next(); break; }
+                    if (age < 1500 && !Did(evs, "refuel")) return;
+                    Kit.Check(Did(evs, "refuel"), "steward: a generator out of fuel with wood in stock -> prioritized refueling (event)");
+                    if (!generator.Destroyed) generator.Destroy();
                     Next();
                     break;
                 case 9:
