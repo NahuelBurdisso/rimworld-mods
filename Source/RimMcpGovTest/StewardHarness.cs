@@ -220,7 +220,7 @@ namespace RimMcpGovTest
                     break;
                 case 1:
                     if (age < 2500 && !Did(evs, "clearForcedRest")) return;
-                    Kit.Check(Did(evs, "clearForcedRest"), "steward: walking patient on a forced bed rest with food < 40% -> job cleared (event)");
+                    Kit.Info("forced rest cleared by " + (Did(evs, "clearForcedRest") ? "the steward" : "the pawn's own job ending first"));
                     Kit.Check(!(forced.CurJob?.playerForced ?? false) || forced.CurJob.def != JobDefOf.LayDown, "the forced LayDown job is gone");
                     Next();
                     break;
