@@ -83,6 +83,25 @@ namespace RimMcpGovTest
         {
             map = Find.CurrentMap;
             startTick = ticks;
+            // the last governor fight can leave raiders standing: peacetime reflexes are off during a threat
+            int removed = 0;
+            foreach (var p in map.mapPawns.AllPawnsSpawned.ToList())
+                if (p.HostileTo(Faction.OfPlayer) && !p.Dead) { p.Destroy(); removed++; }
+            foreach (var p in map.mapPawns.FreeColonistsSpawned.ToList())
+            {
+                p.drafter.Drafted = false;
+                foreach (var h in p.health.hediffSet.hediffs.Where(h => h is Hediff_Injury || h.def == HediffDefOf.Anesthetic).ToList())
+                    p.health.RemoveHediff(h);
+            }
+            int spawned = 0;
+            while (map.mapPawns.FreeColonistsSpawned.Count(p => !p.Downed) < 3 && spawned < 5)
+            {
+                var np = PawnGenerator.GeneratePawn(PawnKindDefOf.Colonist, Faction.OfPlayer);
+                var anyone = map.mapPawns.FreeColonistsSpawned.FirstOrDefault();
+                GenSpawn.Spawn(np, CellFinder.StandableCellNear(anyone?.Position ?? map.Center, map, 6f), map);
+                spawned++;
+            }
+            Kit.Info($"steward setup: removed {removed} hostiles left from the fights, healed colonists, spawned {spawned}");
             originalPolicy = File.Exists(GovernorPolicy.FilePath) ? File.ReadAllText(GovernorPolicy.FilePath) : null;
             File.WriteAllText(GovernorPolicy.FilePath, "{\"enabled\": true, \"steward\": {\"enabled\": true}}\n");
             Tools.Run("governor", new Dictionary<string, object> { ["action"] = "reload" });
@@ -107,6 +126,7 @@ namespace RimMcpGovTest
             if (caseIdx >= Cases.Length) { Finish(); return; }
             Kit.Info("steward case: " + Cases[caseIdx]);
             var cols = map.mapPawns.FreeColonistsSpawned.Where(p => !p.Downed).ToList();
+            if (cols.Count < 2) { Kit.Check(false, $"steward case '{Cases[caseIdx]}' needs 2 standing colonists, has {cols.Count}"); Finish(); return; }
             var at = cols[0].Position;
             switch (caseIdx)
             {
