@@ -28,14 +28,18 @@ namespace RimMcpGovTest
         Area_Allowed area;
         ResearchProjectDef queued;
         float windowAt = -1f;
-        bool windowCase, runCase;
+        bool windowCase, runCase, nameCase;
+        float nameAt = -1f;
+        Pawn prey, cougar;
+        IntVec3 oldHome;
+        int huntRestarts;
         string originalPolicy;
 
         public StewardHarness(Game game) { }
 
         public override void FinalizeInit() { armed = Kit.HarnessArmed; }
 
-        static readonly string[] Cases = { "rescue+tend+feed", "forced rest", "disease alarm", "research", "letters", "area", "thermostat", "weapon", "window", "stop run" };
+        static readonly string[] Cases = { "rescue+tend+feed", "forced rest", "disease alarm", "research", "letters", "area", "thermostat", "weapon", "window", "stop run", "name window", "skirmish" };
 
         float runEmitAt = -1f;
 
@@ -59,6 +63,15 @@ namespace RimMcpGovTest
                 windowCase = false;
                 Next();
             }
+            // a name window (faction / settlement) pauses the game: the steward answers it with the suggestion
+            if (nameCase && nameAt > 0 && UnityEngine.Time.realtimeSinceStartup - nameAt > 2f)
+            {
+                bool open = Find.WindowStack.Windows.Any(w => w is Dialog_GiveName);
+                Kit.Check(!open && Did(Events(), "answerNames"), $"steward answers a name window with the suggested name (faction now '{Faction.OfPlayer.Name}')");
+                nameCase = false;
+                Next();
+                return;
+            }
             var tm = Find.TickManager;
             if (!runCase && tm.CurTimeSpeed == TimeSpeed.Paused && !Find.WindowStack.WindowsForcePause) tm.CurTimeSpeed = TimeSpeed.Superfast;
         }
@@ -77,7 +90,7 @@ namespace RimMcpGovTest
                     return;
                 }
                 Step();
-                if (ticks - startTick > 9000)
+                if (ticks - startTick > 12000)
                 {
                     Kit.Check(false, $"steward harness timed out in case '{Cases[Math.Min(caseIdx, Cases.Length - 1)]}'");
                     Finish();
@@ -195,6 +208,27 @@ namespace RimMcpGovTest
                     windowAt = UnityEngine.Time.realtimeSinceStartup;
                     Find.WindowStack.Add(new Dialog_MessageBox("This research unlocks things which you cannot build (requires memes)."));
                     break;
+                case 10:
+                    nameCase = true;
+                    nameAt = UnityEngine.Time.realtimeSinceStartup;
+                    Find.WindowStack.Add(new Dialog_NamePlayerFaction());
+                    break;
+                case 11:
+                    // run15: a cougar hunted a colonist 90 cells from home while the far hold kept everyone working
+                    prey = cols.FirstOrDefault(p => p.equipment?.Primary?.def.IsRangedWeapon ?? false) ?? cols.First();
+                    if (prey.equipment.Primary == null)
+                        prey.equipment.AddEquipment((ThingWithComps)ThingMaker.MakeThing(ThingDef.Named("Gun_Revolver")));
+                    oldHome = GovernorPolicy.Current.homeCenter;
+                    var far = map.AllCells.Where(c => c.Standable(map) && c.InHorDistOf(prey.Position, 90f) && !c.InHorDistOf(prey.Position, 65f)).FirstOrDefault();
+                    GovernorPolicy.Current.homeCenter = far.IsValid ? far : new IntVec3(map.Size.x - prey.Position.x, 0, map.Size.z - prey.Position.z);
+                    var kind = DefDatabase<PawnKindDef>.GetNamedSilentFail("Cougar") ?? DefDatabase<PawnKindDef>.GetNamed("Wolf_Timber");
+                    cougar = PawnGenerator.GeneratePawn(kind, null);
+                    GenSpawn.Spawn(cougar, CellFinder.StandableCellNear(prey.Position + new IntVec3(8, 0, 0), map, 3f), map);
+                    // a hunt started by hand ends at once (25 restarts in a run), so the far-hold path is tested
+                    // with what run15 actually had: an enemy animal the governor sees, 90 cells from home
+                    cougar.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Manhunter, forceWake: true);
+                    Kit.Info($"skirmish: {kind.defName} ({cougar.CurJob?.def.defName}) hunting {prey.LabelShort} at {prey.Position}, home set to {GovernorPolicy.Current.homeCenter} ({(prey.Position - GovernorPolicy.Current.homeCenter).LengthHorizontal:F0} cells)");
+                    break;
                 case 9:
                     runCase = true;
                     Tools.Run("run", new Dictionary<string, object> { ["hours"] = 6.0, ["speed"] = "superfast" });
@@ -270,6 +304,21 @@ namespace RimMcpGovTest
                     break;
                 case 8:
                     return;   // checked per frame
+                case 10:
+                    return;   // checked per frame
+                case 11:
+                    bool fought = prey.Drafted || Has(evs, "skirmish");
+
+                    if (age < 1500 && !fought && !cougar.Dead && !cougar.Downed) return;
+                    var gst = Governor.Instance?.StateFor(map);
+                    Kit.Info($"skirmish: cougar job {cougar.CurJob?.def.defName} -> {cougar.CurJob?.targetA.Thing?.LabelShort}, hunt restarts {huntRestarts}, governor active {gst?.active}, threats {gst?.threats.Count}, farHold {gst?.farHold}, events {string.Join(",", evs.Select(e => e["type"]).Distinct())}");
+                    Kit.Check(Has(evs, "threat_start"), "governor sees the cougar next to a colonist far from home as a threat");
+                    Kit.Check(fought, $"far from home, the colonist a predator hunts fights back (skirmish event: {Has(evs, "skirmish")}, drafted: {prey.Drafted}, cougar dead/downed: {cougar.Dead || cougar.Downed})");
+                    if (!cougar.Destroyed) cougar.Destroy();
+                    GovernorPolicy.Current.homeCenter = oldHome;
+                    prey.drafter.Drafted = false;
+                    Next();
+                    break;
                 case 9:
                     if (age == 120)
                     {
