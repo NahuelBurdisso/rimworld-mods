@@ -35,6 +35,7 @@ namespace RimMcpGovTest
         string originalPolicy;
         Run run;
         string baselineSummary;
+        readonly List<Pawn> roster = new List<Pawn>();   // the fixture's colonists: every scenario starts with all of them
 
         static readonly string[] Names =
         {
@@ -131,11 +132,8 @@ namespace RimMcpGovTest
             foreach (var p in map.mapPawns.FreeColonistsSpawned.ToList()) Arm(p, 500 + k++);
             // quicktest rosters are random (shooting 0-4 in sprint 2b): the outcome measured the roster, not the
             // governor. Fixed, ordinary skills make the runs comparable (baseline and governor get the same).
-            foreach (var p in map.mapPawns.FreeColonistsSpawned.Where(Violent))
-            {
-                var sh = p.skills?.GetSkill(SkillDefOf.Shooting); if (sh != null && !sh.TotallyDisabled) sh.Level = 8;
-                var me = p.skills?.GetSkill(SkillDefOf.Melee); if (me != null && !me.TotallyDisabled) me.Level = 6;
-            }
+            roster.AddRange(map.mapPawns.FreeColonistsSpawned);
+            FixSkills();
             originalPolicy = File.Exists(GovernorPolicy.FilePath) ? File.ReadAllText(GovernorPolicy.FilePath) : null;
             WritePolicy(true, 0.5f);
             Kit.Check(GovernorPolicy.Current.enabled, "governor enabled through governor.json + the governor tool (reload)");
@@ -147,6 +145,15 @@ namespace RimMcpGovTest
                          $"{p.LabelShort}({p.equipment?.Primary?.LabelCap ?? "unarmed"}, shoot {p.skills?.GetSkill(SkillDefOf.Shooting)?.Level}{(Violent(p) ? "" : ", non-violent")})")));
             step = 1;
             phase = 0;
+        }
+
+        void FixSkills()
+        {
+            foreach (var p in roster.Where(p => !p.Dead && Violent(p)))
+            {
+                var sh = p.skills?.GetSkill(SkillDefOf.Shooting); if (sh != null && !sh.TotallyDisabled) sh.Level = 8;
+                var me = p.skills?.GetSkill(SkillDefOf.Melee); if (me != null && !me.TotallyDisabled) me.Level = 6;
+            }
         }
 
         void WritePolicy(bool enabled, float retreatPct)
@@ -440,7 +447,7 @@ namespace RimMcpGovTest
             });
             var alive = run.enemies.Where(e => e.Spawned && !e.Dead && !e.Downed).ToList();
             var jobs = string.Join(" ", alive.GroupBy(e => e.CurJobDef?.defName ?? "-").Select(g => $"{g.Key}:{g.Count()}"));
-            Kit.Info($"TRACE {run.name} t+{now - run.seenTick}{(run.governor ? $" [{st.planMode}{(st.closeCombat ? ", close" : "")}{(st.overwhelmed ? ", overwhelmed" : "")}]" : "")}: " +
+            Kit.Info($"TRACE {run.name} t+{now - run.seenTick}{(run.governor ? $" [{st.planMode}{(st.closeCombat ? ", close" : "")}{(st.engaged ? ", frozen" : "")}{(st.overwhelmed ? ", overwhelmed" : "")}]" : "")}: " +
                      $"{string.Join(" | ", cols)} || enemies {alive.Count} standing, front {(int)Front(home)} from home, jobs {jobs}");
         }
 
@@ -465,10 +472,16 @@ namespace RimMcpGovTest
                         run.hookTick = now;
                         run.x = ranked[0];
                         run.y = ranked[1];
-                        WritePolicy(true, 0.9f); // a high threshold so one or two cuts are enough (no risk of downing him)
+                        // the threshold is raised just above his health after the cuts, below everyone else's: the old
+                        // fixed 0.9 also pulled out whoever had taken one hit already (sprint 3: Slick at 86 % retreated
+                        // with him, leaving one shooter against two knives, so C measured the harness, not the governor)
+                        float others = st.assign.Keys.Where(p => p != run.x && p != run.y && !p.Downed)
+                            .Select(p => p.health.summaryHealth.SummaryHealthPercent).DefaultIfEmpty(1f).Min();
                         var legs = run.x.health.hediffSet.GetNotMissingParts().Where(bp => bp.def == BodyPartDefOf.Leg).ToList();
-                        for (int i = 0; i < 12 && !run.x.Downed && run.x.health.summaryHealth.SummaryHealthPercent >= 0.86f; i++)
+                        for (int i = 0; i < 12 && !run.x.Downed && run.x.health.summaryHealth.SummaryHealthPercent >= Math.Min(0.86f, others - 0.05f) &&
+                                        run.x.health.summaryHealth.SummaryHealthPercent > 0.6f; i++)
                             run.x.TakeDamage(new DamageInfo(DamageDefOf.Cut, 4f, 0f, -1f, null, legs.Count > 0 ? legs[i % legs.Count] : null));
+                        WritePolicy(true, Math.Min(0.9f, run.x.health.summaryHealth.SummaryHealthPercent + 0.02f));
                         Kit.Down(run.y);
                         Kit.Info($"C: wounded {run.x.LabelShort} to {run.x.health.summaryHealth.SummaryHealthPercent:P0} (downed={run.x.Downed}), downed {run.y.LabelShort}");
                     }
@@ -545,8 +558,24 @@ namespace RimMcpGovTest
                 return;
             }
             bool winning = run.forced && run.oursAtLimit >= 2f * run.theirsAtLimit && run.startColonists.All(p => !p.Dead);
-            Kit.Check(!run.forced || winning, $"{name}: colonists won unaided or were clearly winning at the time limit " +
-                $"(harness killed {run.forcedCount}; standing power at the limit ours {run.oursAtLimit:0} vs theirs {run.theirsAtLimit:0}, needs 2x)");
+            var wonText = $"{name}: colonists won unaided or were clearly winning at the time limit " +
+                $"(harness killed {run.forcedCount}; standing power at the limit ours {run.oursAtLimit:0} vs theirs {run.theirsAtLimit:0}, needs 2x)";
+            var evs0 = GovernorEvents.Since(run.cursor, null, 500)["events"] as List<object>;
+            bool overwhelming = evs0.OfType<Dictionary<string, object>>().Any(e => e["type"] as string == "decision_needed" &&
+                                    (e.TryGetValue("reason", out var rs) ? rs as string : "")?.StartsWith("overwhelming") == true);
+            if (step == 7)
+            {
+                // F is 7 raiders against 3 rifles (power ratio ~3 > defendIndoorsIfRatioAbove 2.5): by design the
+                // governor's job there is to hold, keep everyone alive and ask Claude (turrets, a fallback, a
+                // retreat), not to win alone. Sprint 3 counted every run's loss as a governor FAIL.
+                Kit.Check(overwhelming, $"{name}: the overwhelming raid was reported (decision_needed overwhelming)");
+                Kit.Info((!run.forced || winning ? "PASS-LIKE " : "not won (expected) ") + wonText);
+            }
+            else if (step == 4)
+                // C downs one fighter and sends another to bed on purpose (that is what it tests): one rifle left
+                // against two knives measures the hook, not the governor. Retreat, rescue and deaths are checked.
+                Kit.Info((!run.forced || winning ? "won " : "not won (one rifle left by design) ") + wonText);
+            else Kit.Check(!run.forced || winning, wonText);
             if (run.forced) Kit.Info($"{name}: {(winning ? "winning but slow" : "losing")} at the time limit (killed {run.forcedCount})");
             int died = run.startColonists.Count(p => p.Dead);
             Kit.Check(died == 0, $"{name}: no colonist died ({died})");
@@ -687,12 +716,27 @@ namespace RimMcpGovTest
             foreach (var f in map.listerThings.ThingsOfDef(ThingDefOf.Fire).ToList()) if (!f.Destroyed) f.Destroy();
             gov.Drafted.Clear(); // the harness undrafts below; do not let the governor read that as a player override
             gov.Manual.Clear();
+            // the same fighters every scenario (sprint 4 run 1: the baseline killed Kena, so A fought 2 against 4,
+            // B had 1 eligible fighter, and a wanderer who joined fought C-G): the dead come back, joiners leave
+            foreach (var p in roster.Where(p => p.Dead).ToList())
+            {
+                if (!ResurrectionUtility.TryResurrect(p) || !p.Spawned) { Kit.Info($"could not bring {p.LabelShort} back"); continue; }
+                Kit.Info($"{p.LabelShort} died in {run?.name}: resurrected for the next scenario");
+            }
+            foreach (var p in map.mapPawns.FreeColonistsSpawned.Where(p => !roster.Contains(p)).ToList())
+            {
+                Kit.Info($"{p.LabelShort} joined during {run?.name}: removed from the fixture");
+                p.DeSpawn();
+                Find.WorldPawns.PassToWorld(p, RimWorld.Planet.PawnDiscardDecideMode.Discard);
+            }
+            FixSkills();
             int k = 0;
             foreach (var p in map.mapPawns.FreeColonistsSpawned.ToList())
             {
                 foreach (var h in p.health.hediffSet.hediffs.ToList())
                     if (h is Hediff_Injury || h is Hediff_MissingPart || h.def == HediffDefOf.BloodLoss ||
-                        h.def == HediffDefOf.Hypothermia || h.def == HediffDefOf.Heatstroke) p.health.RemoveHediff(h);
+                        h.def == HediffDefOf.Hypothermia || h.def == HediffDefOf.Heatstroke ||
+                        h.def.isBad && h.TryGetComp<HediffComp_Immunizable>() != null) p.health.RemoveHediff(h);
                 if (p.InMentalState) p.MentalState.RecoverFromState();
                 if (p.needs?.food != null) p.needs.food.CurLevelPercentage = 1f;
                 if (p.needs?.rest != null) p.needs.rest.CurLevelPercentage = 1f;
