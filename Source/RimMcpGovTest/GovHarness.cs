@@ -94,9 +94,12 @@ namespace RimMcpGovTest
             }
         }
 
+        public static bool Finished;   // the steward harness starts after the fights
+
         void Finish()
         {
             done = true;
+            Finished = true;
             try
             {
                 if (originalPolicy != null) File.WriteAllText(GovernorPolicy.FilePath, originalPolicy);
@@ -142,7 +145,8 @@ namespace RimMcpGovTest
                 "{\"enabled\": " + (enabled ? "true" : "false") + ", \"combat\": {\"autoDraft\": true, \"retreatHealthPct\": " +
                 retreatPct.ToString(System.Globalization.CultureInfo.InvariantCulture) +
                 ", \"retreatBleedRate\": 0.8, \"undraftAfterQuietTicks\": 300, \"engageMeleeRadius\": 5, \"defendIndoorsIfRatioAbove\": 2.5}," +
-                " \"rescue\": {\"downedColonists\": true, \"captureDowned\": true}, \"nonCombatants\": {\"shelter\": true}, \"events\": {\"maxFileKb\": 512}}\n");
+                " \"rescue\": {\"downedColonists\": true, \"captureDowned\": true}, \"nonCombatants\": {\"shelter\": true}, \"events\": {\"maxFileKb\": 512}," +
+                " \"steward\": {\"enabled\": false}}\n");
             Tools.Run("governor", new Dictionary<string, object> { ["action"] = "reload" });
         }
 

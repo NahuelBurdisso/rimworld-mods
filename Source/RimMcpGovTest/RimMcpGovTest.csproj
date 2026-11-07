@@ -14,7 +14,7 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <!-- override on the command line on another machine: -p:RimWorldManaged=... -->
     <RimWorldManaged Condition="'$(RimWorldManaged)' == ''">D:/SteamLibrary/steamapps/common/RimWorld/RimWorldWin64_Data/Managed</RimWorldManaged>
-    <HarmonyAssemblies Condition="'$(HarmonyAssemblies)' == ''">D:/SteamLibrary/steamapps/workshop/content/294100/2009463077/Current/Assemblies</HarmonyAssemblies>
+    <HarmonyAssemblies Condition="'$(HarmonyAssemblies)' == ''">D:/SteamLibrary/steamapps/workshop/content/294100/2009463077/1.6/Assemblies</HarmonyAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
