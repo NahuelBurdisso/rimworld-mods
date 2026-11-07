@@ -35,12 +35,14 @@ namespace RimMcpGovTest
         int huntRestarts;
         Thing generator;
         string originalPolicy;
+        Pawn raider;
+        int undraftAt = -1, oldRelease;
 
         public StewardHarness(Game game) { }
 
         public override void FinalizeInit() { armed = Kit.HarnessArmed; }
 
-        static readonly string[] Cases = { "rescue+tend+feed", "forced rest", "disease alarm", "research", "letters", "area", "thermostat", "weapon", "window", "stop run", "name window", "skirmish", "refuel" };
+        static readonly string[] Cases = { "rescue+tend+feed", "forced rest", "disease alarm", "research", "letters", "area", "thermostat", "weapon", "window", "stop run", "name window", "skirmish", "refuel", "undraft mid-fight", "autosave" };
 
         float runEmitAt = -1f;
 
@@ -85,13 +87,13 @@ namespace RimMcpGovTest
             {
                 if (!started)
                 {
-                    if (!GovHarness.Finished && ticks < 30000) return;
+                    if (!GovHarness.Finished && ticks < 42000) return;
                     started = true;
                     Setup();
                     return;
                 }
                 Step();
-                if (ticks - startTick > 12000)
+                if (ticks - startTick > 20000)
                 {
                     Kit.Check(false, $"steward harness timed out in case '{Cases[Math.Min(caseIdx, Cases.Length - 1)]}'");
                     Finish();
@@ -245,6 +247,42 @@ namespace RimMcpGovTest
                         foreach (var p in cols) if (p.workSettings != null) p.workSettings.SetPriority(WorkTypeDefOf.Hauling, 4);
                         break;
                     }
+                case 13:
+                    {
+                        // La Colina day 16: after_raid ran during the fight, its `draft drafted=false` handed all 3
+                        // colonists to the player and the governor said "no colonist can fight" (enemy power 31)
+                        oldHome = GovernorPolicy.Current.homeCenter;
+                        oldRelease = GovernorPolicy.Current.manualReleaseTicks;
+                        GovernorPolicy.Current.homeCenter = at;
+                        GovernorPolicy.Current.manualReleaseTicks = 300;
+                        foreach (var p in cols)
+                            if (p.equipment.Primary == null)
+                                p.equipment.AddEquipment((ThingWithComps)ThingMaker.MakeThing(ThingDef.Named("Gun_Revolver")));
+                        var faction = Find.FactionManager.RandomEnemyFaction(allowHidden: false, allowDefeated: false, allowNonHumanlike: false) ?? Faction.OfPirates;
+                        raider = PawnGenerator.GeneratePawn(new PawnGenerationRequest(faction.def.basicMemberKind ?? PawnKindDefOf.Pirate, faction, mustBeCapableOfViolence: true));
+                        raider.equipment?.DestroyAllEquipment();
+                        raider.equipment?.AddEquipment((ThingWithComps)ThingMaker.MakeThing(ThingDef.Named("MeleeWeapon_Knife"), ThingDefOf.Steel));
+                        var rc = map.AllCells.Where(c => c.Standable(map) && !c.Fogged(map) && c.InHorDistOf(at, 40f) && !c.InHorDistOf(at, 36f)).FirstOrDefault();
+                        GenSpawn.Spawn(raider, rc.IsValid ? rc : CellFinder.StandableCellNear(at + new IntVec3(38, 0, 0), map, 5f), map);
+                        Verse.AI.Group.LordMaker.MakeNewLord(faction, new LordJob_AssaultColony(faction, canKidnap: false, canTimeoutOrFlee: false, sappers: false,
+                            useAvoidGridSmart: false, canSteal: false), map, new List<Pawn> { raider });
+                        undraftAt = -1;
+                        Kit.Info($"undraft mid-fight: raider {raider.LabelShort} at {raider.Position}, home {at}");
+                        break;
+                    }
+                case 14:
+                    {
+                        // 6 old dummies + today's save: rotation keeps the newest 5
+                        var dir = GenFilePaths.SavedGamesFolderPath;
+                        for (int i = 1; i <= 6; i++)
+                        {
+                            var f = Path.Combine(dir, $"auto-day-9000{i}{GenFilePaths.SavedGameExtension}");
+                            File.WriteAllText(f, "harness dummy");
+                            File.SetLastWriteTimeUtc(f, DateTime.UtcNow.AddDays(-10 + i));
+                        }
+                        Steward.LastSaveDay = GenDate.DaysPassed - 1;
+                        break;
+                    }
                 case 9:
                     runCase = true;
                     Tools.Run("run", new Dictionary<string, object> { ["hours"] = 6.0, ["speed"] = "superfast" });
@@ -342,6 +380,45 @@ namespace RimMcpGovTest
                     if (!generator.Destroyed) generator.Destroy();
                     Next();
                     break;
+                case 13:
+                    {
+                        var g = Governor.Instance;
+                        if (undraftAt < 0)
+                        {
+                            bool deployed = map.mapPawns.FreeColonistsSpawned.Any(p => p.Drafted);
+                            if (!deployed && age < 3000 && !raider.Dead && !raider.Downed) return;
+                            Kit.Check(deployed, "undraft mid-fight: the governor drafts against a raider 40 cells from home");
+                            if (!deployed) { EndUndraftCase(); break; }
+                            Tools.Run("draft", new Dictionary<string, object> { ["drafted"] = false });   // what after_raid did
+                            undraftAt = ticks;
+                            return;
+                        }
+                        bool redrafted = Has(evs, "manual_released") && map.mapPawns.FreeColonistsSpawned.Any(p => p.Drafted);
+                        if (!redrafted && ticks - undraftAt < 2500 && !raider.Dead && !raider.Downed) return;
+                        bool falseAlarm = evs.Any(e => e["type"] as string == "decision_needed" && (e.TryGetValue("reason", out var r) ? r as string : "") == "no colonist can fight");
+                        Kit.Info($"undraft mid-fight: events {string.Join(",", evs.Select(e => e["type"]).Distinct())}, raider dead/downed {raider.Dead || raider.Downed}, manual {g?.Manual.Count}");
+                        Kit.Check(!falseAlarm, "undraft mid-fight: no false 'no colonist can fight' while the colonists are only held by the player");
+                        Kit.Check(Has(evs, "manual_hold"), "undraft mid-fight: governor reports the colonists as player-held (manual_hold)");
+                        if (Has(evs, "threat_start"))
+                            Kit.Check(Did(evs, "autosavePreRaid"), "autosave: threat_start -> steward saved auto-pre-raid-* (event)");
+                        else Kit.Info("autosave: the threat was already active (no new threat_start): no pre-raid save expected");
+                        Kit.Check(redrafted || raider.Dead || raider.Downed, $"undraft mid-fight: idle player-held colonists go back to the governor after manualReleaseTicks (released: {Has(evs, "manual_released")})");
+                        EndUndraftCase();
+                        break;
+                    }
+                case 14:
+                    {
+                        if (age < 1500 && !Did(evs, "autosaveDaily")) return;
+                        if (age < 120) return;   // the rotation runs in the same long event, after the save
+                        var dir = GenFilePaths.SavedGamesFolderPath;
+                        var files = Directory.GetFiles(dir, "auto-day-*" + GenFilePaths.SavedGameExtension).Select(Path.GetFileNameWithoutExtension).ToList();
+                        string mine = "auto-day-" + GenDate.DaysPassed;
+                        Kit.Check(Did(evs, "autosaveDaily") && files.Contains(mine), $"autosave: a new game day -> steward saved {mine} (files: {string.Join(",", files)})");
+                        Kit.Check(files.Count <= 5, $"autosave: rotation keeps at most 5 auto-day saves ({files.Count})");
+                        foreach (var f in Directory.GetFiles(dir, "auto-day-9000*")) File.Delete(f);
+                        Next();
+                        break;
+                    }
                 case 9:
                     if (age == 120)
                     {
@@ -350,6 +427,15 @@ namespace RimMcpGovTest
                     }
                     return;   // the stop pauses the game: checked per frame
             }
+        }
+
+        void EndUndraftCase()
+        {
+            if (raider != null && !raider.Destroyed) raider.Destroy();
+            foreach (var p in map.mapPawns.FreeColonistsSpawned.ToList()) if (p.drafter != null) p.drafter.Drafted = false;
+            GovernorPolicy.Current.homeCenter = oldHome;
+            GovernorPolicy.Current.manualReleaseTicks = oldRelease;
+            Next();
         }
 
         List<Dictionary<string, object>> Events()
@@ -414,6 +500,8 @@ namespace RimMcpGovTest
             }
             catch (Exception e) { Kit.Info("could not restore governor.json: " + e.Message); }
             Kit.Summary(Mod);
+            // both harnesses are done: tell `rw launch --wait --kill` now instead of idling to --ticks
+            Log.Message($"[rwtools] TICKS DONE (harnesses finished at harness tick {ticks})");
         }
     }
 }
