@@ -36,13 +36,15 @@ namespace RimMcpGovTest
         Thing generator;
         string originalPolicy;
         Pawn raider;
+        Pawn armless;
+        Thing rifle, knife;
         int undraftAt = -1, oldRelease;
 
         public StewardHarness(Game game) { }
 
         public override void FinalizeInit() { armed = Kit.HarnessArmed; }
 
-        static readonly string[] Cases = { "rescue+tend+feed", "forced rest", "disease alarm", "research", "letters", "area", "thermostat", "weapon", "window", "stop run", "name window", "skirmish", "refuel", "undraft mid-fight", "autosave" };
+        static readonly string[] Cases = { "rescue+tend+feed", "forced rest", "disease alarm", "research", "letters", "area", "thermostat", "weapon", "window", "stop run", "name window", "skirmish", "refuel", "undraft mid-fight", "autosave", "arm new colonist" };
 
         float runEmitAt = -1f;
 
@@ -93,7 +95,7 @@ namespace RimMcpGovTest
                     return;
                 }
                 Step();
-                if (ticks - startTick > 20000)
+                if (ticks - startTick > 26000)
                 {
                     Kit.Check(false, $"steward harness timed out in case '{Cases[Math.Min(caseIdx, Cases.Length - 1)]}'");
                     Finish();
@@ -283,6 +285,24 @@ namespace RimMcpGovTest
                         Steward.LastSaveDay = GenDate.DaysPassed - 1;
                         break;
                     }
+                case 15:
+                    {
+                        // gauntlet 4 (B5): two colonists fist-fought ferraliscs with a rifle on the landing site. A gun of
+                        // another def than the pawn's last one and > 12 cells away, so unforbidWeapons (its own dropped
+                        // weapon within 12) does not answer first (first run: it did, with the same bolt-action rifle)
+                        armless = cols.Last();
+                        var lastDef = armless.equipment.Primary?.def;
+                        armless.equipment.DestroyAllEquipment();
+                        // second run: another bolt-action rifle from the fights lay within 12 and unforbidWeapons equipped it
+                        if (lastDef != null)
+                            foreach (var t in map.listerThings.ThingsOfDef(lastDef).Where(t => t.Spawned && t.Position.InHorDistOf(armless.Position, 14f)).ToList())
+                                t.Destroy();
+                        rifle = GenSpawn.Spawn(ThingMaker.MakeThing(ThingDef.Named("Gun_AssaultRifle")), Free(armless.Position, 16), map);
+                        rifle.SetForbidden(true, false);
+                        knife = GenSpawn.Spawn(ThingMaker.MakeThing(ThingDef.Named("MeleeWeapon_Knife"), ThingDefOf.Steel), Free(armless.Position, 4), map);
+                        Kit.Info($"arm new colonist: {armless.LabelShort} unarmed at {armless.Position}, forbidden rifle at {rifle.Position}, knife at {knife.Position}");
+                        break;
+                    }
                 case 9:
                     runCase = true;
                     Tools.Run("run", new Dictionary<string, object> { ["hours"] = 6.0, ["speed"] = "superfast" });
@@ -416,6 +436,16 @@ namespace RimMcpGovTest
                         Kit.Check(Did(evs, "autosaveDaily") && files.Contains(mine), $"autosave: a new game day -> steward saved {mine} (files: {string.Join(",", files)})");
                         Kit.Check(files.Count <= 5, $"autosave: rotation keeps at most 5 auto-day saves ({files.Count})");
                         foreach (var f in Directory.GetFiles(dir, "auto-day-9000*")) File.Delete(f);
+                        Next();
+                        break;
+                    }
+                case 15:
+                    {
+                        bool armedNow = armless.equipment.Primary?.def.defName == "Gun_AssaultRifle";
+                        if (age < 3000 && !armedNow) return;
+                        Kit.Check(Did(evs, "armNewColonist"), "steward: an unarmed colonist with loose weapons within 30 -> armNewColonist (event)");
+                        Kit.Check(armedNow, $"armNewColonist: the colonist ends up with the forbidden assault rifle 16 cells away, not the knife at 4 (has {armless.equipment.Primary?.LabelCap ?? "nothing"})");
+                        if (knife != null && !knife.Destroyed && knife.Spawned) knife.Destroy();
                         Next();
                         break;
                     }
