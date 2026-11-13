@@ -38,6 +38,18 @@ namespace ColonyTemplate
                 }
                 StartingPawnUtility.SetGenerationRequest(i, req);
                 Pawn p = StartingPawnUtility.RandomizeInPlace(pawns[i]);
+                // Some mods (Humanoid Alien Races) rebuild the starting-pawn request and drop the fixed
+                // gender and age. Gender decides body and head, so regenerate until it matches; age
+                // is set directly below.
+                for (int tries = 0; p.gender != t.gender && tries < 40; tries++)
+                    p = StartingPawnUtility.RandomizeInPlace(p);
+                if (p.gender != t.gender)
+                    problems.AppendLine($"{t.Label}: could not generate a {t.gender} pawn");
+                if (System.Math.Abs(p.ageTracker.AgeBiologicalYearsFloat - t.bioAge) > 0.5f)
+                {
+                    p.ageTracker.AgeBiologicalTicks = (long)(t.bioAge * GenDate.TicksPerYear);
+                    p.ageTracker.AgeChronologicalTicks = (long)(System.Math.Max(t.chronoAge, t.bioAge) * GenDate.TicksPerYear);
+                }
                 // later "randomize" clicks go back to what the page had
                 StartingPawnUtility.SetGenerationRequest(i, original);
 
