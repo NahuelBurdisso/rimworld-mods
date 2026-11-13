@@ -40,6 +40,33 @@ namespace StarWarsPackFixes
     }
 }
 
+namespace StarWarsPackFixes
+{
+    /// <summary>
+    /// Some modded weapon abilities (seen: KotOR wrist-gun abilities on world pawns) end up in a
+    /// pawn's ability list with no pawn assigned. Ability.AbilityTick then throws in Casting /
+    /// SoundTick and aborts that pawn's whole tick ("Exception ticking world pawn ... Suppressing
+    /// further errors"), so its needs and health stop updating. An ability without a pawn cannot
+    /// do anything: skip its tick and say once which one it was.
+    /// </summary>
+    [HarmonyPatch(typeof(RimWorld.Ability), nameof(RimWorld.Ability.AbilityTick))]
+    public static class SWPF_Ability_AbilityTick
+    {
+        static readonly HashSet<string> Reported = new HashSet<string>();
+
+        static bool Prefix(RimWorld.Ability __instance)
+        {
+            if (__instance.pawn != null)
+                return true;
+            string name = __instance.def?.defName ?? "unknown ability";
+            if (Reported.Add(name))
+                Log.Warning($"[Star Wars Pack Fixes] ability {name} " +
+                            $"({__instance.def?.modContentPack?.Name ?? "unknown mod"}) has no pawn assigned; its tick is skipped.");
+            return false;
+        }
+    }
+}
+
 namespace AlienWorlds.TidallyLocked
 {
     /// <summary>
