@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Star Wars Pack Fixes</name>
+  <packageId>nahuel.starwarspackfixes</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+    <li>7f.alienworlds.tidallylocked</li>
+  </loadAfter>
+  <description>Local fixes for the Ultimate Star Wars Collection play profile: provides the patch class Alien Worlds - Tidally Locked's 1.6 build is missing, strips its 1.7-only def field, and turns the nameless ResolveIcon NullReferenceException into a warning naming the def.</description>
+</ModMetaData>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- Alien Worlds - Tidally Locked: Defs/PlanetTypes.xml is shared by 1.6 and 1.7,
+       but latitudeRainfallCurve only exists in the 1.7 PlanetTypeDef. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/AlienWorlds.TidallyLocked.PlanetTypeDef/latitudeRainfallCurve</xpath>
+    <match Class="PatchOperationRemove">
+      <xpath>Defs/AlienWorlds.TidallyLocked.PlanetTypeDef/latitudeRainfallCurve</xpath>
+    </match>
+  </Operation>
+</Patch>
