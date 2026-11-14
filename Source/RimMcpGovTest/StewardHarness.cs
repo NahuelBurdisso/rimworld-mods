@@ -164,7 +164,25 @@ namespace RimMcpGovTest
                     patient = cols.Last();
                     bed1 = SpawnBed(Free(at, 4));
                     bed2 = SpawnBed(Free(at, 6));
-                    for (int i = 0; i < 4; i++) GenSpawn.Spawn(ThingMaker.MakeThing(ThingDefOf.MealSimple), Free(at, 3), map);
+                    // the only food is a long walk away: fetching it takes longer than the steward's re-check, and the
+                    // other doctor must not be sent meanwhile (a forced order takes the patient's reservation: Brasa Lenta day 6)
+                    foreach (var f in map.listerThings.ThingsInGroup(ThingRequestGroup.FoodSourceNotPlantOrTree).ToList()) f.SetForbidden(true, false);
+                    foreach (var c in cols)
+                        foreach (var f in c.inventory.innerContainer.Where(x => x.def.IsIngestible).ToList()) f.Destroy();
+                    var farFood = FarReachable(at, 35);
+                    for (int i = 0; i < 4; i++) GenSpawn.Spawn(ThingMaker.MakeThing(ThingDefOf.MealSimple), farFood, map);
+                    Kit.Info($"rescue+tend+feed: meals {farFood.DistanceTo(at):0} cells from the colonists");
+                    // the bug needs two doctors who can both take the order: make sure there are two
+                    var docs = cols.Where(c => c != patient && !c.WorkTypeIsDisabled(WorkTypeDefOf.Doctor)).ToList();
+                    for (int i = 0; docs.Count < 2 && i < 20; i++)
+                    {
+                        var extra = PawnGenerator.GeneratePawn(PawnKindDefOf.Colonist, Faction.OfPlayer);
+                        if (extra.WorkTypeIsDisabled(WorkTypeDefOf.Doctor)) { extra.Destroy(); continue; }
+                        GenSpawn.Spawn(extra, Free(at, 3), map);
+                        docs.Add(extra);
+                    }
+                    foreach (var d in docs) d.workSettings.SetPriority(WorkTypeDefOf.Doctor, 1);
+                    Kit.Info("rescue+tend+feed: doctors " + string.Join(", ", docs.Select(d => d.LabelShort)) + ", patient " + patient.LabelShort);
                     patient.TakeDamage(new DamageInfo(DamageDefOf.Cut, 6, 0, -1, null, patient.health.hediffSet.GetNotMissingParts().First(p => p.def == BodyPartDefOf.Torso)));
                     patient.health.AddHediff(HediffMaker.MakeHediff(HediffDefOf.Anesthetic, patient));
                     patient.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Anesthetic).Severity = 1f;
@@ -290,7 +308,10 @@ namespace RimMcpGovTest
                         // gauntlet 4 (B5): two colonists fist-fought ferraliscs with a rifle on the landing site. A gun of
                         // another def than the pawn's last one and > 12 cells away, so unforbidWeapons (its own dropped
                         // weapon within 12) does not answer first (first run: it did, with the same bolt-action rifle)
-                        armless = cols.Last();
+                        // one the reflex is for: able to fight and on its feet (steward-only runs skip the fights, so the
+                        // last colonist can be a pacifist or still the case-0 patient)
+                        armless = cols.LastOrDefault(p => !p.WorkTagIsDisabled(WorkTags.Violent) && !p.Downed && p != patient) ?? cols.Last();
+                        Kit.Info($"arm new colonist: {cols.Last().LabelShort} violent disabled {cols.Last().WorkTagIsDisabled(WorkTags.Violent)}, downed {cols.Last().Downed}");
                         var lastDef = armless.equipment.Primary?.def;
                         armless.equipment.DestroyAllEquipment();
                         // second run: another bolt-action rifle from the fights lay within 12 and unforbidWeapons equipped it
@@ -318,11 +339,18 @@ namespace RimMcpGovTest
             {
                 case 0:
                     bool tended = !patient.health.HasHediffsNeedingTend();
-                    if (age < 5000 && !(patient.InBed() && tended && Did(evs, "feedPatients"))) return;
+                    bool fed = patient.needs.food.CurLevelPercentage > 0.3f;
+                    if (age < 9000 && !(patient.InBed() && tended && fed)) return;
                     // vanilla doctors often get there first; the outcome is what matters, the event says who did it
                     Kit.Check(patient.InBed(), "downed colonist outside a bed ends up in a bed" + (Did(evs, "rescue") ? " (steward rescue order)" : " (colonists' own AI)"));
                     Kit.Check(tended, "patient in bed gets tended" + (Did(evs, "tend") ? " (steward prioritized tend)" : " (colonists' own AI)"));
-                    Kit.Check(Did(evs, "feedPatients"), "steward: patient in bed with food < 30% -> prioritized feeding (event)");
+                    // the steward orders feeding only when nobody is on it: when the colonists' own AI starts first, no event is
+                    // right (the old code took the job from that feeder - half of the Brasa Lenta day 6 flip-flop)
+                    Kit.Info("feeding: " + (Did(evs, "feedPatients") ? "steward prioritized feeding" : "colonists' own AI, steward stayed out"));
+                    Kit.Check(fed, $"two doctors, food a long walk away: the patient gets fed (food {Math.Round(patient.needs.food.CurLevelPercentage * 100)}% after {age} ticks)");
+                    int tends = Count(evs, "tend"), feeds = Count(evs, "feedPatients");
+                    Kit.Check(tends <= 2 && feeds <= 2, $"two doctors: a tend/feed order is not re-issued to the other one while someone is on it (tend x{tends}, feed x{feeds}: {Who(evs)})");
+                    foreach (var f in map.listerThings.ThingsInGroup(ThingRequestGroup.FoodSourceNotPlantOrTree).ToList()) f.SetForbidden(false, false);
                     patient.health.RemoveHediff(patient.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Anesthetic));
                     Next();
                     break;
@@ -478,6 +506,24 @@ namespace RimMcpGovTest
             evs.Any(e => e["type"] as string == "steward" && e.TryGetValue("reflex", out var r) && r as string == reflex);
 
         bool Has(List<Dictionary<string, object>> evs, string type) => evs.Any(e => e["type"] as string == type);
+
+        int Count(List<Dictionary<string, object>> evs, string reflex) =>
+            evs.Count(e => e["type"] as string == "steward" && e.TryGetValue("reflex", out var r) && r as string == reflex);
+
+        string Who(List<Dictionary<string, object>> evs) => string.Join(", ", evs
+            .Where(e => e["type"] as string == "steward" && e.TryGetValue("reflex", out var r) && (r as string == "tend" || r as string == "feedPatients"))
+            .Select(e => $"{e["reflex"]}>{(e.TryGetValue("by", out var b) ? b : "?")}@{e["tick"]}"));
+
+        // a standable cell about `radius` away that a colonist can walk to
+        IntVec3 FarReachable(IntVec3 near, int radius)
+        {
+            foreach (var c in GenRadial.RadialCellsAround(near, radius + 8, true))
+            {
+                if (c.DistanceTo(near) < radius || !c.InBounds(map) || !c.Standable(map) || c.GetThingList(map).Count > 0) continue;
+                if (map.reachability.CanReach(near, c, PathEndMode.OnCell, TraverseParms.For(TraverseMode.PassDoors))) return c;
+            }
+            return Free(near, 6);
+        }
 
         IntVec3 Free(IntVec3 near, int radius, int clear = 1)
         {

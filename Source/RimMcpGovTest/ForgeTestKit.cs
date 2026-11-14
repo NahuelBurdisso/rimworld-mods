@@ -14,6 +14,9 @@ namespace RimMcpGovTest
         /// <summary>Armed only by `rw launch --ticks N` (arg is -rwtools-ticks=N).</summary>
         public static bool HarnessArmed => GenCommandLine.TryGetCommandLineArg("rwtools-ticks", out _);
 
+        /// <summary>RIMMCP_HARNESS=steward skips the governor fights (25 of the 30 minutes).</summary>
+        public static bool StewardOnly => System.Environment.GetEnvironmentVariable("RIMMCP_HARNESS") == "steward";
+
         public static void Check(bool ok, string what)
         {
             if (ok) { Passed++; Log.Message("[Test] PASS " + what); }

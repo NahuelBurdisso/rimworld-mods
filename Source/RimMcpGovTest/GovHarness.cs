@@ -66,7 +66,11 @@ namespace RimMcpGovTest
 
         public GovHarness(Game game) { }
 
-        public override void FinalizeInit() { armed = Kit.HarnessArmed; }
+        public override void FinalizeInit()
+        {
+            armed = Kit.HarnessArmed;
+            if (armed && Kit.StewardOnly) { armed = false; done = true; Finished = true; Kit.Info("RIMMCP_HARNESS=steward: governor fights skipped"); }
+        }
 
         // Letters or messages can pause the game; keep it running while the harness works.
         public override void GameComponentUpdate()
