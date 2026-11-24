@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>The Dog Knows Test</name>
+  <packageId>nahuel.thedogknowstest</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+    <li>
+      <packageId>nahuel.thedogknows</packageId>
+      <displayName>The Dog Knows</displayName>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+    <li>nahuel.thedogknows</li>
+  </loadAfter>
+  <description>Test harness for The Dog Knows. Runs only under rw launch --ticks; does nothing in normal play.</description>
+</ModMetaData>
