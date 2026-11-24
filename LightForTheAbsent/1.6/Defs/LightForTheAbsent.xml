@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!--
+    The lamp itself: an invisible, unselectable carrier for a vanilla glower plus a drawn halo, spawned on the
+    absent colonist's bed while it is lit. Never saved: the AbsenceTracker re-creates it. The glow is real
+    (candle strength: only the bed cell counts as lit), the halo is drawing only. See DESIGN.md.
+  -->
+  <ThingDef ParentName="EtherealThingBase">
+    <defName>LightForTheAbsent_Light</defName>
+    <label>a light left on</label>
+    <description>A faint, warm light someone keeps burning in an empty room.</description>
+    <thingClass>LightForTheAbsent.AbsentLight</thingClass>
+    <drawerType>RealtimeOnly</drawerType>
+    <tickerType>Never</tickerType>
+    <isSaveable>false</isSaveable>
+    <selectable>false</selectable>
+    <rotatable>false</rotatable>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>2.5</glowRadius>
+        <glowColor>(60,36,12,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
+
+  <!-- The returning colonist: a small, warm memory. -->
+  <ThoughtDef>
+    <defName>LightForTheAbsent_LeftALightOn</defName>
+    <durationDays>2</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>they left a light on for me</label>
+        <description>All the nights I was away, there was a light on in my room. Somebody wanted me to find my way home.</description>
+        <baseMoodEffect>3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <!-- The partner who shares the bed: sleeping lightly while the other side is empty. -->
+  <ThoughtDef>
+    <defName>LightForTheAbsent_SleptLightly</defName>
+    <durationDays>0.5</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>slept lightly</label>
+        <description>{OTHERPAWN_nameDef}'s side of the bed is cold. I kept waking up, looking at the light, listening for footsteps.</description>
+        <baseMoodEffect>-2</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <!--
+    Partner and close family on the map when the light finally goes out after a death far away.
+    Not a second death thought: a small nuance on top of vanilla's, tied to the light.
+  -->
+  <ThoughtDef>
+    <defName>LightForTheAbsent_LightWentOut</defName>
+    <durationDays>8</durationDays>
+    <stackLimit>5</stackLimit>
+    <stackLimitForSameOtherPawn>1</stackLimitForSameOtherPawn>
+    <stages>
+      <li>
+        <label>the light for {0} went out</label>
+        <description>We kept the light on in {OTHERPAWN_nameDef}'s room for nights after the news. Tonight it flickered and went out. There's no one left to wait for.</description>
+        <baseMoodEffect>-3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+</Defs>

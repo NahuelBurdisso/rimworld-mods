@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>A Light for the Absent</name>
+  <packageId>nahuel.lightfortheabsent</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <description>Someone always leaves a light on.
+
+While a colonist is away from home - with a caravan, in transport pods or a shuttle, on a quest map, or taken by kidnappers - a faint amber light comes on in their room every evening and goes out at dawn. It sits on their bed, warm and small, like a candle nobody wants to blow out.
+
+[b]Coming home[/b]
+If they come back at night, the light fades out slowly over the next couple of hours. If it burned for them through some of the night (about an hour or more), they remember it: "They left a light on for me" (+3).
+
+[b]Waiting[/b]
+A partner who shares the bed sleeps lightly while the other side is empty (-2, short).
+
+[b]Not coming home[/b]
+If they die far away, the light keeps burning, but it gutters and flickers. On the third night it goes out for good. Their partner, parents, children and siblings at home feel it: "The light for ... went out" (-3). This is a small extra beat on top of the usual grief, not a second death moodlet.
+
+[b]Details[/b]
+- Only colonists with a bed in a real room (enclosed by walls and doors) get a light. Barracks and shared double beds count. A bed in the open gets none.
+- If the bed is given to someone else (not their partner), the light goes out quietly.
+- The light is real light, candle strength: only the bed itself counts as lit. It uses no power and grows no plants. The soft halo around it is purely visual.
+- Settings: moodlets on/off, message on/off, brightness.
+- A couple away together share one light.
+- Cheap: one check every 250 ticks. No Harmony needed. Safe to add to an existing save; removing it from a save logs a few one-time errors that are harmless.
+- Works with Sensible Bed Ownership and Hospitality (guests never get lights).</description>
+</ModMetaData>
