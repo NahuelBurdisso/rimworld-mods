@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <!-- Settings -->
+  <Aftermath_Settings_Enabled>Enabled</Aftermath_Settings_Enabled>
+  <Aftermath_Settings_BracedDoors>Braced Door</Aftermath_Settings_BracedDoors>
+  <Aftermath_Settings_BracedDoorsDesc>A player door destroyed by hostiles, or battered below 30% of its hit points, leaves a breach on its cell. The door rebuilt (or repaired) there shows one crossed plank per breach and lists their dates when inspected.</Aftermath_Settings_BracedDoorsDesc>
+  <Aftermath_Settings_TrophyStandards>Trophy Standards</Aftermath_Settings_TrophyStandards>
+  <Aftermath_Settings_TrophyStandardsDesc>When the leader of a hostile humanlike raid is downed or killed, he drops his faction's standard. Install it anywhere: it shows the faction's colours, remembers the day and who brought him down, and gives pride to colonists who see it (more to those who fought that day).</Aftermath_Settings_TrophyStandardsDesc>
+  <Aftermath_Settings_HonoredFoes>Honored Foe</Aftermath_Settings_HonoredFoes>
+  <Aftermath_Settings_HonoredFoesDesc>A raider who brings down two colonists, or kills one, is remembered. Bury him and his grave carries his own weapon, stood upright, with his helmet on top, and tells his name and deeds.</Aftermath_Settings_HonoredFoesDesc>
+  <Aftermath_Settings_VigilLamps>Vigil Lamp</Aftermath_Settings_VigilLamps>
+  <Aftermath_Settings_VigilLampsDesc>The bed of anyone fighting for their life glows a faint amber. When the danger passes the light fades; if they die it goes out at once.</Aftermath_Settings_VigilLampsDesc>
+  <Aftermath_Settings_BedsideOfferings>Bedside Offerings</Aftermath_Settings_BedsideOfferings>
+  <Aftermath_Settings_BedsideOfferingsDesc>Each visit to a wounded colonist leaves a small gift by the bed: flowers from a lover, a letter from family, a carved figure from a friend, a candle from anyone else. Those who dislike the patient leave nothing. Back on their feet, the patient is cheered by how many came.</Aftermath_Settings_BedsideOfferingsDesc>
+
+  <Aftermath_Settings_OldSentinels>The Old Sentinel</Aftermath_Settings_OldSentinels>
+  <Aftermath_Settings_OldSentinelsDesc>A turret that brings down 5 foes over at least 3 separate battles is given a name by the colonists, and keeps a tally of the foes it brings down. Colonists who man it or fight beside it become its old hands. When a named turret is destroyed it leaves its named remains, and the colony mourns it (its old hands most of all). Uninstalled and reinstalled turrets keep their name.</Aftermath_Settings_OldSentinelsDesc>
+
+  <!-- Shared -->
+  <Aftermath_UnknownHands>unknown hands</Aftermath_UnknownHands>
+  <Aftermath_Raiders>raiders</Aftermath_Raiders>
+
+  <!-- Braced door -->
+  <Aftermath_Braced>Braced {0}×</Aftermath_Braced>
+  <Aftermath_BreachBroken>broken on {0} by {1}</Aftermath_BreachBroken>
+  <Aftermath_BreachBattered>battered on {0} by {1}</Aftermath_BreachBattered>
+  <Aftermath_BreachNotRepaired>(repair it fully to brace it)</Aftermath_BreachNotRepaired>
+
+  <!-- Trophy standards -->
+  <Aftermath_StandardLabel>{0} of {1}</Aftermath_StandardLabel>
+  <Aftermath_StandardTaken>{2} brought down {1}. The standard of {0} is ours.</Aftermath_StandardTaken>
+  <Aftermath_StandardOf>Standard of {0}.</Aftermath_StandardOf>
+  <Aftermath_StandardTakenFrom>Taken from {0}, their leader, on {1}.</Aftermath_StandardTakenFrom>
+  <Aftermath_StandardBroughtDownBy>Brought down by {0}.</Aftermath_StandardBroughtDownBy>
+  <Aftermath_StandardVeterans>{0} of our colonists fought that day.</Aftermath_StandardVeterans>
+
+  <!-- Honored foe -->
+  <Aftermath_FoeHereLies>Here lies {0} of {1}, a worthy foe.</Aftermath_FoeHereLies>
+  <Aftermath_FoeHereLiesNoFaction>Here lies {0}, a worthy foe.</Aftermath_FoeHereLiesNoFaction>
+  <Aftermath_UnnamedFoe>an unnamed {0}</Aftermath_UnnamedFoe>
+  <Aftermath_FoeDeedsBoth>Brought down {0}, and killed {1}.</Aftermath_FoeDeedsBoth>
+  <Aftermath_FoeDeedsKilled>Killed {0}.</Aftermath_FoeDeedsKilled>
+  <Aftermath_FoeDeedsDowned>Brought down {0}.</Aftermath_FoeDeedsDowned>
+  <Aftermath_FoeFell>Fell to {0} on {1}.</Aftermath_FoeFell>
+
+  <!-- Bedside offerings -->
+  <Aftermath_OfferingLabel>{0} for {1}</Aftermath_OfferingLabel>
+  <Aftermath_OfferingShrine>In memory of {0}.</Aftermath_OfferingShrine>
+  <Aftermath_OfferingLeftBy>Left for {0} by {1}, {2}.</Aftermath_OfferingLeftBy>
+  <Aftermath_OfferingLeftByRelation>Left for {0} by {1} ({2}), {3}.</Aftermath_OfferingLeftByRelation>
+  <Aftermath_OfferingVisits>Visits: {0}.</Aftermath_OfferingVisits>
+  <Aftermath_Lover>lover</Aftermath_Lover>
+  <Aftermath_Friend>friend</Aftermath_Friend>
+
+  <!-- The old sentinel -->
+  <Aftermath_SentinelLabel>{0} ({1})</Aftermath_SentinelLabel>
+  <Aftermath_SentinelOverlay>{0} · {1}</Aftermath_SentinelOverlay>
+  <Aftermath_SentinelNamed>The colonists have started calling the {1} "{0}": {2} foes brought down in {3} battles.</Aftermath_SentinelNamed>
+  <Aftermath_SentinelTallyUnnamed>Foes brought down: {0}. Battles fought: {1}.</Aftermath_SentinelTallyUnnamed>
+  <Aftermath_SentinelTally>"{0}" since {1}: {2} foes brought down in {3} battles.</Aftermath_SentinelTally>
+  <Aftermath_SentinelOldHands>Old hands: {0}.</Aftermath_SentinelOldHands>
+  <Aftermath_SentinelFellLabel>{0} has fallen</Aftermath_SentinelFellLabel>
+  <Aftermath_SentinelFellText>{0}, the {1} that held the line through {2} battles and brought down {3} foes, has been destroyed.\n\nThe colonists will miss it. Its remains lie where it stood.</Aftermath_SentinelFellText>
+  <Aftermath_SentinelFellTextBy>{0}, the {1} that held the line through {2} battles and brought down {3} foes, has been destroyed by {4}.\n\nThe colonists will miss it. Its remains lie where it stood.</Aftermath_SentinelFellTextBy>
+  <Aftermath_RemainsLabel>remains of {0}</Aftermath_RemainsLabel>
+  <Aftermath_RemainsWhat>{0}, a {1}.</Aftermath_RemainsWhat>
+  <Aftermath_RemainsTally>Brought down {0} foes in {1} battles.</Aftermath_RemainsTally>
+  <Aftermath_RemainsFell>Fell on {0}.</Aftermath_RemainsFell>
+  <Aftermath_RemainsFellTo>Fell on {0} to {1}.</Aftermath_RemainsFellTo>
+</LanguageData>

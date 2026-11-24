@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Names the colonists give a turret that has held the line (NameGenerator, first rule keyword r_name). -->
+  <RulePackDef>
+    <defName>Aftermath_NamerSentinel</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>r_name(p=3)->Old [given]</li>
+        <li>r_name(p=2)->[adj] [given]</li>
+        <li>r_name(p=1.5)->The [title]</li>
+        <li>r_name(p=0.7)->[given] the [epithet]</li>
+        <li>given->Bess</li>
+        <li>given->Maud</li>
+        <li>given->Jo</li>
+        <li>given->Sal</li>
+        <li>given->Hank</li>
+        <li>given->Gus</li>
+        <li>given->Molly</li>
+        <li>given->Dot</li>
+        <li>given->Tess</li>
+        <li>given->Barnaby</li>
+        <li>given->Ned</li>
+        <li>given->Mags</li>
+        <li>given->Bertha</li>
+        <li>given->Clem</li>
+        <li>given->Hattie</li>
+        <li>given->Abe</li>
+        <li>given->Winnie</li>
+        <li>given->Flo</li>
+        <li>given->Rosie</li>
+        <li>given->Otto</li>
+        <li>adj->Steady</li>
+        <li>adj->Faithful</li>
+        <li>adj->Grumpy</li>
+        <li>adj->Stubborn</li>
+        <li>adj->Loud</li>
+        <li>adj->Big</li>
+        <li>adj->Iron</li>
+        <li>adj->Lucky</li>
+        <li>adj->Sleepless</li>
+        <li>adj->Rusty</li>
+        <li>title->Deacon</li>
+        <li>title->Gatekeeper</li>
+        <li>title->Old Lady</li>
+        <li>title->Sergeant</li>
+        <li>title->Watchman</li>
+        <li>title->Night Owl</li>
+        <li>title->Doorman</li>
+        <li>title->Preacher</li>
+        <li>title->Rattler</li>
+        <li>title->Warden</li>
+        <li>epithet->Unblinking</li>
+        <li>epithet->Patient</li>
+        <li>epithet->Stubborn</li>
+        <li>epithet->Watchful</li>
+        <li>epithet->Loud</li>
+        <li>epithet->Tireless</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+  <!-- A root category of its own: default stockpiles never take the remains. -->
+  <ThingCategoryDef>
+    <defName>Aftermath_Mementos</defName>
+    <label>mementos</label>
+    <parent>Root</parent>
+  </ThingCategoryDef>
+
+  <ThingDef>
+    <defName>Aftermath_SentinelRemains</defName>
+    <label>sentinel remains</label>
+    <description>The scorched wreck of a turret the colonists had given a name. It still carries that name, and the count of the foes it brought down before it fell. It cannot be repaired, and nobody has the heart to melt it down.</description>
+    <thingClass>Aftermath.SentinelRemains</thingClass>
+    <category>Item</category>
+    <drawerType>MapMeshOnly</drawerType>
+    <altitudeLayer>Item</altitudeLayer>
+    <graphicData>
+      <texPath>Things/Item/Chunk/ChunkSlag</texPath>
+      <graphicClass>Graphic_Random</graphicClass>
+    </graphicData>
+    <selectable>true</selectable>
+    <useHitPoints>false</useHitPoints>
+    <rotatable>false</rotatable>
+    <alwaysHaulable>true</alwaysHaulable>
+    <drawGUIOverlay>true</drawGUIOverlay>
+    <passability>PassThroughOnly</passability>
+    <pathCost>30</pathCost>
+    <stackLimit>1</stackLimit>
+    <tradeability>None</tradeability>
+    <thingCategories>
+      <li>Aftermath_Mementos</li>
+    </thingCategories>
+    <statBases>
+      <Mass>15</Mass>
+      <MarketValue>5</MarketValue>
+      <Flammability>0</Flammability>
+      <DeteriorationRate>0</DeteriorationRate>
+      <Beauty>0</Beauty>
+    </statBases>
+  </ThingDef>
+
+  <ThoughtDef>
+    <defName>Aftermath_SentinelFell</defName>
+    <thoughtClass>Aftermath.Thought_SentinelFell</thoughtClass>
+    <durationDays>3</durationDays>
+    <stackLimit>3</stackLimit>
+    <stages>
+      <li>
+        <label>lost {SENTINEL}</label>
+        <description>{SENTINEL} watched over us through so many raids. The wall looks wrong without it.</description>
+        <baseMoodEffect>-3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <ThoughtDef>
+    <defName>Aftermath_SentinelFellComrade</defName>
+    <thoughtClass>Aftermath.Thought_SentinelFell</thoughtClass>
+    <durationDays>5</durationDays>
+    <stackLimit>3</stackLimit>
+    <stages>
+      <li>
+        <label>lost {SENTINEL}, my old comrade</label>
+        <description>I stood beside {SENTINEL} when they came for us. It never flinched. Now it's scrap.</description>
+        <baseMoodEffect>-6</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+</Defs>

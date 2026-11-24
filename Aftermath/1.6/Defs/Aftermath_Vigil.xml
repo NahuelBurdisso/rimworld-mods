@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- The light on the bed of someone in mortal danger: a vanilla CompGlower (the light level) plus a soft
+       amber halo drawn by Aftermath.VigilGlow around the bed. Never saved: the VigilTracker spawns it while
+       the danger lasts and destroys it the moment the patient dies. -->
+  <ThingDef ParentName="EtherealThingBase">
+    <defName>Aftermath_VigilGlow</defName>
+    <label>vigil light</label>
+    <description>A faint amber light kept by the bed of someone fighting for their life.</description>
+    <thingClass>Aftermath.VigilGlow</thingClass>
+    <drawerType>RealtimeOnly</drawerType>
+    <tickerType>Never</tickerType>
+    <isSaveable>false</isSaveable>
+    <selectable>false</selectable>
+    <rotatable>false</rotatable>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>3</glowRadius>
+        <glowColor>(64,38,10,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
+</Defs>
