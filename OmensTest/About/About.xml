@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Omens Test</name>
+  <packageId>nahuel.omenstest</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+    <li>
+      <packageId>nahuel.omens</packageId>
+      <displayName>Omens</displayName>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+    <li>nahuel.omens</li>
+  </loadAfter>
+  <description>Test harness for Omens (nahuel.omens). Only does something under `rw launch --ticks N` (command-line arg -rwtools-ticks): from tick 300 it checks Rain Reveals the Unseen with a real revenant, then from tick 800 drives real raids (a staging raid, a second one next to its camp, an immediate attack, a massacre for the carrion crows) and logs [Test] PASS/FAIL lines. With showcase.flag present and no --ticks, it stages the three features in a live quicktest and captures screenshots into logs/showcase/omens. Not for normal play.</description>
+</ModMetaData>
