@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <ColonyTemplate_SaveCrew>Save crew template</ColonyTemplate_SaveCrew>
+  <ColonyTemplate_LoadCrew>Load crew template</ColonyTemplate_LoadCrew>
+  <ColonyTemplate_NamePrompt>Template name:</ColonyTemplate_NamePrompt>
+  <ColonyTemplate_WillOverwrite>A template with this name exists and will be replaced.</ColonyTemplate_WillOverwrite>
+  <ColonyTemplate_BadName>Invalid template name.</ColonyTemplate_BadName>
+  <ColonyTemplate_Saved>Saved crew template "{0}" ({1} colonists).</ColonyTemplate_Saved>
+  <ColonyTemplate_Loaded>Loaded crew template "{0}".</ColonyTemplate_Loaded>
+  <ColonyTemplate_LoadFailed>Could not load crew template "{0}".</ColonyTemplate_LoadFailed>
+  <ColonyTemplate_NoTemplates>No crew templates saved yet.</ColonyTemplate_NoTemplates>
+  <ColonyTemplate_Problems>The template was applied with some problems:</ColonyTemplate_Problems>
+  <ColonyTemplate_TooManyPawns>The template has {0} colonists but this scenario has room for {1}; the extra ones were skipped.</ColonyTemplate_TooManyPawns>
+  <ColonyTemplate_MissingDef>Missing {0} "{1}" (mod not loaded?) - skipped.</ColonyTemplate_MissingDef>
+  <ColonyTemplate_CannotWear>{0} cannot wear {1} - skipped.</ColonyTemplate_CannotWear>
+  <ColonyTemplate_RunSetup>Apply colony setup (schedule, priorities, policies)</ColonyTemplate_RunSetup>
+  <ColonyTemplate_SaveColonists>Save current colonists as crew template</ColonyTemplate_SaveColonists>
+  <ColonyTemplate_OpenSettings>Setup options...</ColonyTemplate_OpenSettings>
+  <ColonyTemplate_SetupDone>Colony setup applied to {0} colonists.</ColonyTemplate_SetupDone>
+  <ColonyTemplate_AutoApply>Apply colony setup automatically when a new game starts</ColonyTemplate_AutoApply>
+  <ColonyTemplate_AutoApplyTip>Runs once on the first tick of a new colony. You can always run it from the "setup" button on the bottom bar.</ColonyTemplate_AutoApplyTip>
+  <ColonyTemplate_DoSchedule>Set the schedule</ColonyTemplate_DoSchedule>
+  <ColonyTemplate_ScheduleHelp>24 letters, one per hour from midnight: S sleep, W work, J recreation, M meditate, A anything. Night owls get it shifted 12 hours.</ColonyTemplate_ScheduleHelp>
+  <ColonyTemplate_ScheduleInvalid>Needs exactly 24 letters from S W J M A - the schedule is not applied until fixed.</ColonyTemplate_ScheduleInvalid>
+  <ColonyTemplate_ScheduleReset>Reset schedule (sleep 22-6, recreation 19-22)</ColonyTemplate_ScheduleReset>
+  <ColonyTemplate_DoPriorities>Set work priorities from skills and passions</ColonyTemplate_DoPriorities>
+  <ColonyTemplate_DoPrioritiesTip>Turns on manual priorities. The best colonist at each job gets 1, major passion or skill 10+ gets 2, minor passion or skill 6+ gets 3, the rest 4. Firefighting and bed rest 1, basic work 2, hauling and cleaning 3.</ColonyTemplate_DoPrioritiesTip>
+  <ColonyTemplate_DoPolicies>Set medicine, self-tend and hostility response</ColonyTemplate_DoPolicies>
+  <ColonyTemplate_DoPoliciesTip>Colonists incapable of violence flee, everyone else attacks.</ColonyTemplate_DoPoliciesTip>
+  <ColonyTemplate_MedCare>Medicine allowed</ColonyTemplate_MedCare>
+  <ColonyTemplate_SelfTend>Self-tend (for colonists who can doctor)</ColonyTemplate_SelfTend>
+</LanguageData>

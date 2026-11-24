@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <MainButtonDef>
+    <defName>ColonyTemplate_Setup</defName>
+    <label>setup</label>
+    <description>Colony Template: apply the start-of-colony setup (schedule, work priorities, medicine, hostility response) or save the current colonists as a crew template.</description>
+    <workerClass>ColonyTemplate.MainButtonWorker_ColonyTemplate</workerClass>
+    <order>450</order>
+  </MainButtonDef>
+</Defs>
