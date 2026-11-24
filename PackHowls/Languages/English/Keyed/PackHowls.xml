@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <PackHowls_Message>The pack howls for {0}.</PackHowls_Message>
+  <PackHowls_NamesTwo>{0} and {1}</PackHowls_NamesTwo>
+  <PackHowls_NamesThree>{0}, {1} and {2}</PackHowls_NamesThree>
+  <PackHowls_NamesMany>{0}, {1} and {2} others</PackHowls_NamesMany>
+
+  <PackHowls_SettingsCategory>The Pack Howls</PackHowls_SettingsCategory>
+  <PackHowls_Setting_WildAnswer>Wild canines answer</PackHowls_Setting_WildAnswer>
+  <PackHowls_Setting_WildAnswer_Desc>A few seconds after the colony's animals howl, up to three wild wolves or dogs on the map answer.</PackHowls_Setting_WildAnswer_Desc>
+  <PackHowls_Setting_Moodlets>Mood memories</PackHowls_Setting_Moodlets>
+  <PackHowls_Setting_Moodlets_Desc>Colonists who hear the howl get a small bittersweet memory; family, lovers and the bonded master of the fallen get a stronger one.</PackHowls_Setting_Moodlets_Desc>
+  <PackHowls_Setting_Message>Message</PackHowls_Setting_Message>
+  <PackHowls_Setting_Message_Desc>Show "The pack howls for ..." when it starts.</PackHowls_Setting_Message_Desc>
+</LanguageData>
