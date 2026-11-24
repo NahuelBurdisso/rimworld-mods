@@ -1,0 +1,583 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using RimMcp;
+using RimWorld;
+using Verse;
+using Verse.AI;
+
+namespace RimMcpGovTest
+{
+    /// <summary>
+    /// The steward's peacetime reflexes, one case each, after the governor fights (GovHarness).
+    /// Setup uses dev-style spawning; the steward itself only gives player orders. Every case waits
+    /// for the steward event (events.jsonl) and checks the game state it should have changed.
+    /// Run: rw launch --quicktest --ticks 36000 --wait --kill (needs RimMcp + this mod).
+    /// </summary>
+    public class StewardHarness : GameComponent
+    {
+        const string Mod = "RimMcp/Steward";
+        bool armed, started, done;
+        int ticks, startTick, caseIdx, caseStart;
+        long cursor;
+        Map map;
+        Pawn patient, forced, armedPawn, newbie;
+        Building_Bed bed1, bed2, forcedBed;
+        Thing cooler;
+        Area_Allowed area;
+        ResearchProjectDef queued;
+        float windowAt = -1f;
+        bool windowCase, runCase, nameCase;
+        float nameAt = -1f;
+        Pawn prey, cougar;
+        IntVec3 oldHome;
+        int huntRestarts;
+        Thing generator;
+        string originalPolicy;
+        Pawn raider;
+        Pawn armless;
+        Thing rifle, knife;
+        int undraftAt = -1, oldRelease;
+
+        public StewardHarness(Game game) { }
+
+        public override void FinalizeInit() { armed = Kit.HarnessArmed; }
+
+        static readonly string[] Cases = { "rescue+tend+feed", "forced rest", "disease alarm", "research", "letters", "area", "thermostat", "weapon", "window", "stop run", "name window", "skirmish", "refuel", "undraft mid-fight", "autosave", "arm new colonist" };
+
+        float runEmitAt = -1f;
+
+        public override void GameComponentUpdate()
+        {
+            if (!armed || !started || done || Current.ProgramState != ProgramState.Playing) return;
+            if (runCase && runEmitAt > 0 && (Find.TickManager.Paused || UnityEngine.Time.realtimeSinceStartup - runEmitAt > 10f))
+            {
+                Kit.Check(Find.TickManager.Paused && (Tools.pauseReason ?? "").Contains("decision_needed"),
+                    $"a decision_needed event stops a running `run` at once (pauseReason: {Tools.pauseReason})");
+                runCase = false;
+                runEmitAt = -1f;
+                Next();
+                return;
+            }
+            // the routine-window case is checked per frame: the box pauses the game, ticks stop
+            if (windowCase && windowAt > 0 && UnityEngine.Time.realtimeSinceStartup - windowAt > 2f)
+            {
+                bool open = Find.WindowStack.Windows.Any(w => w is Dialog_MessageBox mb && mb.text.ToString().Contains("cannot build"));
+                Kit.Check(!open, "steward closes the 'unlocks things you cannot build (memes)' box while the game is paused");
+                windowCase = false;
+                Next();
+            }
+            // a name window (faction / settlement) pauses the game: the steward answers it with the suggestion
+            if (nameCase && nameAt > 0 && UnityEngine.Time.realtimeSinceStartup - nameAt > 2f)
+            {
+                bool open = Find.WindowStack.Windows.Any(w => w is Dialog_GiveName);
+                Kit.Check(!open && Did(Events(), "answerNames"), $"steward answers a name window with the suggested name (faction now '{Faction.OfPlayer.Name}')");
+                nameCase = false;
+                Next();
+                return;
+            }
+            var tm = Find.TickManager;
+            if (!runCase && tm.CurTimeSpeed == TimeSpeed.Paused && !Find.WindowStack.WindowsForcePause) tm.CurTimeSpeed = TimeSpeed.Superfast;
+        }
+
+        public override void GameComponentTick()
+        {
+            if (!armed || done) return;
+            ticks++;
+            try
+            {
+                if (!started)
+                {
+                    if (!GovHarness.Finished && ticks < 42000) return;
+                    started = true;
+                    Setup();
+                    return;
+                }
+                Step();
+                if (ticks - startTick > 26000)
+                {
+                    Kit.Check(false, $"steward harness timed out in case '{Cases[Math.Min(caseIdx, Cases.Length - 1)]}'");
+                    Finish();
+                }
+            }
+            catch (Exception ex)
+            {
+                Kit.Check(false, "steward harness threw: " + ex);
+                Finish();
+            }
+        }
+
+        void Setup()
+        {
+            map = Find.CurrentMap;
+            startTick = ticks;
+            // the last governor fight can leave raiders standing: peacetime reflexes are off during a threat
+            int removed = 0;
+            foreach (var p in map.mapPawns.AllPawnsSpawned.ToList())
+                if (p.HostileTo(Faction.OfPlayer) && !p.Dead) { p.Destroy(); removed++; }
+            foreach (var p in map.mapPawns.FreeColonistsSpawned.ToList())
+            {
+                p.drafter.Drafted = false;
+                foreach (var h in p.health.hediffSet.hediffs.Where(h => h is Hediff_Injury || h.def == HediffDefOf.Anesthetic).ToList())
+                    p.health.RemoveHediff(h);
+            }
+            int spawned = 0;
+            while (map.mapPawns.FreeColonistsSpawned.Count(p => !p.Downed) < 3 && spawned < 5)
+            {
+                var np = PawnGenerator.GeneratePawn(PawnKindDefOf.Colonist, Faction.OfPlayer);
+                var anyone = map.mapPawns.FreeColonistsSpawned.FirstOrDefault();
+                GenSpawn.Spawn(np, CellFinder.StandableCellNear(anyone?.Position ?? map.Center, map, 6f), map);
+                spawned++;
+            }
+            Kit.Info($"steward setup: removed {removed} hostiles left from the fights, healed colonists, spawned {spawned}");
+            originalPolicy = File.Exists(GovernorPolicy.FilePath) ? File.ReadAllText(GovernorPolicy.FilePath) : null;
+            File.WriteAllText(GovernorPolicy.FilePath, "{\"enabled\": true, \"steward\": {\"enabled\": true}}\n");
+            Tools.Run("governor", new Dictionary<string, object> { ["action"] = "reload" });
+            Kit.Check(GovernorPolicy.Current.enabled && GovernorPolicy.Current.steward.enabled, "governor + steward enabled from governor.json");
+            cursor = GovernorEvents.Seq;
+            var cols = map.mapPawns.FreeColonistsSpawned.ToList();
+            Kit.Info("steward harness: colonists " + string.Join(", ", cols.Select(p => p.LabelShort)));
+            foreach (var p in cols)
+            {
+                p.drafter.Drafted = false;
+                if (p.workSettings != null) { p.workSettings.EnableAndInitialize(); p.workSettings.SetPriority(WorkTypeDefOf.Doctor, 1); }
+                p.needs.food.CurLevelPercentage = 1f;
+            }
+            caseIdx = -1;
+            Next();
+        }
+
+        void Next()
+        {
+            caseIdx++;
+            caseStart = ticks;
+            cursor = GovernorEvents.Seq;      // each case sees only its own events
+            if (caseIdx >= Cases.Length) { Finish(); return; }
+            Kit.Info("steward case: " + Cases[caseIdx]);
+            var cols = map.mapPawns.FreeColonistsSpawned.Where(p => !p.Downed).ToList();
+            if (cols.Count < 2) { Kit.Check(false, $"steward case '{Cases[caseIdx]}' needs 2 standing colonists, has {cols.Count}"); Finish(); return; }
+            var at = cols[0].Position;
+            switch (caseIdx)
+            {
+                case 0:
+                    patient = cols.Last();
+                    bed1 = SpawnBed(Free(at, 4));
+                    bed2 = SpawnBed(Free(at, 6));
+                    // the only food is a long walk away: fetching it takes longer than the steward's re-check, and the
+                    // other doctor must not be sent meanwhile (a forced order takes the patient's reservation: Brasa Lenta day 6)
+                    foreach (var f in map.listerThings.ThingsInGroup(ThingRequestGroup.FoodSourceNotPlantOrTree).ToList()) f.SetForbidden(true, false);
+                    foreach (var c in cols)
+                        foreach (var f in c.inventory.innerContainer.Where(x => x.def.IsIngestible).ToList()) f.Destroy();
+                    var farFood = FarReachable(at, 35);
+                    for (int i = 0; i < 4; i++) GenSpawn.Spawn(ThingMaker.MakeThing(ThingDefOf.MealSimple), farFood, map);
+                    Kit.Info($"rescue+tend+feed: meals {farFood.DistanceTo(at):0} cells from the colonists");
+                    // the bug needs two doctors who can both take the order: make sure there are two
+                    var docs = cols.Where(c => c != patient && !c.WorkTypeIsDisabled(WorkTypeDefOf.Doctor)).ToList();
+                    for (int i = 0; docs.Count < 2 && i < 20; i++)
+                    {
+                        var extra = PawnGenerator.GeneratePawn(PawnKindDefOf.Colonist, Faction.OfPlayer);
+                        if (extra.WorkTypeIsDisabled(WorkTypeDefOf.Doctor)) { extra.Destroy(); continue; }
+                        GenSpawn.Spawn(extra, Free(at, 3), map);
+                        docs.Add(extra);
+                    }
+                    foreach (var d in docs) d.workSettings.SetPriority(WorkTypeDefOf.Doctor, 1);
+                    Kit.Info("rescue+tend+feed: doctors " + string.Join(", ", docs.Select(d => d.LabelShort)) + ", patient " + patient.LabelShort);
+                    patient.TakeDamage(new DamageInfo(DamageDefOf.Cut, 6, 0, -1, null, patient.health.hediffSet.GetNotMissingParts().First(p => p.def == BodyPartDefOf.Torso)));
+                    patient.health.AddHediff(HediffMaker.MakeHediff(HediffDefOf.Anesthetic, patient));
+                    patient.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Anesthetic).Severity = 1f;
+                    patient.needs.food.CurLevelPercentage = 0.2f;
+                    break;
+                case 1:
+                    forced = cols.First(p => p != patient);
+                    forcedBed = SpawnBed(Free(at, 8));
+                    var job = JobMaker.MakeJob(JobDefOf.LayDown, forcedBed);
+                    job.playerForced = true;
+                    forced.jobs.TryTakeOrderedJob(job, JobTag.Misc);
+                    forced.needs.food.CurLevelPercentage = 0.35f;
+                    break;
+                case 2:
+                    var flu = DefDatabase<HediffDef>.GetNamed("Flu");
+                    var sick = cols.First(p => p != patient);
+                    var h = HediffMaker.MakeHediff(flu, sick);
+                    h.Severity = 0.7f * flu.lethalSeverity;
+                    sick.health.AddHediff(h);
+                    break;
+                case 3:
+                    var cur = Find.ResearchManager.GetProject();
+                    if (cur != null) Find.ResearchManager.StopProject(cur);
+                    queued = DefDatabase<ResearchProjectDef>.AllDefsListForReading.FirstOrDefault(r => !r.IsFinished && r.CanStartNow);
+                    Tools.Run("governor", new Dictionary<string, object> { ["action"] = "steward", ["queue"] = new List<object> { "NoSuchProject", queued?.defName } });
+                    break;
+                case 4:
+                    Find.LetterStack.ReceiveLetter("Steward test letter", "harmless", LetterDefOf.NeutralEvent);
+                    break;
+                case 5:
+                    map.areaManager.TryMakeNewAllowed(out area);
+                    foreach (var c in map.AllCells.Where(c => c.InHorDistOf(at, 25))) area[c] = true;
+                    newbie = cols.Last();
+                    foreach (var p in cols) p.playerSettings.AreaRestrictionInPawnCurrentMap = p == newbie ? null : area;
+                    break;
+                case 6:
+                    cooler = BuildFreezer(Free(at, 12, 5));
+                    break;
+                case 7:
+                    armedPawn = cols.First();
+                    if (armedPawn.equipment.Primary == null)
+                        armedPawn.equipment.AddEquipment((ThingWithComps)ThingMaker.MakeThing(ThingDef.Named("Gun_Revolver")));
+                    break;
+                case 8:
+                    windowCase = true;
+                    windowAt = UnityEngine.Time.realtimeSinceStartup;
+                    Find.WindowStack.Add(new Dialog_MessageBox("This research unlocks things which you cannot build (requires memes)."));
+                    break;
+                case 10:
+                    nameCase = true;
+                    nameAt = UnityEngine.Time.realtimeSinceStartup;
+                    Find.WindowStack.Add(new Dialog_NamePlayerFaction());
+                    break;
+                case 11:
+                    // run15: a cougar hunted a colonist 90 cells from home while the far hold kept everyone working
+                    prey = cols.FirstOrDefault(p => p.equipment?.Primary?.def.IsRangedWeapon ?? false) ?? cols.First();
+                    if (prey.equipment.Primary == null)
+                        prey.equipment.AddEquipment((ThingWithComps)ThingMaker.MakeThing(ThingDef.Named("Gun_Revolver")));
+                    oldHome = GovernorPolicy.Current.homeCenter;
+                    var far = map.AllCells.Where(c => c.Standable(map) && c.InHorDistOf(prey.Position, 90f) && !c.InHorDistOf(prey.Position, 65f)).FirstOrDefault();
+                    GovernorPolicy.Current.homeCenter = far.IsValid ? far : new IntVec3(map.Size.x - prey.Position.x, 0, map.Size.z - prey.Position.z);
+                    var kind = DefDatabase<PawnKindDef>.GetNamedSilentFail("Cougar") ?? DefDatabase<PawnKindDef>.GetNamed("Wolf_Timber");
+                    cougar = PawnGenerator.GeneratePawn(kind, null);
+                    GenSpawn.Spawn(cougar, CellFinder.StandableCellNear(prey.Position + new IntVec3(8, 0, 0), map, 3f), map);
+                    // a hunt started by hand ends at once (25 restarts in a run), so the far-hold path is tested
+                    // with what run15 actually had: an enemy animal the governor sees, 90 cells from home
+                    cougar.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Manhunter, forceWake: true);
+                    Kit.Info($"skirmish: {kind.defName} ({cougar.CurJob?.def.defName}) hunting {prey.LabelShort} at {prey.Position}, home set to {GovernorPolicy.Current.homeCenter} ({(prey.Position - GovernorPolicy.Current.homeCenter).LengthHorizontal:F0} cells)");
+                    break;
+                case 12:
+                    {
+                        var gdef = DefDatabase<ThingDef>.GetNamedSilentFail("WoodFiredGenerator");
+                        if (gdef == null) break;
+                        var c = Free(at, 8, 2);
+                        generator = ThingMaker.MakeThing(gdef);
+                        generator.SetFaction(Faction.OfPlayer);
+                        GenSpawn.Spawn(generator, c, map, Rot4.North);
+                        var fc = generator.TryGetComp<CompRefuelable>();
+                        if (fc != null && fc.HasFuel) fc.ConsumeFuel(fc.Fuel);
+                        var wood = ThingMaker.MakeThing(ThingDefOf.WoodLog); wood.stackCount = 40;
+                        GenSpawn.Spawn(wood, Free(at, 3), map);
+                        foreach (var p in cols) if (p.workSettings != null) p.workSettings.SetPriority(WorkTypeDefOf.Hauling, 4);
+                        break;
+                    }
+                case 13:
+                    {
+                        // La Colina day 16: after_raid ran during the fight, its `draft drafted=false` handed all 3
+                        // colonists to the player and the governor said "no colonist can fight" (enemy power 31)
+                        oldHome = GovernorPolicy.Current.homeCenter;
+                        oldRelease = GovernorPolicy.Current.manualReleaseTicks;
+                        GovernorPolicy.Current.homeCenter = at;
+                        GovernorPolicy.Current.manualReleaseTicks = 300;
+                        foreach (var p in cols)
+                            if (p.equipment.Primary == null)
+                                p.equipment.AddEquipment((ThingWithComps)ThingMaker.MakeThing(ThingDef.Named("Gun_Revolver")));
+                        var faction = Find.FactionManager.RandomEnemyFaction(allowHidden: false, allowDefeated: false, allowNonHumanlike: false) ?? Faction.OfPirates;
+                        raider = PawnGenerator.GeneratePawn(new PawnGenerationRequest(faction.def.basicMemberKind ?? PawnKindDefOf.Pirate, faction, mustBeCapableOfViolence: true));
+                        raider.equipment?.DestroyAllEquipment();
+                        raider.equipment?.AddEquipment((ThingWithComps)ThingMaker.MakeThing(ThingDef.Named("MeleeWeapon_Knife"), ThingDefOf.Steel));
+                        var rc = map.AllCells.Where(c => c.Standable(map) && !c.Fogged(map) && c.InHorDistOf(at, 40f) && !c.InHorDistOf(at, 36f)).FirstOrDefault();
+                        GenSpawn.Spawn(raider, rc.IsValid ? rc : CellFinder.StandableCellNear(at + new IntVec3(38, 0, 0), map, 5f), map);
+                        Verse.AI.Group.LordMaker.MakeNewLord(faction, new LordJob_AssaultColony(faction, canKidnap: false, canTimeoutOrFlee: false, sappers: false,
+                            useAvoidGridSmart: false, canSteal: false), map, new List<Pawn> { raider });
+                        undraftAt = -1;
+                        Kit.Info($"undraft mid-fight: raider {raider.LabelShort} at {raider.Position}, home {at}");
+                        break;
+                    }
+                case 14:
+                    {
+                        // 6 old dummies + today's save: rotation keeps the newest 5
+                        var dir = GenFilePaths.SavedGamesFolderPath;
+                        for (int i = 1; i <= 6; i++)
+                        {
+                            var f = Path.Combine(dir, $"auto-day-9000{i}{GenFilePaths.SavedGameExtension}");
+                            File.WriteAllText(f, "harness dummy");
+                            File.SetLastWriteTimeUtc(f, DateTime.UtcNow.AddDays(-10 + i));
+                        }
+                        Steward.LastSaveDay = GenDate.DaysPassed - 1;
+                        break;
+                    }
+                case 15:
+                    {
+                        // gauntlet 4 (B5): two colonists fist-fought ferraliscs with a rifle on the landing site. A gun of
+                        // another def than the pawn's last one and > 12 cells away, so unforbidWeapons (its own dropped
+                        // weapon within 12) does not answer first (first run: it did, with the same bolt-action rifle)
+                        // one the reflex is for: able to fight and on its feet (steward-only runs skip the fights, so the
+                        // last colonist can be a pacifist or still the case-0 patient)
+                        armless = cols.LastOrDefault(p => !p.WorkTagIsDisabled(WorkTags.Violent) && !p.Downed && p != patient) ?? cols.Last();
+                        Kit.Info($"arm new colonist: {cols.Last().LabelShort} violent disabled {cols.Last().WorkTagIsDisabled(WorkTags.Violent)}, downed {cols.Last().Downed}");
+                        var lastDef = armless.equipment.Primary?.def;
+                        armless.equipment.DestroyAllEquipment();
+                        // second run: another bolt-action rifle from the fights lay within 12 and unforbidWeapons equipped it
+                        if (lastDef != null)
+                            foreach (var t in map.listerThings.ThingsOfDef(lastDef).Where(t => t.Spawned && t.Position.InHorDistOf(armless.Position, 14f)).ToList())
+                                t.Destroy();
+                        rifle = GenSpawn.Spawn(ThingMaker.MakeThing(ThingDef.Named("Gun_AssaultRifle")), Free(armless.Position, 16), map);
+                        rifle.SetForbidden(true, false);
+                        knife = GenSpawn.Spawn(ThingMaker.MakeThing(ThingDef.Named("MeleeWeapon_Knife"), ThingDefOf.Steel), Free(armless.Position, 4), map);
+                        Kit.Info($"arm new colonist: {armless.LabelShort} unarmed at {armless.Position}, forbidden rifle at {rifle.Position}, knife at {knife.Position}");
+                        break;
+                    }
+                case 9:
+                    runCase = true;
+                    Tools.Run("run", new Dictionary<string, object> { ["hours"] = 6.0, ["speed"] = "superfast" });
+                    break;
+            }
+        }
+
+        void Step()
+        {
+            int age = ticks - caseStart;
+            var evs = Events();
+            switch (caseIdx)
+            {
+                case 0:
+                    bool tended = !patient.health.HasHediffsNeedingTend();
+                    bool fed = patient.needs.food.CurLevelPercentage > 0.3f;
+                    if (age < 9000 && !(patient.InBed() && tended && fed)) return;
+                    // vanilla doctors often get there first; the outcome is what matters, the event says who did it
+                    Kit.Check(patient.InBed(), "downed colonist outside a bed ends up in a bed" + (Did(evs, "rescue") ? " (steward rescue order)" : " (colonists' own AI)"));
+                    Kit.Check(tended, "patient in bed gets tended" + (Did(evs, "tend") ? " (steward prioritized tend)" : " (colonists' own AI)"));
+                    // the steward orders feeding only when nobody is on it: when the colonists' own AI starts first, no event is
+                    // right (the old code took the job from that feeder - half of the Brasa Lenta day 6 flip-flop)
+                    Kit.Info("feeding: " + (Did(evs, "feedPatients") ? "steward prioritized feeding" : "colonists' own AI, steward stayed out"));
+                    Kit.Check(fed, $"two doctors, food a long walk away: the patient gets fed (food {Math.Round(patient.needs.food.CurLevelPercentage * 100)}% after {age} ticks)");
+                    int tends = Count(evs, "tend"), feeds = Count(evs, "feedPatients");
+                    Kit.Check(tends <= 2 && feeds <= 2, $"two doctors: a tend/feed order is not re-issued to the other one while someone is on it (tend x{tends}, feed x{feeds}: {Who(evs)})");
+                    foreach (var f in map.listerThings.ThingsInGroup(ThingRequestGroup.FoodSourceNotPlantOrTree).ToList()) f.SetForbidden(false, false);
+                    patient.health.RemoveHediff(patient.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Anesthetic));
+                    Next();
+                    break;
+                case 1:
+                    if (age < 2500 && !Did(evs, "clearForcedRest")) return;
+                    Kit.Info("forced rest cleared by " + (Did(evs, "clearForcedRest") ? "the steward" : "the pawn's own job ending first"));
+                    Kit.Check(!(forced.CurJob?.playerForced ?? false) || forced.CurJob.def != JobDefOf.LayDown, "the forced LayDown job is gone");
+                    Next();
+                    break;
+                case 2:
+                    if (age < 600 && !Has(evs, "decision_needed")) return;
+                    Kit.Check(Has(evs, "decision_needed"), "steward: disease severity >= immunity -> decision_needed");
+                    Next();
+                    break;
+                case 3:
+                    if (queued == null) { Kit.Info("no startable research project: research case skipped"); Next(); break; }
+                    if (age < 600 && !Did(evs, "research")) return;
+                    Kit.Check(Did(evs, "research") && Find.ResearchManager.GetProject() == queued, $"steward: no project -> first startable of the queue ({queued.defName}), unknown names skipped");
+                    Next();
+                    break;
+                case 4:
+                    if (age < 1200 && !Did(evs, "dismissRoutineLetters")) return;
+                    Kit.Check(Did(evs, "dismissRoutineLetters") && !Find.LetterStack.LettersListForReading.Any(l => l.Label == "Steward test letter"),
+                        "steward: neutral letter without choices dismissed");
+                    Next();
+                    break;
+                case 5:
+                    if (age < 600 && !Did(evs, "newColonistArea")) return;
+                    Kit.Check(Did(evs, "newColonistArea") && newbie.playerSettings.AreaRestrictionInPawnCurrentMap == area,
+                        "steward: colonist without area gets the one the others use");
+                    foreach (var p in map.mapPawns.FreeColonistsSpawned) p.playerSettings.AreaRestrictionInPawnCurrentMap = null;
+                    Next();
+                    break;
+                case 6:
+                    if (cooler == null) { Kit.Check(false, "could not build the test freezer"); Next(); break; }
+                    if (age < 600 && !Did(evs, "thermostats")) return;
+                    var tc = cooler.TryGetComp<CompTempControl>();
+                    Kit.Check(Did(evs, "thermostats") && tc != null && Math.Abs(tc.TargetTemperature + 10f) < 0.1f,
+                        $"steward: new cooler at 21C with a food stockpile on its cold side -> -10C (now {tc?.TargetTemperature})");
+                    Next();
+                    break;
+                case 7:
+                    if (age == 400)
+                    {
+                        // the steward has seen the pawn armed; now drop it like a downed colonist does
+                        armedPawn.equipment.TryDropEquipment(armedPawn.equipment.Primary, out var dropped, armedPawn.Position);
+                        dropped?.SetForbidden(true, false);
+                        return;
+                    }
+                    if (age < 2000 && !(age > 400 && Did(evs, "unforbidWeapons"))) return;
+                    Kit.Check(Did(evs, "unforbidWeapons"), "steward: a colonist's dropped forbidden weapon is unforbidden (and re-equip ordered)");
+                    Next();
+                    break;
+                case 8:
+                    return;   // checked per frame
+                case 10:
+                    return;   // checked per frame
+                case 11:
+                    bool fought = prey.Drafted || Has(evs, "skirmish");
+
+                    if (age < 1500 && !fought && !cougar.Dead && !cougar.Downed) return;
+                    var gst = Governor.Instance?.StateFor(map);
+                    Kit.Info($"skirmish: cougar job {cougar.CurJob?.def.defName} -> {cougar.CurJob?.targetA.Thing?.LabelShort}, hunt restarts {huntRestarts}, governor active {gst?.active}, threats {gst?.threats.Count}, farHold {gst?.farHold}, events {string.Join(",", evs.Select(e => e["type"]).Distinct())}");
+                    Kit.Check(Has(evs, "threat_start"), "governor sees the cougar next to a colonist far from home as a threat");
+                    Kit.Check(fought, $"far from home, the colonist a predator hunts fights back (skirmish event: {Has(evs, "skirmish")}, drafted: {prey.Drafted}, cougar dead/downed: {cougar.Dead || cougar.Downed})");
+                    if (!cougar.Destroyed) cougar.Destroy();
+                    GovernorPolicy.Current.homeCenter = oldHome;
+                    prey.drafter.Drafted = false;
+                    Next();
+                    break;
+                case 12:
+                    if (generator == null) { Kit.Info("no WoodFiredGenerator def: refuel case skipped"); Next(); break; }
+                    if (age < 1500 && !Did(evs, "refuel")) return;
+                    Kit.Check(Did(evs, "refuel"), "steward: a generator out of fuel with wood in stock -> prioritized refueling (event)");
+                    if (!generator.Destroyed) generator.Destroy();
+                    Next();
+                    break;
+                case 13:
+                    {
+                        var g = Governor.Instance;
+                        if (undraftAt < 0)
+                        {
+                            bool deployed = map.mapPawns.FreeColonistsSpawned.Any(p => p.Drafted);
+                            if (!deployed && age < 3000 && !raider.Dead && !raider.Downed) return;
+                            Kit.Check(deployed, "undraft mid-fight: the governor drafts against a raider 40 cells from home");
+                            if (!deployed) { EndUndraftCase(); break; }
+                            Tools.Run("draft", new Dictionary<string, object> { ["drafted"] = false });   // what after_raid did
+                            undraftAt = ticks;
+                            return;
+                        }
+                        bool redrafted = Has(evs, "manual_released") && map.mapPawns.FreeColonistsSpawned.Any(p => p.Drafted);
+                        if (!redrafted && ticks - undraftAt < 2500 && !raider.Dead && !raider.Downed) return;
+                        bool falseAlarm = evs.Any(e => e["type"] as string == "decision_needed" && (e.TryGetValue("reason", out var r) ? r as string : "") == "no colonist can fight");
+                        Kit.Info($"undraft mid-fight: events {string.Join(",", evs.Select(e => e["type"]).Distinct())}, raider dead/downed {raider.Dead || raider.Downed}, manual {g?.Manual.Count}");
+                        Kit.Check(!falseAlarm, "undraft mid-fight: no false 'no colonist can fight' while the colonists are only held by the player");
+                        Kit.Check(Has(evs, "manual_hold"), "undraft mid-fight: governor reports the colonists as player-held (manual_hold)");
+                        if (Has(evs, "threat_start"))
+                            Kit.Check(Did(evs, "autosavePreRaid"), "autosave: threat_start -> steward saved auto-pre-raid-* (event)");
+                        else Kit.Info("autosave: the threat was already active (no new threat_start): no pre-raid save expected");
+                        Kit.Check(redrafted || raider.Dead || raider.Downed, $"undraft mid-fight: idle player-held colonists go back to the governor after manualReleaseTicks (released: {Has(evs, "manual_released")})");
+                        EndUndraftCase();
+                        break;
+                    }
+                case 14:
+                    {
+                        if (age < 1500 && !Did(evs, "autosaveDaily")) return;
+                        if (age < 120) return;   // the rotation runs in the same long event, after the save
+                        var dir = GenFilePaths.SavedGamesFolderPath;
+                        var files = Directory.GetFiles(dir, "auto-day-*" + GenFilePaths.SavedGameExtension).Select(Path.GetFileNameWithoutExtension).ToList();
+                        string mine = "auto-day-" + GenDate.DaysPassed;
+                        Kit.Check(Did(evs, "autosaveDaily") && files.Contains(mine), $"autosave: a new game day -> steward saved {mine} (files: {string.Join(",", files)})");
+                        Kit.Check(files.Count <= 5, $"autosave: rotation keeps at most 5 auto-day saves ({files.Count})");
+                        foreach (var f in Directory.GetFiles(dir, "auto-day-9000*")) File.Delete(f);
+                        Next();
+                        break;
+                    }
+                case 15:
+                    {
+                        bool armedNow = armless.equipment.Primary?.def.defName == "Gun_AssaultRifle";
+                        if (age < 3000 && !armedNow) return;
+                        Kit.Check(Did(evs, "armNewColonist"), "steward: an unarmed colonist with loose weapons within 30 -> armNewColonist (event)");
+                        Kit.Check(armedNow, $"armNewColonist: the colonist ends up with the forbidden assault rifle 16 cells away, not the knife at 4 (has {armless.equipment.Primary?.LabelCap ?? "nothing"})");
+                        if (knife != null && !knife.Destroyed && knife.Spawned) knife.Destroy();
+                        Next();
+                        break;
+                    }
+                case 9:
+                    if (age == 120)
+                    {
+                        GovernorEvents.Emit("decision_needed", map, new Dictionary<string, object> { ["reason"] = "steward harness stop test" });
+                        runEmitAt = UnityEngine.Time.realtimeSinceStartup;
+                    }
+                    return;   // the stop pauses the game: checked per frame
+            }
+        }
+
+        void EndUndraftCase()
+        {
+            if (raider != null && !raider.Destroyed) raider.Destroy();
+            foreach (var p in map.mapPawns.FreeColonistsSpawned.ToList()) if (p.drafter != null) p.drafter.Drafted = false;
+            GovernorPolicy.Current.homeCenter = oldHome;
+            GovernorPolicy.Current.manualReleaseTicks = oldRelease;
+            Next();
+        }
+
+        List<Dictionary<string, object>> Events()
+        {
+            var r = GovernorEvents.Since(cursor, null, 500);
+            return ((List<object>)r["events"]).Cast<Dictionary<string, object>>().Where(e => (int)(double)e["tick"] >= 0).ToList();
+        }
+
+        bool Did(List<Dictionary<string, object>> evs, string reflex) =>
+            evs.Any(e => e["type"] as string == "steward" && e.TryGetValue("reflex", out var r) && r as string == reflex);
+
+        bool Has(List<Dictionary<string, object>> evs, string type) => evs.Any(e => e["type"] as string == type);
+
+        int Count(List<Dictionary<string, object>> evs, string reflex) =>
+            evs.Count(e => e["type"] as string == "steward" && e.TryGetValue("reflex", out var r) && r as string == reflex);
+
+        string Who(List<Dictionary<string, object>> evs) => string.Join(", ", evs
+            .Where(e => e["type"] as string == "steward" && e.TryGetValue("reflex", out var r) && (r as string == "tend" || r as string == "feedPatients"))
+            .Select(e => $"{e["reflex"]}>{(e.TryGetValue("by", out var b) ? b : "?")}@{e["tick"]}"));
+
+        // a standable cell about `radius` away that a colonist can walk to
+        IntVec3 FarReachable(IntVec3 near, int radius)
+        {
+            foreach (var c in GenRadial.RadialCellsAround(near, radius + 8, true))
+            {
+                if (c.DistanceTo(near) < radius || !c.InBounds(map) || !c.Standable(map) || c.GetThingList(map).Count > 0) continue;
+                if (map.reachability.CanReach(near, c, PathEndMode.OnCell, TraverseParms.For(TraverseMode.PassDoors))) return c;
+            }
+            return Free(near, 6);
+        }
+
+        IntVec3 Free(IntVec3 near, int radius, int clear = 1)
+        {
+            foreach (var c in GenRadial.RadialCellsAround(near, radius + 6, true))
+            {
+                if (c.DistanceTo(near) < radius) continue;
+                var r = CellRect.CenteredOn(c, clear);
+                if (r.InBounds(map) && r.Cells.All(x => x.Standable(map) && x.GetEdifice(map) == null && x.GetThingList(map).Count == 0)) return c;
+            }
+            return near;
+        }
+
+        Building_Bed SpawnBed(IntVec3 c)
+        {
+            var b = (Building_Bed)ThingMaker.MakeThing(ThingDefOf.Bed, ThingDefOf.WoodLog);
+            b.SetFaction(Faction.OfPlayer);
+            GenSpawn.Spawn(b, c, map, Rot4.North);
+            return b;
+        }
+
+        // a 3x3 room: granite walls, a stockpile inside, a cooler in the north wall facing in (rot north)
+        Thing BuildFreezer(IntVec3 center)
+        {
+            var inner = CellRect.CenteredOn(center, 1);
+            foreach (var c in inner.ExpandedBy(1).EdgeCells)
+            {
+                if (c == new IntVec3(center.x, 0, inner.maxZ + 1)) continue;
+                var w = ThingMaker.MakeThing(ThingDefOf.Wall, ThingDefOf.BlocksGranite);
+                w.SetFaction(Faction.OfPlayer);
+                GenSpawn.Spawn(w, c, map);
+            }
+            var zone = new Zone_Stockpile(StorageSettingsPreset.DefaultStockpile, map.zoneManager);
+            map.zoneManager.RegisterZone(zone);
+            foreach (var c in inner) zone.AddCell(c);
+            var def = DefDatabase<ThingDef>.GetNamedSilentFail("Cooler");
+            if (def == null) return null;
+            var cool = ThingMaker.MakeThing(def);
+            cool.SetFaction(Faction.OfPlayer);
+            return GenSpawn.Spawn(cool, new IntVec3(center.x, 0, inner.maxZ + 1), map, Rot4.North);
+        }
+
+        void Finish()
+        {
+            done = true;
+            Find.TickManager.CurTimeSpeed = TimeSpeed.Ultrafast;   // let the probe reach TICKS DONE
+            try
+            {
+                if (originalPolicy != null) File.WriteAllText(GovernorPolicy.FilePath, originalPolicy);
+                Tools.Run("governor", new Dictionary<string, object> { ["action"] = "reload" });
+            }
+            catch (Exception e) { Kit.Info("could not restore governor.json: " + e.Message); }
+            Kit.Summary(Mod);
+            // both harnesses are done: tell `rw launch --wait --kill` now instead of idling to --ticks
+            Log.Message($"[rwtools] TICKS DONE (harnesses finished at harness tick {ticks})");
+        }
+    }
+}
