@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Old Scores Test</name>
+  <packageId>nahuel.oldscorestest</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+    <li>
+      <packageId>nahuel.oldscores</packageId>
+      <displayName>Old Scores</displayName>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+    <li>nahuel.oldscores</li>
+  </loadAfter>
+  <description>Test harness for Old Scores (nahuel.oldscores). Only does something under `rw launch --ticks N` (command-line arg -rwtools-ticks): from tick 2700 it drives the three features through real kills, captures, raids, exits and the queued incident, and logs [Test] PASS/FAIL lines. Not for normal play.</description>
+</ModMetaData>
