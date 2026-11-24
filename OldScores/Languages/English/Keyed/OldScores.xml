@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <!-- Settings -->
+  <OldScores_Settings_Nicknames>Enemy Nickname</OldScores_Settings_Nicknames>
+  <OldScores_Settings_NicknamesDesc>A colonist who kills five of a faction's people (or its leader) gets a nickname from them, and their raiders may flee in dread when they see her.</OldScores_Settings_NicknamesDesc>
+  <OldScores_Settings_Spared>The One You Spared</OldScores_Settings_Spared>
+  <OldScores_Settings_SparedDesc>A hostile captured by a colonist and later released may come back with a raid of his faction, and join the colony when he sees the one who captured him.</OldScores_Settings_SparedDesc>
+  <OldScores_Settings_Beasts>The Beast That Came Back</OldScores_Settings_Beasts>
+  <OldScores_Settings_BeastsDesc>A wild animal that badly hurts a colonist and gets away is named, scarred, and comes back one or two quadrums later, tougher and furious. Killing it leaves a trophy.</OldScores_Settings_BeastsDesc>
+  <OldScores_Settings_Echoes>Raid Echoes</OldScores_Settings_Echoes>
+  <OldScores_Settings_EchoesDesc>Each map remembers how past raids came at the colony: the roads they walked, where they broke in, where they fell. An overlay toggle in the bottom-right icon row shows the faint echoes, and a message tells you when a faction comes by the same road again.</OldScores_Settings_EchoesDesc>
+
+  <!-- Enemy Nickname -->
+  <OldScores_Nickname_LetterLabel>Nicknamed: {0}</OldScores_Nickname_LetterLabel>
+  <OldScores_Nickname_LetterText>{0} have started calling {1} "{2}". {3} of their people fell to {PAWN_objective}, and the story is going around their camps.\n\nTheir raiders may break and run when they see {PAWN_objective} up close.</OldScores_Nickname_LetterText>
+  <OldScores_Nickname_LetterTextLeader>{1} killed {3}, the leader of {0}. They have started calling {PAWN_objective} "{2}", and nobody laughs when they say it.\n\nTheir raiders may break and run when they see {PAWN_objective} up close.</OldScores_Nickname_LetterTextLeader>
+  <OldScores_Nickname_Inspect>Known as {0}</OldScores_Nickname_Inspect>
+  <OldScores_Nickname_Fallback>the Nightmare</OldScores_Nickname_Fallback>
+  <OldScores_Dread_Reason>{0} is here. {1}.</OldScores_Dread_Reason>
+
+  <!-- The One You Spared -->
+  <OldScores_Spared_Line1>You carried me out of the snow.</OldScores_Spared_Line1>
+  <OldScores_Spared_Line2>{0}... you let me walk away. I remember.</OldScores_Spared_Line2>
+  <OldScores_Spared_Line3>Not you. Anyone but you.</OldScores_Spared_Line3>
+  <OldScores_Spared_Line4>I owe you a life, {0}. I came to pay it.</OldScores_Spared_Line4>
+  <OldScores_Spared_Line5>You gave me water when you had no reason to.</OldScores_Spared_Line5>
+  <OldScores_Spared_LetterLabel>An old debt: {0}</OldScores_Spared_LetterLabel>
+  <OldScores_Spared_LetterText>{0} came back with a raid of {2}, and stopped dead when {PAWN_pronoun} saw {1}.\n\n"{3}"\n\nOnce, {1} carried {PAWN_objective} in as a prisoner, and the colony let {PAWN_objective} go. {0} has thrown down {PAWN_possessive} weapon and joined the colony.</OldScores_Spared_LetterText>
+  <OldScores_Spared_Inspect>Once spared by {0}.</OldScores_Spared_Inspect>
+
+  <!-- The Beast That Came Back -->
+  <OldScores_Beast_Label>Hurt {0}</OldScores_Beast_Label>
+  <OldScores_Beast_LetterLabel>It came back: {0}</OldScores_Beast_LetterLabel>
+  <OldScores_Beast_LetterText>{0}, the {1} that hurt {2}, has come back. It is scarred, it is older, and it remembers the way here.\n\nIt will hunt your people until it dies or decides to leave again.</OldScores_Beast_LetterText>
+  <OldScores_Beast_KilledMessage>{0} is dead at last, killed by {1}. An old score is settled.</OldScores_Beast_KilledMessage>
+  <OldScores_Beast_SomeoneFallback>Someone</OldScores_Beast_SomeoneFallback>
+  <OldScores_Beast_NameFallback>Old Scar</OldScores_Beast_NameFallback>
+  <OldScores_Trophy_History>{0}, a {1}. It hurt {2} on {3} and got away. It came back scarred, and {4} killed it on {5}.</OldScores_Trophy_History>
+  <OldScores_Trophy_HistoryNoKiller>{0}, a {1}. It hurt {2} on {3} and got away. It came back scarred, and died on {4}.</OldScores_Trophy_HistoryNoKiller>
+
+  <!-- Raid Echoes -->
+  <OldScores_Echo_ToggleTip>Raid echoes: show the roads past raids took to the colony, where they broke in (rings) and where they fell (crosses). Older raids fade.</OldScores_Echo_ToggleTip>
+  <OldScores_Echo_OldRoad>They come by the old road again: {0}, from the {1}.</OldScores_Echo_OldRoad>
+  <OldScores_Echo_North>north</OldScores_Echo_North>
+  <OldScores_Echo_South>south</OldScores_Echo_South>
+  <OldScores_Echo_East>east</OldScores_Echo_East>
+  <OldScores_Echo_West>west</OldScores_Echo_West>
+  <OldScores_Echo_OneRaid>1 raid</OldScores_Echo_OneRaid>
+  <OldScores_Echo_Raids>{0} raids</OldScores_Echo_Raids>
+  <OldScores_Echo_LabelBreach>{0} - {1}, broke in here</OldScores_Echo_LabelBreach>
+  <OldScores_Echo_LabelBreachOther>{0} - broke in here</OldScores_Echo_LabelBreachOther>
+  <OldScores_Echo_Label>{0} - {1}</OldScores_Echo_Label>
+
+  <!-- The Beast Remembers -->
+  <OldScores_Settings_BeastMemory>The Beast Remembers</OldScores_Settings_BeastMemory>
+  <OldScores_Settings_BeastMemoryDesc>A colony animal remembers the person who hurt it and growls at them whenever they are close again - as a prisoner, a recruit, a visitor or a raider. A raider brought down by one of your animals is afraid of it once he is your prisoner: seeing it near his cell upsets him and wears his resistance down.</OldScores_Settings_BeastMemoryDesc>
+  <OldScores_Grudge_Inspect>Remembers who hurt it: {0}</OldScores_Grudge_Inspect>
+</LanguageData>

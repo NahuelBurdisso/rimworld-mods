@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+
+  <!-- Raiders in OldScores_Dread flee from the colonist who caused it (MentalState.causedByPawn),
+       wired like Core's SubTrees_Misc.xml wires Odyssey's Terror state. -->
+  <Operation Class="PatchOperationAdd">
+    <xpath>Defs/ThinkTreeDef[defName="MentalStateNonCritical"]/thinkRoot/subNodes</xpath>
+    <order>Prepend</order>
+    <value>
+      <li Class="ThinkNode_ConditionalMentalState">
+        <state>OldScores_Dread</state>
+        <subNodes>
+          <li Class="JobGiver_FleeTerror" />
+          <li Class="JobGiver_WanderAnywhere">
+            <maxDanger>Some</maxDanger>
+            <locomotionUrgency>Jog</locomotionUrgency>
+          </li>
+        </subNodes>
+      </li>
+    </value>
+  </Operation>
+
+</Patch>
