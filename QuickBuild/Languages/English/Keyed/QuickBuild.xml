@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <QB_SettingsCategory>Quick Build</QB_SettingsCategory>
+  <QB_Multiplier>Construction speed multiplier: x{0}</QB_Multiplier>
+  <QB_MultiplierTip>Multiplies construction speed: building, deconstructing, repairing, roofs and floors. Materials are still needed and hauled. x1 = vanilla.</QB_MultiplierTip>
+  <QB_PlayerOnly>Only the player's colony</QB_PlayerOnly>
+  <QB_PlayerOnlyTip>When on, raiders and other factions build at normal speed.</QB_PlayerOnlyTip>
+  <QB_Explanation>Quick Build</QB_Explanation>
+</LanguageData>

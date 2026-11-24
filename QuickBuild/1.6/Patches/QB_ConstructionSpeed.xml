@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- ConstructionSpeed has no <parts> as written: create the list if needed, then add ours -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/StatDef[defName="ConstructionSpeed"]/parts</xpath>
+    <nomatch Class="PatchOperationAdd">
+      <xpath>Defs/StatDef[defName="ConstructionSpeed"]</xpath>
+      <value>
+        <parts />
+      </value>
+    </nomatch>
+  </Operation>
+  <Operation Class="PatchOperationAdd">
+    <xpath>Defs/StatDef[defName="ConstructionSpeed"]/parts</xpath>
+    <value>
+      <li Class="QuickBuild.StatPart_QuickBuild" />
+    </value>
+  </Operation>
+</Patch>
