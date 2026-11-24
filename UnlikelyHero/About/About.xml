@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Unlikely Hero</name>
+  <packageId>nahuel.unlikelyhero</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+  </loadAfter>
+  <description>Sometimes the one who saves the day is the last person anyone expected.
+
+The first time a colonist who never fought - the cook, the doctor, the artist, the one who tends the animals - brings down a real enemy in a raid or an animal attack, the colony sees it happen: a brief column of warm light rises over them, the words "An unlikely hero!" float above their head and a message tells the story.
+
+&lt;b&gt;What it leaves behind&lt;/b&gt;
+- The hero thinks "I didn't know I had it in me" (+6 mood for six days).
+- Colonists who saw it with their own eyes remember it (+3 mood, +10 opinion of the hero).
+- A tale the colony's artists can carve.
+- A small chance (15%, adjustable) of a permanent change: the steadfast trait, or, if steadfast conflicts with their traits, a new passion in the skill they fought with.
+
+It happens once per colonist, ever, and it is saved with your game.
+
+&lt;b&gt;Who counts&lt;/b&gt;
+A colonist whose Shooting and Melee are both 4 or lower, or whose best skill is Cooking, Medicine, Artistic or Animals (with both combat skills below it and at most 8). No bloodlust, brawler, careful shooter, trigger-happy or psychopath. It must be their first kill of a person or a mechanoid.
+
+&lt;b&gt;What does not count&lt;/b&gt;
+Finishing off a downed enemy, executions, prisoners, your own animals or mechanoids, a colonist in a mental break, kills by fire or explosions, and anything that was not an active threat.
+
+Every number is in the mod settings. Works with Gesta: when Gesta is active, Unlikely Hero leaves the column of light and the tale to Gesta's feats and keeps the thoughts and the memories (this can be switched off). Safe to add to an existing save. No DLC required.</description>
+</ModMetaData>
