@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <!-- Settings -->
+  <Omens_Settings_Enabled>Enabled</Omens_Settings_Enabled>
+  <Omens_Settings_RainReveals>Rain Reveals the Unseen</Omens_Settings_RainReveals>
+  <Omens_Settings_RainRevealsDesc>In rain, splashes outline an invisible hostile creature standing under open sky; in snow, white dust does. It stays untargetable. Requires Anomaly to matter.</Omens_Settings_RainRevealsDesc>
+  <Omens_Settings_Crows>The Crows Know</Omens_Settings_Crows>
+  <Omens_Settings_CrowsDesc>Crows circle over raiders who wait before attacking, fly off toward your colony when the assault starts, and circle over the unburied dead after a bloody battle.</Omens_Settings_CrowsDesc>
+  <Omens_Settings_ColdCamp>The Cold Camp</Omens_Settings_ColdCamp>
+  <Omens_Settings_ColdCampDesc>Raiders who waited before attacking leave a cold campfire that remembers who camped there, how long, how many came and how many went home.</Omens_Settings_ColdCampDesc>
+
+  <!-- Cold camp -->
+  <Omens_ColdCamp_The>The {0}</Omens_ColdCamp_The>
+  <Omens_ColdCamp_Unknown>Raiders</Omens_ColdCamp_Unknown>
+  <Omens_ColdCamp_Entry>{0} waited here {1}, {2}. {3} came; {4} went home.</Omens_ColdCamp_Entry>
+  <Omens_ColdCamp_Earlier>(and {0} earlier camps)</Omens_ColdCamp_Earlier>
+
+</LanguageData>

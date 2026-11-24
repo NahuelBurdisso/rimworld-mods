@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- ============ Rain Reveals the Unseen ============ -->
+
+  <!-- A droplet ring that widens and fades: many of them on an ellipse draw the outline. -->
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Omens_RainSplash</defName>
+    <graphicData>
+      <texPath>Things/Omens/Splash</texPath>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.04</fadeInTime>
+    <solidTime>0.12</solidTime>
+    <fadeOutTime>0.34</fadeOutTime>
+    <growthRate>0.5</growthRate>
+  </FleckDef>
+
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Omens_SnowDust</defName>
+    <graphicData>
+      <texPath>Things/Omens/Dust</texPath>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.1</fadeInTime>
+    <solidTime>0.3</solidTime>
+    <fadeOutTime>0.6</fadeOutTime>
+  </FleckDef>
+
+  <!-- ============ The Crows Know ============ -->
+
+  <ThingDef ParentName="MoteBase">
+    <defName>Omens_Crow</defName>
+    <thingClass>Omens.CrowMote</thingClass>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <graphicData>
+      <texPath>Things/Omens/Crow</texPath>
+      <drawSize>(1.4, 1.4)</drawSize>
+    </graphicData>
+    <mote>
+      <fadeInTime>1.5</fadeInTime>
+      <solidTime>999999</solidTime>
+      <fadeOutTime>1.5</fadeOutTime>
+      <rotateTowardsMoveDirection>true</rotateTowardsMoveDirection>
+    </mote>
+  </ThingDef>
+
+  <!-- ============ The Cold Camp ============ -->
+
+  <ThingDef ParentName="BuildingBase">
+    <defName>Omens_ColdCamp</defName>
+    <label>cold campfire</label>
+    <description>A dead campfire with cold ash around it. Raiders waited here before they attacked. Whoever camps near it again adds to its story.
+
+It can be removed; nothing worth keeping is left in it.</description>
+    <thingClass>Omens.Building_ColdCamp</thingClass>
+    <graphicData>
+      <texPath>Things/Omens/ColdCamp</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>(1.8, 1.8)</drawSize>
+      <drawRotated>false</drawRotated>
+      <allowFlip>false</allowFlip>
+      <damageData>
+        <rect>(0.2,0,0.6,0.1)</rect>
+      </damageData>
+    </graphicData>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>Standable</passability>
+    <pathCost>14</pathCost>
+    <fillPercent>0.1</fillPercent>
+    <rotatable>false</rotatable>
+    <tickerType>Never</tickerType>
+    <useHitPoints>true</useHitPoints>
+    <statBases>
+      <MaxHitPoints>60</MaxHitPoints>
+      <WorkToBuild>120</WorkToBuild>
+      <Flammability>0</Flammability>
+      <Beauty>-2</Beauty>
+    </statBases>
+    <leaveResourcesWhenKilled>false</leaveResourcesWhenKilled>
+    <filthLeaving>Filth_Ash</filthLeaving>
+    <soundImpactDefault>BulletImpact_Ground</soundImpactDefault>
+    <building>
+      <claimable>false</claimable>
+      <alwaysDeconstructible>true</alwaysDeconstructible>
+      <expandHomeArea>false</expandHomeArea>
+      <ai_chillDestination>false</ai_chillDestination>
+      <isInert>true</isInert>
+    </building>
+  </ThingDef>
+
+</Defs>
