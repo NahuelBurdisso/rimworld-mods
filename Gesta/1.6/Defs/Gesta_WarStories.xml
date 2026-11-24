@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- War Stories: chosen by Gesta.InteractionWorker_WarStory only for colonists with a fresh battle
+       to tell. GESTAKILLS is replaced in the log text by the (growing) number of the telling. -->
+  <InteractionDef>
+    <defName>Gesta_RecountsBattle</defName>
+    <label>war story</label>
+    <workerClass>Gesta.InteractionWorker_WarStory</workerClass>
+    <symbol>Things/Gesta/WarStory</symbol>
+    <initiatorXpGainSkill>Social</initiatorXpGainSkill>
+    <initiatorXpGainAmount>8</initiatorXpGainAmount>
+    <logRulesInitiator>
+      <rulesStrings>
+        <li>r_logentry->[INITIATOR_nameDef] told [RECIPIENT_nameDef] how [INITIATOR_pronoun] felled GESTAKILLS raiders [flourish].</li>
+        <li>r_logentry->[INITIATOR_nameDef] recounted the last battle to [RECIPIENT_nameDef]: GESTAKILLS enemies, [flourish].</li>
+        <li>r_logentry->According to [INITIATOR_nameDef], who was telling [RECIPIENT_nameDef] about it, GESTAKILLS raiders fell to [INITIATOR_objective] [flourish].</li>
+        <li>flourish->single-handed</li>
+        <li>flourish->with one arm tied behind [INITIATOR_possessive] back</li>
+        <li>flourish->before breakfast</li>
+        <li>flourish->while badly wounded</li>
+        <li>flourish->without breaking a sweat</li>
+        <li>flourish->in the rain, uphill</li>
+        <li>flourish->in about a minute</li>
+        <li>flourish->and barely got a scratch</li>
+      </rulesStrings>
+    </logRulesInitiator>
+  </InteractionDef>
+
+  <ThoughtDef>
+    <defName>Gesta_NotHowItHappened</defName>
+    <thoughtClass>Thought_MemorySocial</thoughtClass>
+    <durationDays>3</durationDays>
+    <stackLimit>5</stackLimit>
+    <stackLimitForSameOtherPawn>2</stackLimitForSameOtherPawn>
+    <stages>
+      <li>
+        <label>that's not how it happened</label>
+        <description>I was there. It was not that many, and it was not like that.</description>
+        <baseOpinionOffset>-3</baseOpinionOffset>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <ThoughtDef>
+    <defName>Gesta_InspiredByWarStory</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>1</durationDays>
+    <stackLimit>3</stackLimit>
+    <stackLimitForSameOtherPawn>1</stackLimitForSameOtherPawn>
+    <stages>
+      <li>
+        <label>{0}'s war story</label>
+        <description>The way they told it, the fight sounded like something out of a legend. Maybe we really are that tough.</description>
+        <baseMoodEffect>3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Gesta_Fleck_WarStory</defName>
+    <altitudeLayer>MetaOverlays</altitudeLayer>
+    <fadeInTime>0.1</fadeInTime>
+    <solidTime>0.6</solidTime>
+    <fadeOutTime>0.6</fadeOutTime>
+    <graphicData>
+      <texPath>Things/Gesta/WarStory</texPath>
+      <drawSize>(0.6, 0.6)</drawSize>
+    </graphicData>
+  </FleckDef>
+
+</Defs>

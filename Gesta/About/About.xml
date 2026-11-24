@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Gesta</name>
+  <packageId>nahuel.gesta</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+  </loadAfter>
+  <description>Combat that becomes legend.\n\nGesta turns the rare, decisive moments of a fight into something the colony remembers. Every feature can be switched off in the mod settings.\n\n&lt;b&gt;The Last One Standing&lt;/b&gt;\nWhen everyone else is down and a single colonist is still on their feet against a real attack, the game stops to watch them: the camera finds them, the battle music fades to silence, the screen edges pulse like a heartbeat and their name turns gold. They fight without pain or panic for an hour, then crash. If they hold, they never forget it, the friends they stood over remember it too, and the colony's artists will carve it.
+
+&lt;b&gt;Feats of Arms&lt;/b&gt;
+Three kills in ten seconds, a thrumbo felled in close combat, the enemy's true leader brought down, a wounded friend carried out under fire: a column of golden light marks the moment and the colony gives the colonist a name for it (shown as their title, never replacing one you typed), plus a tale for the artists.
+
+&lt;b&gt;Battlefield Poppies&lt;/b&gt;
+Where someone fell in battle, a poppy blooms the next growing season: red for your people, white for the enemy. Inspect it to read who fell there, who killed them and when. Those who loved the fallen are moved when they pass by.
+
+&lt;b&gt;Ash Silhouettes&lt;/b&gt;
+Someone killed by an explosion or by fire leaves their shadow burned into the ground, drawn from their real appearance. It does not wash out; it fades after a year, or when you rebuild the floor.
+
+&lt;b&gt;Turning Tide&lt;/b&gt;
+When a fight goes badly the sky drains to a cold steel grey. Turn it around and win, and the clouds open gold. Light levels never change, only the colour, and only when the colony is truly outmatched and already losing people.
+
+&lt;b&gt;Blood-Stained&lt;/b&gt;
+Those who fought up close come back spattered with blood, from speckled to drenched. It washes off over a day or two, faster with sleep.
+
+&lt;b&gt;Brothers in Arms&lt;/b&gt;
+Two colonists who fight side by side in three battles become brothers (or sisters) in arms: they like each other more, wear matching red sashes, flinch when the other goes down, and grieve like family. If one dies, the survivor's sash turns black.
+
+&lt;b&gt;The Chronicler&lt;/b&gt;
+A narrator speaks at the decisive moments of a fight: the first to fall, a death, the enemy leader slain, someone getting back up, the victory. One line across the bottom of the screen, written from the colonist's real history, in the voice of your storyteller.
+
+&lt;b&gt;The Breaking Blow&lt;/b&gt;
+When the last raider of a big raid falls, the camera finds whoever fired the shot, time slows for a breath, black bars close in and the moment is named.
+
+&lt;b&gt;War Stories&lt;/b&gt;
+After a battle, the colonists who scored kills tell the tale over dinner, and the number of raiders grows with every telling. Those who were there roll their eyes; those who were not are inspired.
+
+&lt;b&gt;The Champion's Challenge&lt;/b&gt;
+Sometimes, in the middle of an assault, the raiders' champion plants a banner between the lines and calls for single combat. The rest of the raid holds its ground. Send a drafted colonist into the circle: win, and the raiders lose heart and flee; lose, and the attack resumes. Strike them during the truce, or leave the challenge unanswered for an hour, and the colony carries the shame.
+
+&lt;b&gt;Trash Talk&lt;/b&gt;
+Before the shooting starts, a colonist with a sharp tongue (good Social, or an abrasive, bloodthirsty or brawling temper) shouts insults across the field at the raiders, and they shout back: you see the words above their heads and the exchange in the log. A good insult rattles the raid; enough of them and its weakest raider breaks and runs. A clumsy one gets the whole raid laughing, and stings. A few exchanges per raid at most.</description>
+</ModMetaData>

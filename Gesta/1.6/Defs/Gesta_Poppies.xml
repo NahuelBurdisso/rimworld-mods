@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Battlefield Poppies: spawned by Gesta.PoppyField where someone fell. Not sowable, not harvestable,
+       not edible, never dies of age (Gesta.Plant_Poppy). -->
+  <ThingDef Name="Gesta_PoppyBase" ParentName="PlantBaseNonEdible" Abstract="True">
+    <thingClass>Gesta.Plant_Poppy</thingClass>
+    <selectable>true</selectable>
+    <statBases>
+      <MaxHitPoints>60</MaxHitPoints>
+      <Beauty>8</Beauty>
+      <BeautyOutdoors>8</BeautyOutdoors>
+    </statBases>
+    <plant>
+      <fertilityMin>0.5</fertilityMin>
+      <growDays>2</growDays>
+      <lifespanDaysPerGrowDays>0</lifespanDaysPerGrowDays>
+      <dieIfLeafless>false</dieIfLeafless>
+      <neverBlightable>true</neverBlightable>
+      <allowAutoCut>false</allowAutoCut>
+      <warnIfMarkedForCut>true</warnIfMarkedForCut>
+      <purpose>Beauty</purpose>
+      <visualSizeRange>0.55~0.9</visualSizeRange>
+      <harvestYield>0</harvestYield>
+      <topWindExposure>0.25</topWindExposure>
+    </plant>
+  </ThingDef>
+
+  <ThingDef ParentName="Gesta_PoppyBase">
+    <defName>Gesta_PoppyRed</defName>
+    <label>red poppy</label>
+    <description>A red poppy growing where one of the colony's own fell in battle. Nobody planted it.</description>
+    <graphicData>
+      <texPath>Things/Gesta/PoppyRed</texPath>
+    </graphicData>
+  </ThingDef>
+
+  <ThingDef ParentName="Gesta_PoppyBase">
+    <defName>Gesta_PoppyWhite</defName>
+    <label>white poppy</label>
+    <description>A white poppy growing where an enemy fell in battle. Nobody planted it.</description>
+    <graphicData>
+      <texPath>Things/Gesta/PoppyWhite</texPath>
+    </graphicData>
+  </ThingDef>
+
+  <ThoughtDef>
+    <defName>Gesta_VisitedPoppy</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>1</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>remembered the fallen</label>
+        <description>I passed the red poppy where they fell. It hurts, but it's good that something grows there.</description>
+        <baseMoodEffect>3</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+
+</Defs>

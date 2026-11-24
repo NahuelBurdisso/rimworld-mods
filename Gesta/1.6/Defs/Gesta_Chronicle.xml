@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- The Chronicler: lines resolved by Gesta.Chronicler with GrammarResolver (root r_line).
+       Symbols: PAWN (the subject), OTHER (enemy/leader, when hasOther==True).
+       Constants for conditions: storyteller, kills, timesDowned, count, hasLover, veteran, hasOther.
+       Text rules for numbers: [kills], [timesDowned], [count]. -->
+
+  <RulePackDef>
+    <defName>Gesta_Chronicle_FirstDown</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>r_line->[PAWN_nameDef] falls first. Someone always has to.</li>
+        <li>r_line->The first blood of the day belongs to [PAWN_nameDef].</li>
+        <li>r_line(timesDowned>=3)->[PAWN_nameDef] is down again. The ground knows [PAWN_objective] by name now.</li>
+        <li>r_line(veteran==True)->[kills] enemies have fallen to [PAWN_nameDef]. Today the ground takes [PAWN_objective] first.</li>
+        <li>r_line(hasOther==True)->[OTHER_nameDef] draws first blood. [PAWN_nameDef] will remember that face.</li>
+        <li>r_line(hasLover==True)->[PAWN_nameDef] goes down, and somewhere in the colony a heart skips.</li>
+        <li>r_line(storyteller==Randy)->[PAWN_nameDef] is down. Bad luck. Hilarious, but bad.</li>
+        <li>r_line(storyteller==Phoebe)->[PAWN_nameDef] falls. Rest, if only for a moment.</li>
+        <li>r_line(storyteller==Cassandra)->The first to fall is [PAWN_nameDef]. The pattern begins.</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+  <RulePackDef>
+    <defName>Gesta_Chronicle_Death</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>r_line->[PAWN_nameDef] is gone. The colony is smaller now, and quieter.</li>
+        <li>r_line->Mark the place. [PAWN_nameDef] fell here.</li>
+        <li>r_line(hasOther==True)->[OTHER_nameDef] took [PAWN_nameDef] from us. Remember that name.</li>
+        <li>r_line(veteran==True)->[kills] foes fell to [PAWN_nameDef]. In the end, one was enough.</li>
+        <li>r_line(hasLover==True)->[PAWN_nameDef] dies, and someone will wait at a door that will not open.</li>
+        <li>r_line(timesDowned>=2)->[PAWN_nameDef] got back up [timesDowned] times. Not this time.</li>
+        <li>r_line(storyteller==Randy)->[PAWN_nameDef] is dead. The dice do not care. They never did.</li>
+        <li>r_line(storyteller==Phoebe)->Sleep now, [PAWN_nameDef]. You did enough.</li>
+        <li>r_line(storyteller==Cassandra)->[PAWN_nameDef] falls, and the story tightens around those who remain.</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+  <RulePackDef>
+    <defName>Gesta_Chronicle_Kingslayer</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>r_line->[PAWN_nameDef] cuts the head from the serpent. [OTHER_nameDef] will lead no one again.</li>
+        <li>r_line->[OTHER_nameDef] came to conquer. [PAWN_nameDef] had other plans.</li>
+        <li>r_line(veteran==True)->One more for [PAWN_nameDef], and the one that mattered most.</li>
+        <li>r_line(storyteller==Randy)->[PAWN_nameDef] kills [OTHER_nameDef]. A promotion opens up in the enemy ranks.</li>
+        <li>r_line(storyteller==Phoebe)->[OTHER_nameDef] falls. Maybe now the rest will go home.</li>
+        <li>r_line(storyteller==Cassandra)->Their leader is dead. Watch the rest begin to doubt.</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+  <RulePackDef>
+    <defName>Gesta_Chronicle_Recovered</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>r_line->[PAWN_nameDef] rises. Not finished. Not yet.</li>
+        <li>r_line->Blood in [PAWN_possessive] mouth, [PAWN_nameDef] finds [PAWN_possessive] feet again.</li>
+        <li>r_line(timesDowned>=3)->Down [timesDowned] times, and still [PAWN_nameDef] stands up.</li>
+        <li>r_line(storyteller==Randy)->[PAWN_nameDef] gets back up. Nobody expected that, least of all [PAWN_nameDef].</li>
+        <li>r_line(storyteller==Phoebe)->[PAWN_nameDef] stands. Slowly. Carefully. Still here.</li>
+        <li>r_line(storyteller==Cassandra)->[PAWN_nameDef] refuses the ending written for [PAWN_objective].</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+  <RulePackDef>
+    <defName>Gesta_Chronicle_Victory</defName>
+    <rulePack>
+      <rulesStrings>
+        <li>r_line->The attackers break. [count] of them lie still, and [PAWN_nameDef] is still breathing.</li>
+        <li>r_line->It is over. [PAWN_nameDef] lowers [PAWN_possessive] weapon and listens to the silence.</li>
+        <li>r_line(veteran==True)->Another day survived. [PAWN_nameDef] has stopped counting. We have not: [kills].</li>
+        <li>r_line(storyteller==Randy)->Victory. Nobody planned it, and it worked anyway.</li>
+        <li>r_line(storyteller==Phoebe)->The fighting stops. Tend the wounded. Bury the dead. Breathe.</li>
+        <li>r_line(storyteller==Cassandra)->They are beaten, for now. They will remember this place.</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+</Defs>
