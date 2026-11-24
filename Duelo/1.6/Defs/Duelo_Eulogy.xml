@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- One line of a eulogy rising from a grave. Drawn as GUI text by Duelo.Mote_EulogyLine;
+       realTime like vanilla text motes, so it stays readable at any game speed. -->
+  <ThingDef ParentName="MoteBase">
+    <defName>Duelo_Mote_EulogyLine</defName>
+    <thingClass>Duelo.Mote_EulogyLine</thingClass>
+    <altitudeLayer>MetaOverlays</altitudeLayer>
+    <drawGUIOverlay>true</drawGUIOverlay>
+    <mote>
+      <realTime>true</realTime>
+      <fadeInTime>0.6</fadeInTime>
+      <solidTime>5.5</solidTime>
+      <fadeOutTime>2.4</fadeOutTime>
+    </mote>
+    <graphicData>
+      <graphicClass>Graphic_Mote</graphicClass>
+      <shaderType>Mote</shaderType>
+      <texPath>Things/Mote/Transparent</texPath>
+    </graphicData>
+  </ThingDef>
+
+  <!-- Embers that drift up from the grave while the eulogy is read. -->
+  <FleckDef ParentName="FleckBase_Thrown">
+    <defName>Duelo_Fleck_Ember</defName>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <fadeInTime>0.1</fadeInTime>
+    <solidTime>1.1</solidTime>
+    <fadeOutTime>2.0</fadeOutTime>
+    <growthRate>-0.12</growthRate>
+    <graphicData>
+      <texPath>Things/Duelo/SoulGlow</texPath>
+      <shaderType>MoteGlow</shaderType>
+      <drawSize>(0.5, 0.5)</drawSize>
+      <color>(255, 150, 60)</color>
+    </graphicData>
+  </FleckDef>
+
+  <RulePackDef>
+    <defName>Duelo_RulePack_Eulogy</defName>
+    <rulePack>
+      <rulesStrings>
+        <!-- opening -->
+        <li>eulogy_open->[PAWN_nameDef] walked beside us for [DURATION].</li>
+        <li>eulogy_open->For [DURATION], [PAWN_nameDef] was one of us.</li>
+        <li>eulogy_open->[PAWN_nameDef] shared our walls and our bread for [DURATION].</li>
+        <li>eulogy_open_pod->[PAWN_nameDef] fell out of the sky in a drop pod, and stayed with us for [DURATION].</li>
+        <li>eulogy_open_pod->[PAWN_nameDef] came down in a burning pod. We pulled [PAWN_objective] out, and [PAWN_pronoun] stayed [DURATION].</li>
+        <li>eulogy_open_recruited->[PAWN_nameDef] came to us as a prisoner, and chose to stay. That was [DURATION] ago.</li>
+        <li>eulogy_open_recruited->We met [PAWN_nameDef] behind bars. For [DURATION] after that, [PAWN_pronoun] was family.</li>
+
+        <!-- records -->
+        <li>eulogy_kills->When enemies came, [PAWN_nameDef] stood at the wall. [COUNT] of them never left.</li>
+        <li>eulogy_kills->[PAWN_pronoun] brought down [COUNT] foes so the rest of us could sleep.</li>
+        <li>eulogy_kills->[COUNT] enemies fell before [PAWN_nameDef] ever lowered [PAWN_possessive] weapon.</li>
+        <li>eulogy_surgeon->[PAWN_possessive] hands performed [COUNT] operations. Some of us are standing here because of them.</li>
+        <li>eulogy_surgeon->[COUNT] times [PAWN_pronoun] picked up the scalpel, and [PAWN_possessive] hands never shook.</li>
+        <li>eulogy_tender->[PAWN_pronoun] tended our wounds [COUNT] times and never once complained.</li>
+        <li>eulogy_tender->[COUNT] times we bled, and [COUNT] times [PAWN_nameDef] was there with bandages.</li>
+        <li>eulogy_crafter->[COUNT] things [PAWN_pronoun] made with [PAWN_possessive] own hands are still in ours.</li>
+        <li>eulogy_crafter->[PAWN_nameDef] crafted [COUNT] things for this colony. Look around; you are holding one.</li>
+        <li>eulogy_builder->[COUNT] of the walls and floors around us were raised by [PAWN_nameDef].</li>
+        <li>eulogy_builder->[PAWN_pronoun] built [COUNT] things here. This place is partly [PAWN_objective].</li>
+        <li>eulogy_cook->[PAWN_pronoun] cooked [COUNT] meals for us. We never thanked [PAWN_objective] enough.</li>
+        <li>eulogy_cook->[COUNT] meals came out of [PAWN_possessive] kitchen. Tonight's will taste different.</li>
+        <li>eulogy_farmer->[PAWN_pronoun] brought in [COUNT] plants from the fields, one harvest at a time.</li>
+        <li>eulogy_farmer->[COUNT] times [PAWN_nameDef] knelt in the dirt to bring something home to eat.</li>
+        <li>eulogy_tamer->[COUNT] wild animals learned to trust a human because of [PAWN_objective].</li>
+        <li>eulogy_recruiter->[COUNT] of the people around us first came here as prisoners. [PAWN_nameDef] talked them into staying.</li>
+        <li>eulogy_miner->[PAWN_pronoun] cut [COUNT] cells of stone out of the rock to give us room.</li>
+        <li>eulogy_researcher->[PAWN_pronoun] spent long nights at the research bench, and we all know more because of it.</li>
+        <li>eulogy_researcher->Much of what this colony knows, [PAWN_nameDef] learned first.</li>
+
+        <!-- who they were -->
+        <li>eulogy_skill->No one handled [SKILL] like [PAWN_nameDef].</li>
+        <li>eulogy_skill->When it came to [SKILL], we all went to [PAWN_objective] first.</li>
+        <li>eulogy_trait->If you had to say it in one word: [TRAIT].</li>
+        <li>eulogy_trait->Ask anyone here and they will tell you the same thing first: [TRAIT].</li>
+
+        <!-- people -->
+        <li>eulogy_partner->[PAWN_pronoun] loved [OTHER_nameDef], and [OTHER_nameDef] loved [PAWN_objective] back.</li>
+        <li>eulogy_partner->Whatever else [PAWN_pronoun] was, [PAWN_pronoun] was [OTHER_nameDef]'s.</li>
+        <li>eulogy_partner_dead->[PAWN_pronoun] goes now to [OTHER_nameDef], who went first.</li>
+        <li>eulogy_partner_dead->[OTHER_nameDef] has been waiting for [PAWN_objective]. Not anymore.</li>
+        <li>eulogy_children->[PAWN_pronoun] leaves [COUNT] children behind, and they have [PAWN_possessive] eyes.</li>
+        <li>eulogy_child->[PAWN_pronoun] leaves a child behind, and the child has [PAWN_possessive] eyes.</li>
+        <li>eulogy_missed->No one will miss [PAWN_objective] more than [OTHER_nameDef].</li>
+        <li>eulogy_missed->[OTHER_nameDef] will set out one plate too many for a long time.</li>
+
+        <!-- tales -->
+        <li>eulogy_tale_Marriage->We all remember the day [PAWN_pronoun] married [OTHER_nameDef].</li>
+        <li>eulogy_tale_Marriage->[PAWN_pronoun] married [OTHER_nameDef] here, and we all danced.</li>
+        <li>eulogy_tale_BecameLover->[PAWN_pronoun] fell in love with [OTHER_nameDef] here, among us.</li>
+        <li>eulogy_tale_KilledMajorThreat->When [OTHER_nameDef] came for us, it was [PAWN_nameDef] who brought it down.</li>
+        <li>eulogy_tale_KilledMajorThreat->[PAWN_pronoun] faced [OTHER_nameDef] and won. We still tell that story.</li>
+        <li>eulogy_tale_BondedWithAnimal->[OTHER_nameDef] never left [PAWN_possessive] side, and never will.</li>
+        <li>eulogy_tale_GaveBirth->[PAWN_pronoun] brought [OTHER_nameDef] into this world.</li>
+        <li>eulogy_tale_BuriedCorpse->[PAWN_pronoun] once buried [OTHER_nameDef] with [PAWN_possessive] own hands. Today we return the favor.</li>
+        <li>eulogy_tale_SocialFight->[PAWN_pronoun] once came to blows with [OTHER_nameDef]. They made up. Mostly.</li>
+        <li>eulogy_tale_Captured->[PAWN_pronoun] once brought [OTHER_nameDef] home alive, which was harder than the alternative.</li>
+        <li>eulogy_tale_Recruited->[OTHER_nameDef] is one of us because [PAWN_nameDef] never stopped talking to [OTHER_objective].</li>
+        <li>eulogy_tale_CraftedArt->[PAWN_pronoun] made [ART]. It will outlast all of us.</li>
+        <li>eulogy_tale_CraftedArt->Every time you look at [ART], you are looking at [PAWN_nameDef]'s heart.</li>
+        <li>eulogy_tale_Mastered->[PAWN_pronoun] became a true master of [SKILL], and was proud of it.</li>
+
+        <!-- the end, always last -->
+        <li>eulogy_death_person->In the end, [KILLER_nameDef] of [KILLER_factionName] took [PAWN_objective] from us.</li>
+        <li>eulogy_death_person->[KILLER_nameDef] of [KILLER_factionName] ended it. [PAWN_nameDef] did not go quietly.</li>
+        <li>eulogy_death_person_nofaction->In the end, [KILLER_nameDef] took [PAWN_objective] from us.</li>
+        <li>eulogy_death_beast->In the end, [KILLER_indefinite] took [PAWN_objective] from us.</li>
+        <li>eulogy_death_beast->It was [KILLER_indefinite] that ended it. [PAWN_pronoun] deserved better.</li>
+        <li>eulogy_death_illness->In the end, [CAUSE] took [PAWN_objective] from us.</li>
+        <li>eulogy_death_illness->It was [CAUSE] that finally took [PAWN_objective]. We did all we could.</li>
+        <li>eulogy_death_accident->It was a cruel and sudden end, and [PAWN_pronoun] deserved a better one.</li>
+        <li>eulogy_death_unknown->And then, too soon, [PAWN_pronoun] was gone.</li>
+        <li>eulogy_death_unknown->We do not know exactly how it ended. Only that it ended too soon.</li>
+
+        <!-- a life with nothing to tell -->
+        <li>eulogy_sad->[PAWN_nameDef] was with us too briefly for stories. We will remember that [PAWN_pronoun] was here.</li>
+        <li>eulogy_sad->We hardly knew [PAWN_nameDef]. That is its own kind of sorrow.</li>
+      </rulesStrings>
+    </rulePack>
+  </RulePackDef>
+
+</Defs>

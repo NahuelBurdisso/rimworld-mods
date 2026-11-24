@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Pack del Duelo</name>
+  <packageId>nahuel.duelo</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+  </loadAfter>
+  <description>Grief made visible.
+
+The Last Light: when a colonist dies, a small light rises from the body, flies across the map to the person who loved them most, circles them once and fades. If nobody is left who loved them, it simply rises and fades where they fell. Bonded animals get one too.
+
+Embers of the Eulogy: at a funeral (Ideology), or at a burial with mourners nearby, a short eulogy written from the deceased's real life - their deeds, the people they loved, what they were best at, and how they died - rises from the grave line by line in embers. The grave keeps the words, and a letter carries them home.
+
+Moss of the Beloved: graves of people the living still love slowly grow a soft moss that glows at night. When those who loved them die or forget, the moss fades.
+
+Every feature can be switched off in the mod settings.</description>
+</ModMetaData>

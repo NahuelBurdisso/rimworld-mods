@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+
+  <!-- settings -->
+  <Duelo_SettingsCategory>Pack del Duelo</Duelo_SettingsCategory>
+  <Duelo_Setting_LastLight>The Last Light</Duelo_Setting_LastLight>
+  <Duelo_Setting_LastLight_Desc>When a colonist dies, a small light flies from the body to the person who loved them most.</Duelo_Setting_LastLight_Desc>
+  <Duelo_Setting_Eulogy>Embers of the Eulogy</Duelo_Setting_Eulogy>
+  <Duelo_Setting_Eulogy_Desc>At a funeral, or at a burial with mourners nearby, lines from the deceased's life rise from the grave with embers. The grave keeps the eulogy.</Duelo_Setting_Eulogy_Desc>
+  <Duelo_Setting_EulogyLetter>Send the eulogy as a letter</Duelo_Setting_EulogyLetter>
+  <Duelo_Setting_EulogyLetter_Desc>When the eulogy has been read, a letter with the full text arrives.</Duelo_Setting_EulogyLetter_Desc>
+  <Duelo_Setting_EulogyAtBurial>Read the eulogy at burial even when a funeral is pending</Duelo_Setting_EulogyAtBurial>
+  <Duelo_Setting_EulogyAtBurial_Desc>With Ideology, a burial normally stays silent when the colony owes the deceased a funeral: the funeral reads the eulogy instead.</Duelo_Setting_EulogyAtBurial_Desc>
+  <Duelo_Setting_Moss>Moss of the Beloved</Duelo_Setting_Moss>
+  <Duelo_Setting_Moss_Desc>Graves of people the living still love slowly grow a soft moss that glows at night. It fades as those who loved them die or forget.</Duelo_Setting_Moss_Desc>
+  <Duelo_Setting_MossBrightness>Moss glow brightness: {0}</Duelo_Setting_MossBrightness>
+
+  <!-- eulogy -->
+  <Duelo_EulogyInspect>Eulogy: "{0}"</Duelo_EulogyInspect>
+  <Duelo_ReadEulogy>Read eulogy</Duelo_ReadEulogy>
+  <Duelo_ReadEulogyDesc>Read the words spoken for {0} at this grave.</Duelo_ReadEulogyDesc>
+  <Duelo_EulogyTitle>Eulogy for {0}</Duelo_EulogyTitle>
+  <Duelo_EulogyLetterLabel>Eulogy: {0}</Duelo_EulogyLetterLabel>
+  <Duelo_EulogyLetterFuneral>At {0}'s funeral, these words were spoken:</Duelo_EulogyLetterFuneral>
+  <Duelo_EulogyLetterBurial>As {0} was laid to rest, those who loved them remembered:</Duelo_EulogyLetterBurial>
+
+  <!-- moss -->
+  <Duelo_MossInspect>Moss of the beloved: {0}</Duelo_MossInspect>
+  <Duelo_MossFaint>faint</Duelo_MossFaint>
+  <Duelo_MossGrowing>growing</Duelo_MossGrowing>
+  <Duelo_MossLush>lush</Duelo_MossLush>
+  <Duelo_MossRadiant>radiant</Duelo_MossRadiant>
+
+</LanguageData>
