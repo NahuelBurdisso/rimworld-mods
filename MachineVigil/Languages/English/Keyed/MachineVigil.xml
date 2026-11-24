@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <MachineVigil_VigilBegins>{PAWN_labelShort}'s mechanoids gather around {PAWN_possessive} body. With no mechanitor to command them, they keep vigil.</MachineVigil_VigilBegins>
+  <MachineVigil_ReportKeep>keeping vigil for {PAWN_labelShort}.</MachineVigil_ReportKeep>
+  <MachineVigil_ReportApproach>walking to {PAWN_labelShort}'s vigil.</MachineVigil_ReportApproach>
+  <MachineVigil_Wakes>{MECH_labelShort} wakes from the vigil for {PAWN_labelShort}.</MachineVigil_Wakes>
+</LanguageData>

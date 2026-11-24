@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+
+  <!-- Uncontrolled colony mechs of a dead mechanitor keep vigil instead of wandering.
+       Inserted right before the top-level Idle tagger: after lord duties, low energy and
+       the self-defence node for non-controlled mechs, so they still fight back.
+       Conditional: if another mod restructures the tree, skip silently instead of a red error. -->
+  <Operation Class="PatchOperationConditional">
+    <xpath>Defs/ThinkTreeDef[defName="Mechanoid"]/thinkRoot/subNodes/li[@Class="ThinkNode_Tagger" and tagToGive="Idle"]</xpath>
+    <match Class="PatchOperationInsert">
+      <xpath>Defs/ThinkTreeDef[defName="Mechanoid"]/thinkRoot/subNodes/li[@Class="ThinkNode_Tagger" and tagToGive="Idle"]</xpath>
+      <value>
+        <li Class="MachineVigil.JobGiver_KeepVigil" />
+      </value>
+    </match>
+  </Operation>
+
+</Patch>

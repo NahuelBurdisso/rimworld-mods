@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- An uncontrolled mech walking to its spot in the ring around a dead mechanitor. -->
+  <JobDef>
+    <defName>MachineVigil_Approach</defName>
+    <driverClass>MachineVigil.JobDriver_ApproachVigil</driverClass>
+    <reportString>walking to the vigil.</reportString>
+    <casualInterruptible>true</casualInterruptible>
+  </JobDef>
+
+  <!-- Standing still in the ring, facing the body. Expires every 600 ticks to re-think. -->
+  <JobDef>
+    <defName>MachineVigil_Keep</defName>
+    <driverClass>MachineVigil.JobDriver_KeepVigil</driverClass>
+    <reportString>keeping vigil.</reportString>
+    <suspendable>false</suspendable>
+    <casualInterruptible>true</casualInterruptible>
+  </JobDef>
+
+</Defs>
