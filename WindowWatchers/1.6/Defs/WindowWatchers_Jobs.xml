@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Standing at a safe roofed cell (TargetB), watching a fighting loved one (TargetA). Flees as usual. -->
+  <JobDef>
+    <defName>WW_Watch</defName>
+    <driverClass>WindowWatchers.JobDriver_WatchLovedOne</driverClass>
+    <reportString>watching TargetA from cover.</reportString>
+    <casualInterruptible>true</casualInterruptible>
+    <checkOverrideOnDamage>Always</checkOverrideOnDamage>
+  </JobDef>
+
+  <!-- After the threat: going to embrace the loved one who made it back (TargetA). -->
+  <JobDef>
+    <defName>WW_Reunite</defName>
+    <driverClass>WindowWatchers.JobDriver_Reunite</driverClass>
+    <reportString>going to embrace TargetA.</reportString>
+    <casualInterruptible>true</casualInterruptible>
+  </JobDef>
+
+</Defs>

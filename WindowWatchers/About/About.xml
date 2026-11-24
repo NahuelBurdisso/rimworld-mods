@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Window Watchers</name>
+  <packageId>nahuel.windowwatchers</packageId>
+  <author>Nahuel</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <description>The ones who can't fight still watch.
+
+During a raid on your home map, colonists who don't fight - children, elders, pacifists, the sick and the recovering - look for a safe roofed spot inside where they can see someone they love who is out there fighting: their partner, their mother or father, their child, or their closest friend.
+
+- They only watch from cover: an indoor, roofed cell with a clear line of sight, or from just inside a door they keep ajar. They never walk out into the crossfire. If there is no safe spot that sees their loved one, they carry on as normal.
+- A worry bubble hangs over them with an arrow pointing at the person they're watching.
+- If that person gets hit, the bubble trembles and flushes red ("watched Ana get hurt", -2).
+- If they go down: "watched Ana go down" (-5, 2 days). If they die: "watched Ana die" (-6, 4 days, on top of the usual grief).
+- If they come back standing when the threat is over: "Ana made it back" (+4) - and the watcher runs over and hugs them (+2 for the fighter, a line in the social log).
+
+It does not get in the way: hungry, tired, sleeping, urgently sick colonists, doctors with patients waiting, anyone in a ritual or under player orders are left alone, and the vanilla flee behaviour still applies if enemies come close (watchers also step away from the door when an enemy gets within 14 cells). The area restriction is respected, so a "safe room" area works.
+
+Cheap: one scan every 250 ticks, only while there is an active threat on a home map. No Harmony patches - one think-tree node at the vanilla modder hook. Safe to add to an existing save. Works with modded humanlike races (elders by each race's life expectancy).</description>
+</ModMetaData>

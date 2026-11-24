@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Inserted into the vanilla Humanlike think tree at its modder hook Humanlike_PreMain: after mental states, drafted
+       orders, lord duties, emergency work, seek-allowed-area/safe-temperature and trait behaviours; before the main
+       colonist core (food, rest, joy, work). The giver checks food/rest/schedule/urgent care itself.
+       Wrapped in ConditionalColonist: Hospitality's guest "Relax" duty also runs Humanlike_PreMain subtrees. -->
+  <ThinkTreeDef>
+    <defName>WW_WatchLovedOne</defName>
+    <insertTag>Humanlike_PreMain</insertTag>
+    <insertPriority>10</insertPriority>
+    <thinkRoot Class="ThinkNode_ConditionalColonist">
+      <subNodes>
+        <li Class="ThinkNode_Tagger">
+          <tagToGive>Misc</tagToGive>
+          <subNodes>
+            <li Class="WindowWatchers.JobGiver_WatchLovedOne" />
+          </subNodes>
+        </li>
+      </subNodes>
+    </thinkRoot>
+  </ThinkTreeDef>
+
+</Defs>
