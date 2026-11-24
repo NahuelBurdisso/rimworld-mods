@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Inserted into the vanilla Animal think tree at its modder hook (Animal_PreMain): after lying down, downed,
+       mental states, close melee threats, queued jobs, forced goto, roping and lord duties; before everything else.
+       Returns no job unless a bonded colonist is downed on this map with enemies near. -->
+  <ThinkTreeDef>
+    <defName>OverTheBody_Guard</defName>
+    <insertTag>Animal_PreMain</insertTag>
+    <insertPriority>10</insertPriority>
+    <thinkRoot Class="ThinkNode_ConditionalOfPlayerFaction">
+      <subNodes>
+        <li Class="ThinkNode_Tagger">
+          <tagToGive>TrainedAnimalBehavior</tagToGive>
+          <subNodes>
+            <li Class="OverTheBody.JobGiver_StandOverMaster" />
+          </subNodes>
+        </li>
+      </subNodes>
+    </thinkRoot>
+  </ThinkTreeDef>
+
+</Defs>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <TaleDef>
+    <defName>OverTheBody_StoodOverTale</defName>
+    <label>stood over the fallen</label>
+    <taleClass>Tale_DoublePawn</taleClass>
+    <type>PermanentHistorical</type>
+    <firstPawnSymbol>ANIMAL</firstPawnSymbol>
+    <secondPawnSymbol>FALLEN</secondPawnSymbol>
+    <baseInterest>3</baseInterest>
+    <rulePack>
+      <rulesStrings>
+        <li>tale_noun->the day [ANIMAL_nameDef] stood over [FALLEN_nameDef]</li>
+        <li>tale_noun->[ANIMAL_nameDef]'s watch over [FALLEN_nameDef]</li>
+        <li>image->[ANIMAL_nameFull] standing over the fallen [FALLEN_nameFull] [circumstance_group]</li>
+        <li>image->[ANIMAL_nameFull] guarding [FALLEN_nameFull], who lies wounded in the dirt [circumstance_group]</li>
+        <li>image->[ANIMAL_nameFull] baring its teeth over the body of [FALLEN_nameFull] [circumstance_group]</li>
+        <li>circumstance_phrase->as raiders close in from every side</li>
+        <li>circumstance_phrase->while bullets kick up the earth around them</li>
+        <li>circumstance_phrase->with blood on its muzzle</li>
+        <li>circumstance_phrase->refusing to give an inch</li>
+        <li>desc_sentence->[FALLEN_nameDef]'s hand rests on [ANIMAL_nameDef]'s flank.</li>
+        <li>desc_sentence->The enemy hesitates at the edge of the scene.</li>
+        <li>desc_sentence->[ANIMAL_nameDef]'s eyes are fixed on something beyond the frame.</li>
+      </rulesStrings>
+    </rulePack>
+  </TaleDef>
+
+  <TaleDef>
+    <defName>OverTheBody_DiedOverTale</defName>
+    <label>died over the fallen</label>
+    <taleClass>Tale_DoublePawn</taleClass>
+    <type>PermanentHistorical</type>
+    <firstPawnSymbol>ANIMAL</firstPawnSymbol>
+    <secondPawnSymbol>FALLEN</secondPawnSymbol>
+    <baseInterest>4</baseInterest>
+    <rulePack>
+      <rulesStrings>
+        <li>tale_noun->[ANIMAL_nameDef]'s last stand over [FALLEN_nameDef]</li>
+        <li>tale_noun->the death of [ANIMAL_nameDef], who would not leave [FALLEN_nameDef]</li>
+        <li>image->[ANIMAL_nameFull] lying dead across the body of [FALLEN_nameFull] [circumstance_group]</li>
+        <li>image->[ANIMAL_nameFull] falling in front of the wounded [FALLEN_nameFull] [circumstance_group]</li>
+        <li>circumstance_phrase->with its teeth still bared</li>
+        <li>circumstance_phrase->as the enemy finally falls back</li>
+        <li>circumstance_phrase->having never taken a step back</li>
+        <li>desc_sentence->[FALLEN_nameDef] is reaching for [ANIMAL_nameDef].</li>
+        <li>desc_sentence->The ground around them is torn and dark.</li>
+      </rulesStrings>
+    </rulePack>
+  </TaleDef>
+
+</Defs>

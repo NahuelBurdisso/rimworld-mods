@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <OverTheBody_Rushes>{ANIMAL_labelShort} rushes to stand over the fallen {PAWN_labelShort}.</OverTheBody_Rushes>
+  <OverTheBody_Remembers>{PAWN_labelShort} will not forget how {ANIMAL_labelShort} stood over {PAWN_objective}.</OverTheBody_Remembers>
+  <OverTheBody_DiedGuarding>{ANIMAL_labelShort} died standing over {PAWN_labelShort}.</OverTheBody_DiedGuarding>
+</LanguageData>

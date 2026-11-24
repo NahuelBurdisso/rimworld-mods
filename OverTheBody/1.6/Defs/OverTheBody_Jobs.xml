@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- Sprinting to a cell beside a downed bonded colonist (TargetC). -->
+  <JobDef>
+    <defName>OverTheBody_Rush</defName>
+    <driverClass>OverTheBody.JobDriver_RushToFallen</driverClass>
+    <reportString>rushing to TargetC.</reportString>
+    <neverFleeFromEnemies>true</neverFleeFromEnemies>
+    <casualInterruptible>false</casualInterruptible>
+  </JobDef>
+
+  <!-- Standing beside a downed bonded colonist (TargetA), facing the nearest threat. -->
+  <JobDef>
+    <defName>OverTheBody_Guard</defName>
+    <driverClass>OverTheBody.JobDriver_StandOver</driverClass>
+    <reportString>standing over TargetA.</reportString>
+    <neverFleeFromEnemies>true</neverFleeFromEnemies>
+    <casualInterruptible>false</casualInterruptible>
+    <suspendable>false</suspendable>
+  </JobDef>
+
+  <!-- Staying close to whoever carries the fallen colonist (TargetC) to safety. -->
+  <JobDef>
+    <defName>OverTheBody_Follow</defName>
+    <driverClass>OverTheBody.JobDriver_StayWithCarried</driverClass>
+    <reportString>staying close to TargetC.</reportString>
+    <neverFleeFromEnemies>true</neverFleeFromEnemies>
+  </JobDef>
+
+  <!-- Melee against a hostile near the downed colonist (TargetC); leashed to the body. -->
+  <JobDef>
+    <defName>OverTheBody_Bite</defName>
+    <driverClass>OverTheBody.JobDriver_BiteForFallen</driverClass>
+    <reportString>defending TargetC from TargetA.</reportString>
+    <neverFleeFromEnemies>true</neverFleeFromEnemies>
+    <casualInterruptible>false</casualInterruptible>
+    <collideWithPawns>true</collideWithPawns>
+  </JobDef>
+
+</Defs>
